@@ -27,6 +27,23 @@ object Manuscripts : IntIdTable("manuscripts") {
     val centuryMax = integer("century_max")
     val effectiveCentury = integer("effective_century")
     val manuscriptType = varchar("manuscript_type", 20).nullable()
+    val historicalNotes = text("historical_notes").nullable()
+    val geographicOrigin = varchar("geographic_origin", 200).nullable()
+    val discoveryLocation = varchar("discovery_location", 200).nullable()
+    val ntvmrUrl = varchar("ntvmr_url", 500).nullable()
+}
+
+object ManuscriptSources : IntIdTable("manuscript_sources") {
+    val manuscriptId = reference("manuscript_id", Manuscripts)
+    val sourceName = varchar("source_name", 100).nullable()
+    val ntvmrUrl = varchar("ntvmr_url", 500).nullable()
+    val historicalNotes = text("historical_notes").nullable()
+    val geographicOrigin = varchar("geographic_origin", 200).nullable()
+    val discoveryLocation = varchar("discovery_location", 200).nullable()
+
+    init {
+        uniqueIndex(manuscriptId)
+    }
 }
 
 object ManuscriptVerses : IntIdTable("manuscript_verses") {

@@ -5,9 +5,17 @@ import com.ntcoverage.config.FlywayConfig
 import com.ntcoverage.repository.ChapterCoverageRepository
 import com.ntcoverage.repository.CoverageRepository
 import com.ntcoverage.repository.ManuscriptRepository
+import com.ntcoverage.repository.MetricsRepository
+import com.ntcoverage.repository.StatsRepository
 import com.ntcoverage.repository.VerseRepository
 import com.ntcoverage.routes.coverageRoutes
+import com.ntcoverage.routes.manuscriptRoutes
+import com.ntcoverage.routes.metricsRoutes
+import com.ntcoverage.routes.statsRoutes
 import com.ntcoverage.service.CoverageService
+import com.ntcoverage.service.ManuscriptService
+import com.ntcoverage.service.MetricsService
+import com.ntcoverage.service.StatsService
 import com.ntcoverage.service.IngestionService
 import com.ntcoverage.service.VerseExpander
 import io.ktor.http.*
@@ -73,10 +81,15 @@ fun Application.module() {
     val manuscriptRepository = ManuscriptRepository()
     val coverageRepository = CoverageRepository()
     val chapterCoverageRepository = ChapterCoverageRepository()
+    val statsRepository = StatsRepository()
     val verseExpander = VerseExpander()
 
     val ingestionService = IngestionService(verseRepository, manuscriptRepository, coverageRepository, verseExpander)
     val coverageService = CoverageService(coverageRepository, chapterCoverageRepository)
+    val statsService = StatsService(statsRepository, coverageRepository)
+    val manuscriptService = ManuscriptService(manuscriptRepository)
+    val metricsRepository = MetricsRepository(coverageRepository)
+    val metricsService = MetricsService(metricsRepository)
 
     ingestionService.run()
     log.info("Data ingestion completed. API is ready.")
@@ -98,11 +111,19 @@ fun Application.module() {
                     "GET /timeline?book=John&type=papyrus - Evolutionary timeline",
                     "GET /timeline/full - Full NT timeline",
                     "GET /missing/{book}/{century} - Missing verses for a book up to century",
+                    "GET /stats/overview - Global statistics overview",
+                    "GET /manuscripts?type=papyrus&century=3 - Manuscript explorer",
+                    "GET /manuscripts/{gaId} - Manuscript detail",
+                    "GET /metrics/nt - NT-wide academic metrics",
+                    "GET /metrics/{book} - Book-level metrics",
                     "GET /swagger - Swagger UI documentation"
                 )
             ))
         }
         coverageRoutes(coverageService)
+        statsRoutes(statsService)
+        manuscriptRoutes(manuscriptService)
+        metricsRoutes(metricsService)
     }
 
     monitor.subscribe(ApplicationStopped) {

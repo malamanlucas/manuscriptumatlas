@@ -106,3 +106,96 @@ data class MissingVersesResponse(
     val totalMissing: Int,
     val missingVerses: List<MissingVerse>
 )
+
+@Serializable
+data class StatsOverviewResponse(
+    val totalManuscripts: Int,
+    val byType: Map<String, Int>,
+    val byCentury: List<CenturyCount>,
+    val byBook: List<BookManuscriptCount>,
+    val avgBooksPerManuscript: Double,
+    val totalVerses: Int,
+    val coveredVerses: Long,
+    val overallCoveragePercent: Double
+)
+
+@Serializable
+data class CenturyCount(
+    val century: Int,
+    val count: Int
+)
+
+@Serializable
+data class BookManuscriptCount(
+    val bookName: String,
+    val manuscriptCount: Int
+)
+
+@Serializable
+data class ManuscriptSummary(
+    val gaId: String,
+    val name: String?,
+    val centuryMin: Int,
+    val centuryMax: Int,
+    val manuscriptType: String?,
+    val bookCount: Int,
+    val verseCount: Int
+)
+
+@Serializable
+data class ManuscriptDetailResponse(
+    val gaId: String,
+    val name: String?,
+    val centuryMin: Int,
+    val centuryMax: Int,
+    val manuscriptType: String?,
+    val booksPreserved: List<BookRanges>,
+    val intervals: List<BookInterval>,
+    val dataSource: String,
+    val ntvmrUrl: String,
+    val historicalNotes: String? = null
+)
+
+@Serializable
+data class BookRanges(
+    val book: String,
+    val ranges: List<String>
+)
+
+@Serializable
+data class BookInterval(
+    val book: String,
+    val chapterMin: Int,
+    val chapterMax: Int,
+    val verseCount: Int
+)
+
+@Serializable
+data class CenturyGrowthRate(
+    val century: Int,
+    val rate: Double
+)
+
+@Serializable
+data class BookMetricsResponse(
+    val bookName: String,
+    val centuryGrowthRates: List<CenturyGrowthRate>,
+    val stabilizationCentury: Int?,
+    val fragmentationIndex: Double,
+    val coverageDensity: Double,
+    val manuscriptConcentrationScore: Double,
+    val coverageByCentury: List<CenturyCoveragePercent>
+)
+
+@Serializable
+data class CenturyCoveragePercent(
+    val century: Int,
+    val percent: Double
+)
+
+@Serializable
+data class NtMetricsResponse(
+    val books: List<BookMetricsResponse>,
+    val overallStabilizationCentury: Int?,
+    val overallCoverageByCentury: List<CenturyCoveragePercent>
+)
