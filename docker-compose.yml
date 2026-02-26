@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nt_coverage
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nt_coverage"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    dns:
+      - 10.76.19.15
+      - 10.241.240.41
+      - 8.8.8.8
+    environment:
+      DATABASE_URL: "jdbc:postgresql://postgres:5432/nt_coverage"
+      DATABASE_USER: "postgres"
+      DATABASE_PASSWORD: "postgres"
+      USE_NTVMR: "true"
+      NTVMR_DELAY_MS: "500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: "http://app:8080"
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_URL: "http://app:8080"
+    depends_on:
+      - app
+
+volumes:
+  pgdata:

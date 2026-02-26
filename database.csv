@@ -1,0 +1,58 @@
+"id","ga_id","name","century_min","century_max","effective_century","manuscript_type"
+1,P52,Rylands Library Papyrus P52,2,2,2,papyrus
+2,P90,Papyrus Oxyrhynchus 3523,2,2,2,papyrus
+3,P98,IFAO Inv. 237b,2,2,2,papyrus
+4,P104,Papyrus Oxyrhynchus 4404,2,2,2,papyrus
+5,P32,Papyrus Manchester Rylands 5,2,2,2,papyrus
+6,P66,Bodmer Papyrus II,2,3,2,papyrus
+7,P46,Chester Beatty Papyrus II,2,3,2,papyrus
+8,P77,Papyrus Oxyrhynchus 2683,2,3,2,papyrus
+9,P103,Papyrus Oxyrhynchus 4403,2,3,2,papyrus
+10,P64,Magdalen Papyrus,2,3,2,papyrus
+57,"0189",Papyrus Berlin 11765,2,3,2,uncial
+11,P1,Papyrus Oxyrhynchus 2,3,3,3,papyrus
+12,P4,Suppl. Gr. 1120,3,3,3,papyrus
+13,P5,Papyrus Oxyrhynchus 208 + 1781,3,3,3,papyrus
+14,P9,Papyrus Oxyrhynchus 402,3,3,3,papyrus
+15,P12,Papyrus Amherst 3b,3,3,3,papyrus
+16,P13,Papyrus Oxyrhynchus 657 + PSI 1292,3,4,3,papyrus
+17,P15,Papyrus Oxyrhynchus 1008,3,3,3,papyrus
+18,P16,Papyrus Oxyrhynchus 1009,3,4,3,papyrus
+19,P18,Papyrus Oxyrhynchus 1079,3,4,3,papyrus
+20,P20,Papyrus Oxyrhynchus 1171,3,3,3,papyrus
+21,P22,Papyrus Oxyrhynchus 1228,3,3,3,papyrus
+22,P23,Papyrus Oxyrhynchus 1229,3,3,3,papyrus
+23,P27,Papyrus Oxyrhynchus 1355,3,3,3,papyrus
+24,P30,Papyrus Oxyrhynchus 1598,3,3,3,papyrus
+25,P37,Papyrus Michigan 1570,3,4,3,papyrus
+26,P38,Papyrus Michigan 1571,3,4,3,papyrus
+27,P39,Papyrus Oxyrhynchus 1780,3,3,3,papyrus
+28,P40,Papyrus Heidelberg G 645,3,3,3,papyrus
+29,P45,Chester Beatty Papyrus I,3,3,3,papyrus
+30,P75,Bodmer Papyrus XIV-XV,3,3,3,papyrus
+31,P47,Chester Beatty Papyrus III,3,3,3,papyrus
+32,P48,Papyrus PSI 1165,3,3,3,papyrus
+33,P49,Papyrus Yale 415 + 531,3,3,3,papyrus
+34,P53,Papyrus Michigan 6652,3,3,3,papyrus
+35,P65,Papyrus PSI XIV 1373,3,3,3,papyrus
+36,P69,Papyrus Oxyrhynchus 2383,3,3,3,papyrus
+37,P70,Papyrus Oxyrhynchus 2384,3,3,3,papyrus
+38,P72,Bodmer Papyrus VII-VIII,3,4,3,papyrus
+39,P74,Bodmer Papyrus XVII,3,3,3,papyrus
+40,P78,Papyrus Oxyrhynchus 2684,3,4,3,papyrus
+41,P87,Papyrus Koln 12,3,3,3,papyrus
+42,P100,Papyrus Oxyrhynchus 4449,3,4,3,papyrus
+43,P115,Papyrus Oxyrhynchus 4499,3,4,3,papyrus
+44,"01",Codex Sinaiticus,4,4,4,uncial
+45,"03",Codex Vaticanus,4,4,4,uncial
+51,P17,Papyrus Oxyrhynchus 1078,4,4,4,papyrus
+52,P10,Papyrus Oxyrhynchus 209,4,4,4,papyrus
+53,P24,Papyrus Oxyrhynchus 1230,4,4,4,papyrus
+54,P51,Papyrus Oxyrhynchus 2157,4,5,4,papyrus
+55,"0171",PSI 2.124,4,4,4,uncial
+56,"0162",Papyrus Oxyrhynchus 847,4,4,4,uncial
+46,"02",Codex Alexandrinus,5,5,5,uncial
+47,"05",Codex Bezae,5,5,5,uncial
+48,"04",Codex Ephraemi Rescriptus,5,5,5,uncial
+49,"032",Codex Washingtonianus,5,5,5,uncial
+50,"048",Codex Vaticanus 2061,5,5,5,uncial

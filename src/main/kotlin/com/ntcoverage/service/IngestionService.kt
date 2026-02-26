@@ -1,0 +1,255 @@
+package com.ntcoverage.service
+
+import com.ntcoverage.model.ManuscriptSeed
+import com.ntcoverage.repository.CoverageRepository
+import com.ntcoverage.repository.ManuscriptRepository
+import com.ntcoverage.repository.VerseRepository
+import com.ntcoverage.scraper.NtvmrClient
+import com.ntcoverage.scraper.NtvmrVerseParser
+import com.ntcoverage.seed.CanonicalVerses
+import com.ntcoverage.seed.ManuscriptSeedData
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
+
+class IngestionService(
+    private val verseRepository: VerseRepository,
+    private val manuscriptRepository: ManuscriptRepository,
+    private val coverageRepository: CoverageRepository,
+    private val verseExpander: VerseExpander
+) {
+    private val log = LoggerFactory.getLogger(IngestionService::class.java)
+    private val useNtvmr = System.getenv("USE_NTVMR")?.lowercase() != "false"
+    private val ntvmrDelayMs = System.getenv("NTVMR_DELAY_MS")?.toLongOrNull() ?: 500L
+
+    fun run() {
+        log.info("Starting data ingestion...")
+        seedBooksAndVerses()
+        val manuscripts = ManuscriptSeedData.load()
+        log.info("Loaded ${manuscripts.size} manuscripts from seed data")
+        ingestManuscripts(manuscripts)
+        materializeCoverage()
+        log.info("Ingestion complete.")
+    }
+
+    private fun seedBooksAndVerses() {
+        log.info("Seeding ${CanonicalVerses.books.size} books and ${CanonicalVerses.totalVerses} canonical verses...")
+
+        for (book in CanonicalVerses.books) {
+            val bookId = verseRepository.insertBook(
+                name = book.name,
+                abbreviation = book.abbreviation,
+                order = book.order,
+                totalChapters = book.totalChapters,
+                totalVerses = book.totalVerses
+            )
+
+            val verses = mutableListOf<Pair<Int, Int>>()
+            for ((chIdx, verseCount) in book.chaptersAndVerses.withIndex()) {
+                val chapter = chIdx + 1
+                for (v in 1..verseCount) {
+                    verses.add(chapter to v)
+                }
+            }
+            verseRepository.insertVerses(bookId, verses)
+            log.debug("  Seeded ${book.name}: ${book.totalChapters} chapters, ${book.totalVerses} verses")
+        }
+
+        log.info("Canonical seed complete.")
+    }
+
+    private fun ingestManuscripts(manuscripts: List<ManuscriptSeed>) {
+        if (useNtvmr) {
+            log.info("=== NTVMR integration ENABLED — fetching precise verse data from INTF Münster ===")
+            ingestWithNtvmr(manuscripts)
+        } else {
+            log.info("=== NTVMR integration DISABLED — using seed JSON ranges ===")
+            ingestFromSeedOnly(manuscripts)
+        }
+    }
+
+    private fun ingestWithNtvmr(manuscripts: List<ManuscriptSeed>) {
+        val parser = NtvmrVerseParser()
+        var ntvmrSuccessCount = 0
+        var seedFallbackCount = 0
+        var ntvmrAvailable = true
+
+        runBlocking {
+            val client = NtvmrClient()
+            try {
+                for (ms in manuscripts) {
+                    if (ms.centuryMin > 10) {
+                        log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
+                        continue
+                    }
+
+                    val manuscriptId = manuscriptRepository.insertIfNotExists(
+                        gaId = ms.gaId,
+                        name = ms.name,
+                        centuryMin = ms.centuryMin,
+                        centuryMax = ms.centuryMax,
+                        manuscriptType = ms.type
+                    )
+
+                    if (!ntvmrAvailable) {
+                        linkFromSeed(manuscriptId, ms)
+                        seedFallbackCount++
+                        continue
+                    }
+
+                    val linked = tryNtvmrIngestion(client, parser, manuscriptId, ms)
+                    if (linked != null) {
+                        log.info("${ms.gaId} (NTVMR, century ${ms.centuryMin}): linked $linked verses")
+                        ntvmrSuccessCount++
+                    } else {
+                        val seedLinked = linkFromSeed(manuscriptId, ms)
+                        log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
+                        seedFallbackCount++
+
+                        if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
+                            log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
+                            ntvmrAvailable = false
+                        }
+                    }
+
+                    delay(ntvmrDelayMs)
+                }
+            } finally {
+                client.close()
+            }
+        }
+
+        log.info("=== Ingestion summary: $ntvmrSuccessCount from NTVMR, $seedFallbackCount from seed ===")
+    }
+
+    /**
+     * Fetches precise verse data from NTVMR for a single manuscript.
+     * For each book listed in the seed data, queries the NTVMR API and
+     * parses which verses are actually present in the manuscript.
+     *
+     * @return total linked verse count, or null if NTVMR fetch completely failed
+     */
+    private suspend fun tryNtvmrIngestion(
+        client: NtvmrClient,
+        parser: NtvmrVerseParser,
+        manuscriptId: Int,
+        ms: ManuscriptSeed
+    ): Int? {
+        val docId = client.gaIdToDocId(ms.gaId)
+        var totalLinked = 0
+        var anySuccess = false
+
+        for (bookContent in ms.content) {
+            val bookDef = CanonicalVerses.findBook(bookContent.book) ?: continue
+            val bookId = verseRepository.findBookIdByName(bookDef.name) ?: continue
+
+            val teiXml = client.fetchBookTranscript(docId, bookDef.name)
+
+            if (teiXml != null && teiXml.contains("<ab")) {
+                val presentVerses = parser.extractPresentVerses(teiXml)
+                val bookVerses = presentVerses[bookDef.name]
+
+                if (bookVerses != null && bookVerses.isNotEmpty()) {
+                    val linked = linkVersesByChapterVerse(manuscriptId, bookId, bookVerses)
+                    totalLinked += linked
+                    anySuccess = true
+                    log.debug("  ${ms.gaId}/${bookDef.name}: NTVMR -> $linked verses (${bookVerses.size} reported present)")
+                    delay(ntvmrDelayMs)
+                    continue
+                }
+            }
+
+            val seedLinked = linkBookFromSeed(manuscriptId, bookId, bookDef.name, bookContent.ranges)
+            totalLinked += seedLinked
+            log.debug("  ${ms.gaId}/${bookDef.name}: seed fallback -> $seedLinked verses")
+            delay(ntvmrDelayMs)
+        }
+
+        return if (anySuccess) totalLinked else null
+    }
+
+    private fun linkVersesByChapterVerse(
+        manuscriptId: Int,
+        bookId: Int,
+        verses: List<Pair<Int, Int>>
+    ): Int {
+        val verseLookup = verseRepository.loadAllVersesForBook(bookId)
+            .associateBy { it.chapter to it.verse }
+
+        val verseIds = verses.mapNotNull { (chapter, verse) ->
+            verseLookup[chapter to verse]?.verseId
+        }
+
+        if (verseIds.isNotEmpty()) {
+            verseRepository.insertManuscriptVerses(manuscriptId, verseIds)
+        }
+        return verseIds.size
+    }
+
+    private fun linkBookFromSeed(
+        manuscriptId: Int,
+        bookId: Int,
+        bookName: String,
+        ranges: List<String>
+    ): Int {
+        val verseLookup = verseRepository.loadAllVersesForBook(bookId)
+            .associateBy { Triple(it.bookId, it.chapter, it.verse) }
+
+        val expandedVerses = verseExpander.expandAll(bookName, ranges)
+        val verseIds = expandedVerses.mapNotNull { sv ->
+            val key = Triple(bookId, sv.chapter, sv.verse)
+            verseLookup[key]?.verseId
+        }
+
+        if (verseIds.isNotEmpty()) {
+            verseRepository.insertManuscriptVerses(manuscriptId, verseIds)
+        }
+        return verseIds.size
+    }
+
+    private fun linkFromSeed(manuscriptId: Int, ms: ManuscriptSeed): Int {
+        var totalLinked = 0
+        for (bookContent in ms.content) {
+            val bookDef = CanonicalVerses.findBook(bookContent.book) ?: continue
+            val bookId = verseRepository.findBookIdByName(bookDef.name) ?: continue
+            totalLinked += linkBookFromSeed(manuscriptId, bookId, bookDef.name, bookContent.ranges)
+        }
+        return totalLinked
+    }
+
+    private fun ingestFromSeedOnly(manuscripts: List<ManuscriptSeed>) {
+        for (ms in manuscripts) {
+            if (ms.centuryMin > 10) {
+                log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
+                continue
+            }
+
+            val manuscriptId = manuscriptRepository.insertIfNotExists(
+                gaId = ms.gaId,
+                name = ms.name,
+                centuryMin = ms.centuryMin,
+                centuryMax = ms.centuryMax,
+                manuscriptType = ms.type
+            )
+
+            val totalLinked = linkFromSeed(manuscriptId, ms)
+            log.info("${ms.gaId} (seed, century ${ms.centuryMin}): linked $totalLinked verses")
+        }
+    }
+
+    private fun materializeCoverage() {
+        log.info("Materializing coverage cache for centuries I-X...")
+        val bookIds = coverageRepository.getAllBookIds()
+
+        for (century in 1..10) {
+            val coverage = coverageRepository.calculateCoverage(century)
+            val pairs = coverage.mapNotNull { cov ->
+                val bookId = bookIds[cov.bookName]
+                if (bookId != null) bookId to cov else null
+            }
+            coverageRepository.materializeCoverage(century, pairs)
+            val totalCovered = coverage.sumOf { it.coveredVerses }
+            log.info("  Century $century: $totalCovered verses covered across ${coverage.size} books")
+        }
+    }
+}

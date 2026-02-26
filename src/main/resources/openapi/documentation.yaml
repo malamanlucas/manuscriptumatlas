@@ -1,0 +1,296 @@
+openapi: 3.1.0
+info:
+  title: NT Manuscript Coverage API
+  description: |
+    API para análise de cobertura textual de manuscritos do Novo Testamento datados até o século V.
+
+    O sistema calcula a presença ou ausência de cada versículo do NT com base em manuscritos públicos
+    (papiros e unciais) dos séculos I-V, fornecendo cobertura cumulativa por livro e por século.
+
+    **Regras de negócio:**
+    - Se um versículo aparece em ao menos um manuscrito até determinado século, é considerado "coberto"
+    - Manuscritos com datação em intervalo (ex: "séc. II/III") usam o século mais antigo
+    - A cobertura é cumulativa: o século III inclui tudo dos séculos I, II e III
+    - Duplicações entre manuscritos não são contadas mais de uma vez
+  version: 1.0.0
+  contact:
+    name: NT Coverage Project
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Coverage
+    description: Endpoints de cobertura textual por livro e por século
+  - name: Info
+    description: Informações do serviço
+
+paths:
+  /:
+    get:
+      tags: [Info]
+      summary: Informações do serviço
+      description: Retorna metadados da API e lista de endpoints disponíveis.
+      operationId: getServiceInfo
+      responses:
+        "200":
+          description: Informações do serviço
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+              example:
+                service: NT Manuscript Coverage API
+                version: 1.0.0
+                endpoints:
+                  - "GET /coverage - Full coverage report (all centuries I-V)"
+                  - "GET /coverage/{book} - Coverage for a specific book"
+                  - "GET /century/{number} - Cumulative coverage up to century N"
+
+  /coverage:
+    get:
+      tags: [Coverage]
+      summary: Relatório completo de cobertura (séculos I-V)
+      description: |
+        Retorna o relatório completo de cobertura textual do Novo Testamento,
+        com dados acumulados para cada século (I ao V), incluindo resumo geral,
+        cobertura por livro, livros 100% atestados e livros incompletos.
+      operationId: getFullCoverage
+      responses:
+        "200":
+          description: Relatório completo de cobertura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullCoverageResponse"
+
+  /coverage/{book}:
+    get:
+      tags: [Coverage]
+      summary: Cobertura de um livro específico
+      description: |
+        Retorna a cobertura textual acumulada até o século V para um livro
+        específico do Novo Testamento.
+      operationId: getCoverageByBook
+      parameters:
+        - name: book
+          in: path
+          required: true
+          description: |
+            Nome do livro do Novo Testamento.
+            Exemplos: `Matthew`, `Mark`, `Luke`, `John`, `Acts`, `Romans`,
+            `1 Corinthians`, `2 Corinthians`, `Galatians`, `Ephesians`,
+            `Philippians`, `Colossians`, `1 Thessalonians`, `2 Thessalonians`,
+            `1 Timothy`, `2 Timothy`, `Titus`, `Philemon`, `Hebrews`,
+            `James`, `1 Peter`, `2 Peter`, `1 John`, `2 John`, `3 John`,
+            `Jude`, `Revelation`
+          schema:
+            type: string
+            example: Matthew
+      responses:
+        "200":
+          description: Cobertura do livro solicitado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CenturyCoverageResponse"
+              example:
+                century: 5
+                summary:
+                  totalNtVerses: 1071
+                  coveredVerses: 1071
+                  overallCoveragePercent: 100.0
+                books:
+                  - bookName: Matthew
+                    coveredVerses: 1071
+                    totalVerses: 1071
+                    coveragePercent: 100.0
+                fullyAttested:
+                  - Matthew
+                notFullyAttested: []
+        "404":
+          description: Livro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Book not found: Narnia"
+
+  /century/{number}:
+    get:
+      tags: [Coverage]
+      summary: Cobertura acumulada até um século específico
+      description: |
+        Retorna a cobertura textual acumulada do Novo Testamento desde o
+        século I até o século informado (inclusive). A cobertura é cumulativa:
+        o resultado do século III inclui todos os manuscritos dos séculos I, II e III.
+      operationId: getCoverageByCentury
+      parameters:
+        - name: number
+          in: path
+          required: true
+          description: Número do século (1 a 5)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+            example: 3
+      responses:
+        "200":
+          description: Cobertura acumulada até o século solicitado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CenturyCoverageResponse"
+              example:
+                century: 3
+                summary:
+                  totalNtVerses: 7957
+                  coveredVerses: 5458
+                  overallCoveragePercent: 68.59
+                books:
+                  - bookName: John
+                    coveredVerses: 879
+                    totalVerses: 879
+                    coveragePercent: 100.0
+                fullyAttested:
+                  - John
+                  - 1 Corinthians
+                  - 2 Corinthians
+                  - Galatians
+                  - Ephesians
+                  - Philippians
+                  - Colossians
+                  - Hebrews
+                  - James
+                  - 1 Peter
+                  - 2 Peter
+                  - 1 John
+                  - 2 John
+                  - 3 John
+                  - Jude
+                notFullyAttested:
+                  - bookName: Matthew
+                    coveredVerses: 145
+                    totalVerses: 1071
+                    coveragePercent: 13.54
+        "400":
+          description: Século inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Century must be between 1 and 5"
+
+components:
+  schemas:
+    ServiceInfo:
+      type: object
+      required: [service, version, endpoints]
+      properties:
+        service:
+          type: string
+          description: Nome do serviço
+        version:
+          type: string
+          description: Versão da API
+        endpoints:
+          type: array
+          items:
+            type: string
+          description: Lista de endpoints disponíveis
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+
+    BookCoverage:
+      type: object
+      required: [bookName, coveredVerses, totalVerses, coveragePercent]
+      properties:
+        bookName:
+          type: string
+          description: Nome do livro do NT
+          example: Matthew
+        coveredVerses:
+          type: integer
+          format: int64
+          description: Quantidade de versículos cobertos por manuscritos
+          example: 1071
+        totalVerses:
+          type: integer
+          description: Total de versículos canônicos do livro
+          example: 1071
+        coveragePercent:
+          type: number
+          format: double
+          description: Percentual de cobertura (0.0 a 100.0)
+          example: 100.0
+
+    CoverageSummary:
+      type: object
+      required: [totalNtVerses, coveredVerses, overallCoveragePercent]
+      properties:
+        totalNtVerses:
+          type: integer
+          description: Total de versículos do NT (7.957)
+          example: 7957
+        coveredVerses:
+          type: integer
+          format: int64
+          description: Total de versículos cobertos
+          example: 7957
+        overallCoveragePercent:
+          type: number
+          format: double
+          description: Percentual geral de cobertura
+          example: 100.0
+
+    CenturyCoverageResponse:
+      type: object
+      required: [century, summary, books, fullyAttested, notFullyAttested]
+      properties:
+        century:
+          type: integer
+          description: Século de referência (cobertura acumulada até este século)
+          example: 5
+        summary:
+          $ref: "#/components/schemas/CoverageSummary"
+        books:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookCoverage"
+          description: Cobertura individual de cada livro do NT
+        fullyAttested:
+          type: array
+          items:
+            type: string
+          description: Livros que atingiram 100% de cobertura
+        notFullyAttested:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookCoverage"
+          description: Livros que não atingiram 100% de cobertura
+
+    FullCoverageResponse:
+      type: object
+      required: [maxCentury, summary, byCentury]
+      properties:
+        maxCentury:
+          type: integer
+          description: Século máximo considerado (5)
+          example: 5
+        summary:
+          $ref: "#/components/schemas/CoverageSummary"
+        byCentury:
+          type: array
+          items:
+            $ref: "#/components/schemas/CenturyCoverageResponse"
+          description: Cobertura detalhada por século (I ao V)

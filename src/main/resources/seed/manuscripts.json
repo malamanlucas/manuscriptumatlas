@@ -1,0 +1,724 @@
+[
+  {
+    "gaId": "P52",
+    "name": "Rylands Library Papyrus P52",
+    "centuryMin": 2,
+    "centuryMax": 2,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["18:31-33", "18:37-38"] }
+    ]
+  },
+  {
+    "gaId": "P90",
+    "name": "Papyrus Oxyrhynchus 3523",
+    "centuryMin": 2,
+    "centuryMax": 2,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["18:36-19:7"] }
+    ]
+  },
+  {
+    "gaId": "P98",
+    "name": "IFAO Inv. 237b",
+    "centuryMin": 2,
+    "centuryMax": 2,
+    "type": "papyrus",
+    "content": [
+      { "book": "Revelation", "ranges": ["1:13-2:1"] }
+    ]
+  },
+  {
+    "gaId": "P104",
+    "name": "Papyrus Oxyrhynchus 4404",
+    "centuryMin": 2,
+    "centuryMax": 2,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["21:34-37", "21:43-45"] }
+    ]
+  },
+  {
+    "gaId": "P32",
+    "name": "Papyrus Manchester Rylands 5",
+    "centuryMin": 2,
+    "centuryMax": 2,
+    "type": "papyrus",
+    "content": [
+      { "book": "Titus", "ranges": ["1:11-15", "2:3-8"] }
+    ]
+  },
+  {
+    "gaId": "P66",
+    "name": "Bodmer Papyrus II",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["1:1-6:11", "6:35-14:26", "14:29-21:25"] }
+    ]
+  },
+  {
+    "gaId": "P46",
+    "name": "Chester Beatty Papyrus II",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Romans", "ranges": ["5:17-6:14", "8:15-15:9", "15:11-16:27"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-16:24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-6:24"] },
+      { "book": "Philippians", "ranges": ["1:1-4:23"] },
+      { "book": "Colossians", "ranges": ["1:1-4:18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-2:3", "5:5-28"] },
+      { "book": "Hebrews", "ranges": ["1:1-13:25"] }
+    ]
+  },
+  {
+    "gaId": "P77",
+    "name": "Papyrus Oxyrhynchus 2683",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["23:30-39"] }
+    ]
+  },
+  {
+    "gaId": "P103",
+    "name": "Papyrus Oxyrhynchus 4403",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["13:55-56", "14:3-5"] }
+    ]
+  },
+  {
+    "gaId": "P64",
+    "name": "Magdalen Papyrus",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["3:9-12", "3:14-15", "5:20-22", "5:25-28", "26:7-8", "26:10-10", "26:14-15", "26:22-23", "26:31-33"] }
+    ]
+  },
+  {
+    "gaId": "P1",
+    "name": "Papyrus Oxyrhynchus 2",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:1-9", "1:12-12", "1:14-20"] }
+    ]
+  },
+  {
+    "gaId": "P4",
+    "name": "Suppl. Gr. 1120",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Luke", "ranges": ["1:58-59", "1:62-2:1", "2:6-7", "3:8-4:2", "4:29-32", "4:34-35", "5:3-8", "5:30-6:16"] }
+    ]
+  },
+  {
+    "gaId": "P5",
+    "name": "Papyrus Oxyrhynchus 208 + 1781",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["1:23-31", "1:33-40", "16:14-30", "20:11-17", "20:19-20", "20:22-25"] }
+    ]
+  },
+  {
+    "gaId": "P9",
+    "name": "Papyrus Oxyrhynchus 402",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "1 John", "ranges": ["4:11-12", "4:14-17"] }
+    ]
+  },
+  {
+    "gaId": "P12",
+    "name": "Papyrus Amherst 3b",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Hebrews", "ranges": ["1:1-1"] }
+    ]
+  },
+  {
+    "gaId": "P13",
+    "name": "Papyrus Oxyrhynchus 657 + PSI 1292",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Hebrews", "ranges": ["2:14-5:5", "10:8-22", "10:29-11:13", "11:28-12:17"] }
+    ]
+  },
+  {
+    "gaId": "P15",
+    "name": "Papyrus Oxyrhynchus 1008",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "1 Corinthians", "ranges": ["7:18-8:4"] }
+    ]
+  },
+  {
+    "gaId": "P16",
+    "name": "Papyrus Oxyrhynchus 1009",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Philippians", "ranges": ["3:10-17", "4:2-8"] }
+    ]
+  },
+  {
+    "gaId": "P18",
+    "name": "Papyrus Oxyrhynchus 1079",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Revelation", "ranges": ["1:4-7"] }
+    ]
+  },
+  {
+    "gaId": "P20",
+    "name": "Papyrus Oxyrhynchus 1171",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "James", "ranges": ["2:19-3:9"] }
+    ]
+  },
+  {
+    "gaId": "P22",
+    "name": "Papyrus Oxyrhynchus 1228",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["15:25-16:2", "16:21-32"] }
+    ]
+  },
+  {
+    "gaId": "P23",
+    "name": "Papyrus Oxyrhynchus 1229",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "James", "ranges": ["1:10-12", "1:15-18"] }
+    ]
+  },
+  {
+    "gaId": "P27",
+    "name": "Papyrus Oxyrhynchus 1355",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Romans", "ranges": ["8:12-22", "8:24-27", "8:33-9:3", "9:5-9"] }
+    ]
+  },
+  {
+    "gaId": "P30",
+    "name": "Papyrus Oxyrhynchus 1598",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "1 Thessalonians", "ranges": ["4:12-5:18", "5:25-28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-2"] }
+    ]
+  },
+  {
+    "gaId": "P37",
+    "name": "Papyrus Michigan 1570",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["26:19-52"] }
+    ]
+  },
+  {
+    "gaId": "P38",
+    "name": "Papyrus Michigan 1571",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Acts", "ranges": ["18:27-19:6", "19:12-16"] }
+    ]
+  },
+  {
+    "gaId": "P39",
+    "name": "Papyrus Oxyrhynchus 1780",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "John", "ranges": ["8:14-22"] }
+    ]
+  },
+  {
+    "gaId": "P40",
+    "name": "Papyrus Heidelberg G 645",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Romans", "ranges": ["1:24-27", "1:31-2:3", "3:21-4:8", "6:4-5:5", "5:16-17", "6:3-16", "8:17-35", "8:38-9:3", "9:5-9"] }
+    ]
+  },
+  {
+    "gaId": "P45",
+    "name": "Chester Beatty Papyrus I",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["20:24-32", "21:13-19", "25:41-26:39"] },
+      { "book": "Mark", "ranges": ["4:36-5:2", "5:16-26", "5:38-6:3", "6:16-25", "6:36-50", "7:3-15", "7:25-8:1", "8:10-26", "8:34-9:9", "9:18-31", "11:27-12:1", "12:5-8", "12:13-19", "12:24-28"] },
+      { "book": "Luke", "ranges": ["6:31-41", "6:45-7:7", "9:26-41", "9:45-10:1", "10:6-22", "10:26-11:1", "11:6-25", "11:28-46", "11:50-12:12", "12:18-37", "12:42-13:1", "13:6-24", "13:29-14:10", "14:17-33"] },
+      { "book": "John", "ranges": ["4:51-54", "5:21-24", "10:7-25", "10:30-11:10", "11:18-36", "11:42-57"] },
+      { "book": "Acts", "ranges": ["4:27-36", "5:10-21", "5:30-39", "6:7-7:2", "7:10-21", "7:32-41", "7:52-8:1", "8:14-25", "8:34-9:6", "9:16-27", "9:35-10:2", "10:10-23", "10:31-41", "11:2-14", "11:24-12:5", "12:13-22", "13:6-16", "13:25-36", "13:46-14:3", "14:15-15:2", "15:7-19", "15:25-27", "15:38-16:4", "16:15-21", "16:32-40", "17:9-17"] }
+    ]
+  },
+  {
+    "gaId": "P75",
+    "name": "Bodmer Papyrus XIV-XV",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Luke", "ranges": ["3:18-4:2", "4:34-5:10", "5:37-6:4", "6:10-7:32", "7:35-39", "7:41-43", "7:46-9:2", "9:4-17:15", "17:19-18:18", "22:4-24:53"] },
+      { "book": "John", "ranges": ["1:1-11:45", "11:48-15:8"] }
+    ]
+  },
+  {
+    "gaId": "P47",
+    "name": "Chester Beatty Papyrus III",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Revelation", "ranges": ["9:10-11:3", "11:5-16:15", "16:17-17:2"] }
+    ]
+  },
+  {
+    "gaId": "P48",
+    "name": "Papyrus PSI 1165",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Acts", "ranges": ["23:11-17", "23:23-29"] }
+    ]
+  },
+  {
+    "gaId": "P49",
+    "name": "Papyrus Yale 415 + 531",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Ephesians", "ranges": ["4:16-29", "4:31-5:13"] }
+    ]
+  },
+  {
+    "gaId": "P53",
+    "name": "Papyrus Michigan 6652",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["26:29-40"] },
+      { "book": "Acts", "ranges": ["9:33-10:1"] }
+    ]
+  },
+  {
+    "gaId": "P65",
+    "name": "Papyrus PSI XIV 1373",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "1 Thessalonians", "ranges": ["1:3-2:1", "2:6-13"] }
+    ]
+  },
+  {
+    "gaId": "P69",
+    "name": "Papyrus Oxyrhynchus 2383",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Luke", "ranges": ["22:41-41", "22:45-48", "22:58-61"] }
+    ]
+  },
+  {
+    "gaId": "P70",
+    "name": "Papyrus Oxyrhynchus 2384",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Matthew", "ranges": ["2:13-16", "2:22-3:1", "11:26-27", "12:4-5", "24:3-6", "24:12-15"] }
+    ]
+  },
+  {
+    "gaId": "P72",
+    "name": "Bodmer Papyrus VII-VIII",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "Jude", "ranges": ["1:1-25"] }
+    ]
+  },
+  {
+    "gaId": "P74",
+    "name": "Bodmer Papyrus XVII",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Acts", "ranges": ["1:2-28:31"] },
+      { "book": "James", "ranges": ["1:1-5:20"] },
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "1 John", "ranges": ["1:1-5:21"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "3 John", "ranges": ["1:1-15"] },
+      { "book": "Jude", "ranges": ["1:1-25"] }
+    ]
+  },
+  {
+    "gaId": "P78",
+    "name": "Papyrus Oxyrhynchus 2684",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Jude", "ranges": ["1:4-5", "1:7-8"] }
+    ]
+  },
+  {
+    "gaId": "P87",
+    "name": "Papyrus Koln 12",
+    "centuryMin": 3,
+    "centuryMax": 3,
+    "type": "papyrus",
+    "content": [
+      { "book": "Philemon", "ranges": ["1:13-15", "1:24-25"] }
+    ]
+  },
+  {
+    "gaId": "P100",
+    "name": "Papyrus Oxyrhynchus 4449",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "James", "ranges": ["3:13-4:4", "4:9-5:1"] }
+    ]
+  },
+  {
+    "gaId": "P115",
+    "name": "Papyrus Oxyrhynchus 4499",
+    "centuryMin": 3,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Revelation", "ranges": ["2:1-3", "2:13-15", "2:27-29", "3:10-12", "5:8-9", "6:5-6", "8:3-8", "8:11-13", "9:1-5", "9:10-11", "9:15-16", "9:18-21", "10:1-4", "10:8-11", "11:1-5", "11:8-15", "11:18-19", "12:1-5", "12:8-10", "12:12-17", "13:1-3", "13:6-16", "13:18-18", "14:1-3", "14:5-7", "14:12-13", "14:15-20", "15:1-1", "15:4-7"] }
+    ]
+  },
+  {
+    "gaId": "01",
+    "name": "Codex Sinaiticus",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:1-28:20"] },
+      { "book": "Mark", "ranges": ["1:1-16:20"] },
+      { "book": "Luke", "ranges": ["1:1-24:53"] },
+      { "book": "John", "ranges": ["1:1-21:25"] },
+      { "book": "Acts", "ranges": ["1:1-28:31"] },
+      { "book": "Romans", "ranges": ["1:1-16:27"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-16:24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-6:24"] },
+      { "book": "Philippians", "ranges": ["1:1-4:23"] },
+      { "book": "Colossians", "ranges": ["1:1-4:18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-5:28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-3:18"] },
+      { "book": "1 Timothy", "ranges": ["1:1-6:21"] },
+      { "book": "2 Timothy", "ranges": ["1:1-4:22"] },
+      { "book": "Titus", "ranges": ["1:1-3:15"] },
+      { "book": "Philemon", "ranges": ["1:1-25"] },
+      { "book": "Hebrews", "ranges": ["1:1-13:25"] },
+      { "book": "James", "ranges": ["1:1-5:20"] },
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "1 John", "ranges": ["1:1-5:21"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "3 John", "ranges": ["1:1-15"] },
+      { "book": "Jude", "ranges": ["1:1-25"] },
+      { "book": "Revelation", "ranges": ["1:1-22:21"] }
+    ]
+  },
+  {
+    "gaId": "03",
+    "name": "Codex Vaticanus",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:1-28:20"] },
+      { "book": "Mark", "ranges": ["1:1-16:8"] },
+      { "book": "Luke", "ranges": ["1:1-24:53"] },
+      { "book": "John", "ranges": ["1:1-21:25"] },
+      { "book": "Acts", "ranges": ["1:1-28:31"] },
+      { "book": "Romans", "ranges": ["1:1-16:27"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-16:24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-6:24"] },
+      { "book": "Philippians", "ranges": ["1:1-4:23"] },
+      { "book": "Colossians", "ranges": ["1:1-4:18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-5:28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-3:18"] },
+      { "book": "Hebrews", "ranges": ["1:1-9:14"] },
+      { "book": "James", "ranges": ["1:1-5:20"] },
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "1 John", "ranges": ["1:1-5:21"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "3 John", "ranges": ["1:1-15"] },
+      { "book": "Jude", "ranges": ["1:1-25"] }
+    ]
+  },
+  {
+    "gaId": "02",
+    "name": "Codex Alexandrinus",
+    "centuryMin": 5,
+    "centuryMax": 5,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["25:7-28:20"] },
+      { "book": "Mark", "ranges": ["1:1-16:20"] },
+      { "book": "Luke", "ranges": ["1:1-24:53"] },
+      { "book": "John", "ranges": ["1:1-6:50", "8:52-21:25"] },
+      { "book": "Acts", "ranges": ["1:1-28:31"] },
+      { "book": "Romans", "ranges": ["1:1-16:27"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-16:24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-4:13", "12:7-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-6:24"] },
+      { "book": "Philippians", "ranges": ["1:1-4:23"] },
+      { "book": "Colossians", "ranges": ["1:1-4:18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-5:28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-3:18"] },
+      { "book": "1 Timothy", "ranges": ["1:1-6:21"] },
+      { "book": "2 Timothy", "ranges": ["1:1-4:22"] },
+      { "book": "Titus", "ranges": ["1:1-3:15"] },
+      { "book": "Philemon", "ranges": ["1:1-25"] },
+      { "book": "Hebrews", "ranges": ["1:1-13:25"] },
+      { "book": "James", "ranges": ["1:1-5:20"] },
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "1 John", "ranges": ["1:1-5:21"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "3 John", "ranges": ["1:1-15"] },
+      { "book": "Jude", "ranges": ["1:1-25"] },
+      { "book": "Revelation", "ranges": ["1:1-22:21"] }
+    ]
+  },
+  {
+    "gaId": "05",
+    "name": "Codex Bezae",
+    "centuryMin": 5,
+    "centuryMax": 5,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:1-28:20"] },
+      { "book": "Mark", "ranges": ["1:1-16:20"] },
+      { "book": "Luke", "ranges": ["1:1-24:53"] },
+      { "book": "John", "ranges": ["1:1-21:25"] },
+      { "book": "Acts", "ranges": ["1:1-28:31"] },
+      { "book": "3 John", "ranges": ["1:11-15"] }
+    ]
+  },
+  {
+    "gaId": "04",
+    "name": "Codex Ephraemi Rescriptus",
+    "centuryMin": 5,
+    "centuryMax": 5,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:2-5:15", "5:22-17:26", "18:28-22:20", "23:17-24:10", "24:45-25:30", "26:22-27:11", "27:46-28:20"] },
+      { "book": "Mark", "ranges": ["1:17-6:31", "8:5-12:29", "13:19-16:20"] },
+      { "book": "Luke", "ranges": ["1:2-2:5", "2:42-3:21", "4:25-6:4", "6:37-7:16", "8:28-12:3", "19:42-20:27", "21:21-22:19", "23:25-24:7", "24:46-53"] },
+      { "book": "John", "ranges": ["1:3-41", "3:33-5:16", "6:38-7:3", "8:34-9:11", "11:8-46", "13:8-14:7", "16:21-18:36", "20:26-21:25"] },
+      { "book": "Acts", "ranges": ["1:2-4:3", "5:35-10:42", "13:1-16:36", "20:10-21:31", "22:21-23:18", "24:15-26:19", "27:16-28:4"] },
+      { "book": "Romans", "ranges": ["1:1-2:5", "3:21-9:1", "9:16-10:15", "11:3-13:14"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-2:9", "3:18-5:5", "6:1-7:18", "9:6-15:40", "16:12-24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-2:11", "4:2-7:1", "9:8-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-20", "3:2-4:18", "4:26-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-2:18", "3:1-4:17", "5:1-6:8"] },
+      { "book": "Philippians", "ranges": ["1:22-3:4", "4:4-23"] },
+      { "book": "Colossians", "ranges": ["1:1-2:8", "2:16-4:1", "4:6-18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-3:5", "4:6-5:28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-2:9", "2:13-3:18"] },
+      { "book": "1 Timothy", "ranges": ["1:1-3:9", "5:20-6:21"] },
+      { "book": "2 Timothy", "ranges": ["1:1-2:9", "3:1-4:22"] },
+      { "book": "Titus", "ranges": ["1:1-2:3", "2:11-3:15"] },
+      { "book": "Philemon", "ranges": ["1:1-25"] },
+      { "book": "Hebrews", "ranges": ["1:1-2:4", "7:26-9:15", "9:18-10:24", "12:16-13:25"] },
+      { "book": "James", "ranges": ["1:1-4:2"] },
+      { "book": "1 Peter", "ranges": ["1:2-4:5"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:12"] },
+      { "book": "1 John", "ranges": ["1:1-4:2"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "Jude", "ranges": ["1:1-25"] },
+      { "book": "Revelation", "ranges": ["1:2-3:19", "5:14-7:14", "7:17-8:5", "9:16-10:10", "11:3-16:13", "18:2-19:5"] }
+    ]
+  },
+  {
+    "gaId": "032",
+    "name": "Codex Washingtonianus",
+    "centuryMin": 5,
+    "centuryMax": 5,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["1:1-28:20"] },
+      { "book": "Mark", "ranges": ["1:1-16:20"] },
+      { "book": "Luke", "ranges": ["1:1-24:53"] },
+      { "book": "John", "ranges": ["1:1-21:25"] }
+    ]
+  },
+  {
+    "gaId": "048",
+    "name": "Codex Vaticanus 2061",
+    "centuryMin": 5,
+    "centuryMax": 5,
+    "type": "uncial",
+    "content": [
+      { "book": "Acts", "ranges": ["26:20-27:4", "27:6-8", "27:10-28:31"] },
+      { "book": "James", "ranges": ["1:1-5:20"] },
+      { "book": "1 Peter", "ranges": ["1:1-5:14"] },
+      { "book": "2 Peter", "ranges": ["1:1-3:18"] },
+      { "book": "1 John", "ranges": ["1:1-5:21"] },
+      { "book": "2 John", "ranges": ["1:1-13"] },
+      { "book": "3 John", "ranges": ["1:1-15"] },
+      { "book": "Jude", "ranges": ["1:1-25"] },
+      { "book": "Romans", "ranges": ["1:1-16:27"] },
+      { "book": "1 Corinthians", "ranges": ["1:1-16:24"] },
+      { "book": "2 Corinthians", "ranges": ["1:1-13:13"] },
+      { "book": "Galatians", "ranges": ["1:1-6:18"] },
+      { "book": "Ephesians", "ranges": ["1:1-6:24"] },
+      { "book": "Philippians", "ranges": ["1:1-4:23"] },
+      { "book": "Colossians", "ranges": ["1:1-4:18"] },
+      { "book": "1 Thessalonians", "ranges": ["1:1-5:28"] },
+      { "book": "2 Thessalonians", "ranges": ["1:1-3:18"] },
+      { "book": "1 Timothy", "ranges": ["1:1-6:21"] },
+      { "book": "2 Timothy", "ranges": ["1:1-4:22"] },
+      { "book": "Titus", "ranges": ["1:1-3:15"] },
+      { "book": "Philemon", "ranges": ["1:1-25"] },
+      { "book": "Hebrews", "ranges": ["1:1-13:25"] }
+    ]
+  },
+  {
+    "gaId": "P17",
+    "name": "Papyrus Oxyrhynchus 1078",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Hebrews", "ranges": ["9:12-19"] }
+    ]
+  },
+  {
+    "gaId": "P10",
+    "name": "Papyrus Oxyrhynchus 209",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Romans", "ranges": ["1:1-7"] }
+    ]
+  },
+  {
+    "gaId": "P24",
+    "name": "Papyrus Oxyrhynchus 1230",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "papyrus",
+    "content": [
+      { "book": "Revelation", "ranges": ["5:5-8", "6:5-8"] }
+    ]
+  },
+  {
+    "gaId": "P51",
+    "name": "Papyrus Oxyrhynchus 2157",
+    "centuryMin": 4,
+    "centuryMax": 5,
+    "type": "papyrus",
+    "content": [
+      { "book": "Galatians", "ranges": ["1:2-10", "1:13-20", "4:2-9", "4:12-20"] }
+    ]
+  },
+  {
+    "gaId": "0171",
+    "name": "PSI 2.124",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "uncial",
+    "content": [
+      { "book": "Matthew", "ranges": ["10:17-23", "10:25-32"] },
+      { "book": "Luke", "ranges": ["22:44-50", "22:52-56", "22:61-64"] }
+    ]
+  },
+  {
+    "gaId": "0162",
+    "name": "Papyrus Oxyrhynchus 847",
+    "centuryMin": 4,
+    "centuryMax": 4,
+    "type": "uncial",
+    "content": [
+      { "book": "John", "ranges": ["2:11-22"] }
+    ]
+  },
+  {
+    "gaId": "0189",
+    "name": "Papyrus Berlin 11765",
+    "centuryMin": 2,
+    "centuryMax": 3,
+    "type": "uncial",
+    "content": [
+      { "book": "Acts", "ranges": ["5:3-21"] }
+    ]
+  }
+]
