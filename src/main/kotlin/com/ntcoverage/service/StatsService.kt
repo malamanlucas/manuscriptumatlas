@@ -1,5 +1,6 @@
 package com.ntcoverage.service
 
+import com.ntcoverage.model.ManuscriptsCountResponse
 import com.ntcoverage.model.StatsOverviewResponse
 import com.ntcoverage.repository.CoverageRepository
 import com.ntcoverage.repository.StatsRepository
@@ -10,6 +11,18 @@ class StatsService(
     private val statsRepository: StatsRepository,
     private val coverageRepository: CoverageRepository
 ) {
+
+    fun getManuscriptsCount(): ManuscriptsCountResponse {
+        val total = statsRepository.getTotalManuscripts()
+        val byType = statsRepository.getManuscriptsByType()
+        return ManuscriptsCountResponse(
+            total = total,
+            papyrus = byType["papyrus"] ?: 0,
+            uncial = byType["uncial"] ?: 0,
+            minuscule = byType["minuscule"] ?: 0,
+            lectionary = byType["lectionary"] ?: 0
+        )
+    }
 
     fun getOverview(): StatsOverviewResponse {
         val totalManuscripts = statsRepository.getTotalManuscripts()

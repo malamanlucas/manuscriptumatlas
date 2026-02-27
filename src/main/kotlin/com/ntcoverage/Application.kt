@@ -4,19 +4,22 @@ import com.ntcoverage.config.DatabaseConfig
 import com.ntcoverage.config.FlywayConfig
 import com.ntcoverage.repository.ChapterCoverageRepository
 import com.ntcoverage.repository.CoverageRepository
+import com.ntcoverage.repository.IngestionMetadataRepository
 import com.ntcoverage.repository.ManuscriptRepository
 import com.ntcoverage.repository.MetricsRepository
 import com.ntcoverage.repository.StatsRepository
 import com.ntcoverage.repository.VerseRepository
+import com.ntcoverage.routes.adminRoutes
 import com.ntcoverage.routes.coverageRoutes
 import com.ntcoverage.routes.manuscriptRoutes
 import com.ntcoverage.routes.metricsRoutes
 import com.ntcoverage.routes.statsRoutes
 import com.ntcoverage.service.CoverageService
+import com.ntcoverage.service.IngestionOrchestrator
+import com.ntcoverage.service.IngestionService
 import com.ntcoverage.service.ManuscriptService
 import com.ntcoverage.service.MetricsService
 import com.ntcoverage.service.StatsService
-import com.ntcoverage.service.IngestionService
 import com.ntcoverage.service.VerseExpander
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -28,6 +31,11 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -51,6 +59,7 @@ fun Application.module() {
         anyHost()
         allowHeader(HttpHeaders.ContentType)
         allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
     }
 
     install(ContentNegotiation) {
@@ -83,6 +92,7 @@ fun Application.module() {
     val chapterCoverageRepository = ChapterCoverageRepository()
     val statsRepository = StatsRepository()
     val verseExpander = VerseExpander()
+    val ingestionMetadataRepository = IngestionMetadataRepository()
 
     val ingestionService = IngestionService(verseRepository, manuscriptRepository, coverageRepository, verseExpander)
     val coverageService = CoverageService(coverageRepository, chapterCoverageRepository)
@@ -90,9 +100,12 @@ fun Application.module() {
     val manuscriptService = ManuscriptService(manuscriptRepository)
     val metricsRepository = MetricsRepository(coverageRepository)
     val metricsService = MetricsService(metricsRepository)
+    val orchestrator = IngestionOrchestrator(ingestionService, ingestionMetadataRepository, statsRepository)
 
-    ingestionService.run()
-    log.info("Data ingestion completed. API is ready.")
+    ingestionService.seedBooksAndVerses()
+    log.info("Canonical seed complete. API is ready.")
+
+    val ingestionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     routing {
         swaggerUI(path = "swagger", swaggerFile = "openapi/documentation.yaml")
@@ -100,7 +113,7 @@ fun Application.module() {
         get("/") {
             call.respond(ServiceInfo(
                 service = "NT Manuscript Coverage API",
-                version = "1.0.0",
+                version = "2.0.0",
                 endpoints = listOf(
                     "GET /coverage - Full coverage report (all centuries I-X)",
                     "GET /coverage?type=papyrus&century=4 - Coverage filtered by type and century",
@@ -112,10 +125,13 @@ fun Application.module() {
                     "GET /timeline/full - Full NT timeline",
                     "GET /missing/{book}/{century} - Missing verses for a book up to century",
                     "GET /stats/overview - Global statistics overview",
+                    "GET /stats/manuscripts-count - Manuscript count by type",
                     "GET /manuscripts?type=papyrus&century=3 - Manuscript explorer",
                     "GET /manuscripts/{gaId} - Manuscript detail",
                     "GET /metrics/nt - NT-wide academic metrics",
                     "GET /metrics/{book} - Book-level metrics",
+                    "GET /admin/ingestion/status - Ingestion status",
+                    "POST /admin/ingestion/run - Trigger manual ingestion",
                     "GET /swagger - Swagger UI documentation"
                 )
             ))
@@ -124,9 +140,17 @@ fun Application.module() {
         statsRoutes(statsService)
         manuscriptRoutes(manuscriptService)
         metricsRoutes(metricsService)
+        adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
+    }
+
+    monitor.subscribe(ApplicationStarted) {
+        ingestionScope.launch {
+            orchestrator.launchIfEnabled()
+        }
     }
 
     monitor.subscribe(ApplicationStopped) {
+        ingestionScope.cancel()
         DatabaseConfig.close()
     }
 }

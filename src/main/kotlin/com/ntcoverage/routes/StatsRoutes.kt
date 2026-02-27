@@ -11,4 +11,10 @@ fun Route.statsRoutes(statsService: StatsService) {
         call.response.headers.append(HttpHeaders.CacheControl, "max-age=300")
         call.respond(result)
     }
+
+    get("/stats/manuscripts-count") {
+        val result = statsService.getManuscriptsCount()
+        call.response.headers.append(HttpHeaders.CacheControl, "max-age=300")
+        call.respond(result)
+    }
 }

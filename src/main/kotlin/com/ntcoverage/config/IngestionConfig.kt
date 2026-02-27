@@ -1,0 +1,12 @@
+package com.ntcoverage.config
+
+object IngestionConfig {
+    val enableIngestion: Boolean
+        get() = System.getenv("ENABLE_INGESTION")?.lowercase() != "false"
+
+    val skipIfPopulated: Boolean
+        get() = System.getenv("INGESTION_SKIP_IF_POPULATED")?.lowercase() == "true"
+
+    val timeoutMinutes: Long
+        get() = System.getenv("INGESTION_TIMEOUT_MINUTES")?.toLongOrNull() ?: 30L
+}

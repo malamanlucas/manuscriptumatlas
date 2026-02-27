@@ -11,9 +11,37 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d nt_coverage"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./backups:/backups:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        if [ -z "$${RESTORE_FILE:-}" ]; then
+          echo "No RESTORE_FILE set — skipping restore."
+          exit 0
+        fi
+        if [ ! -f "/backups/$$RESTORE_FILE" ]; then
+          echo "File /backups/$$RESTORE_FILE not found — skipping restore."
+          exit 0
+        fi
+        echo "Restoring from /backups/$$RESTORE_FILE ..."
+        psql -h postgres -U postgres -d postgres -c \
+          "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='nt_coverage' AND pid <> pg_backend_pid();" || true
+        psql -h postgres -U postgres -d postgres -c "DROP DATABASE IF EXISTS nt_coverage;"
+        psql -h postgres -U postgres -d postgres -c "CREATE DATABASE nt_coverage;"
+        pg_restore --clean --if-exists --verbose -h postgres -U postgres -d nt_coverage "/backups/$$RESTORE_FILE"
+        echo "Restore complete."
 
   app:
     build: .
@@ -29,9 +57,12 @@ services:
       DATABASE_PASSWORD: "postgres"
       USE_NTVMR: "true"
       NTVMR_DELAY_MS: "500"
+      ENABLE_INGESTION: "true"
+      INGESTION_SKIP_IF_POPULATED: "false"
+      INGESTION_TIMEOUT_MINUTES: "30"
     depends_on:
-      postgres:
-        condition: service_healthy
+      init:
+        condition: service_completed_successfully
 
   frontend:
     build:

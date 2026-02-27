@@ -3,6 +3,8 @@ package com.ntcoverage.config
 import com.ntcoverage.model.*
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
@@ -28,6 +30,8 @@ object FlywayConfig {
             if (result.migrationsExecuted == 0) {
                 log.info("No Flyway migrations applied. Using Exposed SchemaUtils as fallback...")
                 createTablesViaExposed()
+            } else {
+                ensureIngestionMetadataRow()
             }
         } catch (e: Exception) {
             log.warn("Flyway migration failed (${e.message}). Falling back to Exposed SchemaUtils...")
@@ -38,9 +42,23 @@ object FlywayConfig {
     private fun createTablesViaExposed() {
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
-                Books, Verses, Manuscripts, ManuscriptVerses, CoverageByCentury
+                Books, Verses, Manuscripts, ManuscriptVerses, CoverageByCentury, IngestionMetadata
             )
             log.info("Tables created/verified via Exposed SchemaUtils.")
+        }
+        ensureIngestionMetadataRow()
+    }
+
+    private fun ensureIngestionMetadataRow() {
+        transaction {
+            val exists = IngestionMetadata.selectAll().count() > 0
+            if (!exists) {
+                IngestionMetadata.insert {
+                    it[id] = 1
+                    it[status] = "idle"
+                }
+                log.info("Inserted initial ingestion_metadata row.")
+            }
         }
     }
 }

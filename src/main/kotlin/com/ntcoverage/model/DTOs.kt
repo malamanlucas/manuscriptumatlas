@@ -199,3 +199,31 @@ data class NtMetricsResponse(
     val overallStabilizationCentury: Int?,
     val overallCoverageByCentury: List<CenturyCoveragePercent>
 )
+
+@Serializable
+data class ManuscriptsCountResponse(
+    val total: Int,
+    val papyrus: Int,
+    val uncial: Int,
+    val minuscule: Int,
+    val lectionary: Int
+)
+
+@Serializable
+data class IngestionStatusResponse(
+    val status: String,
+    val startedAt: String? = null,
+    val finishedAt: String? = null,
+    val durationMs: Long? = null,
+    val manuscriptsIngested: Int = 0,
+    val versesLinked: Int = 0,
+    val errorMessage: String? = null,
+    val isRunning: Boolean = false,
+    val enableIngestion: Boolean = true
+)
+
+@Serializable
+data class IngestionResult(
+    val manuscriptsIngested: Int,
+    val versesLinked: Int
+)

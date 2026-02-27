@@ -1,5 +1,6 @@
 package com.ntcoverage.service
 
+import com.ntcoverage.model.IngestionResult
 import com.ntcoverage.model.ManuscriptSeed
 import com.ntcoverage.repository.CoverageRepository
 import com.ntcoverage.repository.ManuscriptRepository
@@ -9,7 +10,6 @@ import com.ntcoverage.scraper.NtvmrVerseParser
 import com.ntcoverage.seed.CanonicalVerses
 import com.ntcoverage.seed.ManuscriptSeedData
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
 class IngestionService(
@@ -22,17 +22,7 @@ class IngestionService(
     private val useNtvmr = System.getenv("USE_NTVMR")?.lowercase() != "false"
     private val ntvmrDelayMs = System.getenv("NTVMR_DELAY_MS")?.toLongOrNull() ?: 500L
 
-    fun run() {
-        log.info("Starting data ingestion...")
-        seedBooksAndVerses()
-        val manuscripts = ManuscriptSeedData.load()
-        log.info("Loaded ${manuscripts.size} manuscripts from seed data")
-        ingestManuscripts(manuscripts)
-        materializeCoverage()
-        log.info("Ingestion complete.")
-    }
-
-    private fun seedBooksAndVerses() {
+    fun seedBooksAndVerses() {
         log.info("Seeding ${CanonicalVerses.books.size} books and ${CanonicalVerses.totalVerses} canonical verses...")
 
         for (book in CanonicalVerses.books) {
@@ -58,77 +48,99 @@ class IngestionService(
         log.info("Canonical seed complete.")
     }
 
-    private fun ingestManuscripts(manuscripts: List<ManuscriptSeed>) {
-        if (useNtvmr) {
+    suspend fun ingestManuscriptsAsync(): IngestionResult {
+        log.info("Starting manuscript ingestion...")
+        val manuscripts = ManuscriptSeedData.load()
+        log.info("Loaded ${manuscripts.size} manuscripts from seed data")
+
+        val result = if (useNtvmr) {
             log.info("=== NTVMR integration ENABLED — fetching precise verse data from INTF Münster ===")
             ingestWithNtvmr(manuscripts)
         } else {
             log.info("=== NTVMR integration DISABLED — using seed JSON ranges ===")
             ingestFromSeedOnly(manuscripts)
         }
+
+        log.info("Manuscript ingestion complete: ${result.manuscriptsIngested} manuscripts, ${result.versesLinked} verses linked")
+        return result
     }
 
-    private fun ingestWithNtvmr(manuscripts: List<ManuscriptSeed>) {
+    suspend fun materializeCoverageAsync() {
+        log.info("Materializing coverage cache for centuries I-X...")
+        val bookIds = coverageRepository.getAllBookIds()
+
+        for (century in 1..10) {
+            val coverage = coverageRepository.calculateCoverage(century)
+            val pairs = coverage.mapNotNull { cov ->
+                val bookId = bookIds[cov.bookName]
+                if (bookId != null) bookId to cov else null
+            }
+            coverageRepository.materializeCoverage(century, pairs)
+            val totalCovered = coverage.sumOf { it.coveredVerses }
+            log.info("  Century $century: $totalCovered verses covered across ${coverage.size} books")
+        }
+    }
+
+    private suspend fun ingestWithNtvmr(manuscripts: List<ManuscriptSeed>): IngestionResult {
         val parser = NtvmrVerseParser()
         var ntvmrSuccessCount = 0
         var seedFallbackCount = 0
         var ntvmrAvailable = true
+        var totalVersesLinked = 0
 
-        runBlocking {
-            val client = NtvmrClient()
-            try {
-                for (ms in manuscripts) {
-                    if (ms.centuryMin > 10) {
-                        log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
-                        continue
-                    }
-
-                    val manuscriptId = manuscriptRepository.insertIfNotExists(
-                        gaId = ms.gaId,
-                        name = ms.name,
-                        centuryMin = ms.centuryMin,
-                        centuryMax = ms.centuryMax,
-                        manuscriptType = ms.type
-                    )
-
-                    if (!ntvmrAvailable) {
-                        linkFromSeed(manuscriptId, ms)
-                        seedFallbackCount++
-                        continue
-                    }
-
-                    val linked = tryNtvmrIngestion(client, parser, manuscriptId, ms)
-                    if (linked != null) {
-                        log.info("${ms.gaId} (NTVMR, century ${ms.centuryMin}): linked $linked verses")
-                        ntvmrSuccessCount++
-                    } else {
-                        val seedLinked = linkFromSeed(manuscriptId, ms)
-                        log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
-                        seedFallbackCount++
-
-                        if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
-                            log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
-                            ntvmrAvailable = false
-                        }
-                    }
-
-                    delay(ntvmrDelayMs)
+        val client = NtvmrClient()
+        try {
+            for (ms in manuscripts) {
+                if (ms.centuryMin > 10) {
+                    log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
+                    continue
                 }
-            } finally {
-                client.close()
+
+                val manuscriptId = manuscriptRepository.insertIfNotExists(
+                    gaId = ms.gaId,
+                    name = ms.name,
+                    centuryMin = ms.centuryMin,
+                    centuryMax = ms.centuryMax,
+                    manuscriptType = ms.type
+                )
+
+                if (!ntvmrAvailable) {
+                    val linked = linkFromSeed(manuscriptId, ms)
+                    totalVersesLinked += linked
+                    seedFallbackCount++
+                    continue
+                }
+
+                val linked = tryNtvmrIngestion(client, parser, manuscriptId, ms)
+                if (linked != null) {
+                    log.info("${ms.gaId} (NTVMR, century ${ms.centuryMin}): linked $linked verses")
+                    totalVersesLinked += linked
+                    ntvmrSuccessCount++
+                } else {
+                    val seedLinked = linkFromSeed(manuscriptId, ms)
+                    log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
+                    totalVersesLinked += seedLinked
+                    seedFallbackCount++
+
+                    if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
+                        log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
+                        ntvmrAvailable = false
+                    }
+                }
+
+                delay(ntvmrDelayMs)
             }
+        } finally {
+            client.close()
         }
 
         log.info("=== Ingestion summary: $ntvmrSuccessCount from NTVMR, $seedFallbackCount from seed ===")
+        return IngestionResult(
+            manuscriptsIngested = ntvmrSuccessCount + seedFallbackCount,
+            versesLinked = totalVersesLinked
+        )
     }
 
-    /**
-     * Fetches precise verse data from NTVMR for a single manuscript.
-     * For each book listed in the seed data, queries the NTVMR API and
-     * parses which verses are actually present in the manuscript.
-     *
-     * @return total linked verse count, or null if NTVMR fetch completely failed
-     */
     private suspend fun tryNtvmrIngestion(
         client: NtvmrClient,
         parser: NtvmrVerseParser,
@@ -217,7 +229,10 @@ class IngestionService(
         return totalLinked
     }
 
-    private fun ingestFromSeedOnly(manuscripts: List<ManuscriptSeed>) {
+    private fun ingestFromSeedOnly(manuscripts: List<ManuscriptSeed>): IngestionResult {
+        var manuscriptsIngested = 0
+        var totalVersesLinked = 0
+
         for (ms in manuscripts) {
             if (ms.centuryMin > 10) {
                 log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
@@ -233,23 +248,14 @@ class IngestionService(
             )
 
             val totalLinked = linkFromSeed(manuscriptId, ms)
+            totalVersesLinked += totalLinked
+            manuscriptsIngested++
             log.info("${ms.gaId} (seed, century ${ms.centuryMin}): linked $totalLinked verses")
         }
-    }
 
-    private fun materializeCoverage() {
-        log.info("Materializing coverage cache for centuries I-X...")
-        val bookIds = coverageRepository.getAllBookIds()
-
-        for (century in 1..10) {
-            val coverage = coverageRepository.calculateCoverage(century)
-            val pairs = coverage.mapNotNull { cov ->
-                val bookId = bookIds[cov.bookName]
-                if (bookId != null) bookId to cov else null
-            }
-            coverageRepository.materializeCoverage(century, pairs)
-            val totalCovered = coverage.sumOf { it.coveredVerses }
-            log.info("  Century $century: $totalCovered verses covered across ${coverage.size} books")
-        }
+        return IngestionResult(
+            manuscriptsIngested = manuscriptsIngested,
+            versesLinked = totalVersesLinked
+        )
     }
 }

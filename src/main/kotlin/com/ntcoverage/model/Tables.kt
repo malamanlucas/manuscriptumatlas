@@ -1,6 +1,8 @@
 package com.ntcoverage.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 
 object Books : IntIdTable("books") {
     val name = varchar("name", 50).uniqueIndex()
@@ -65,4 +67,18 @@ object CoverageByCentury : IntIdTable("coverage_by_century") {
     init {
         uniqueIndex(century, bookId)
     }
+}
+
+object IngestionMetadata : Table("ingestion_metadata") {
+    val id = integer("id")
+    val status = varchar("status", 20)
+    val startedAt = timestampWithTimeZone("started_at").nullable()
+    val finishedAt = timestampWithTimeZone("finished_at").nullable()
+    val durationMs = long("duration_ms").nullable()
+    val manuscriptsIngested = integer("manuscripts_ingested").nullable()
+    val versesLinked = integer("verses_linked").nullable()
+    val errorMessage = text("error_message").nullable()
+    val updatedAt = timestampWithTimeZone("updated_at").nullable()
+
+    override val primaryKey = PrimaryKey(id)
 }
