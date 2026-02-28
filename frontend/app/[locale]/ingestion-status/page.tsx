@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Header } from "@/components/layout/Header";
-import { useIngestionStatus, useTriggerIngestion } from "@/hooks/useIngestion";
+import {
+  useIngestionStatus,
+  useTriggerIngestion,
+  useResetAndReIngest,
+} from "@/hooks/useIngestion";
 import {
   Loader2,
   CheckCircle,
@@ -12,6 +17,7 @@ import {
   FileText,
   Link2,
   Timer,
+  Trash2,
 } from "lucide-react";
 
 export default function IngestionStatusPage() {
@@ -19,6 +25,8 @@ export default function IngestionStatusPage() {
   const tc = useTranslations("common");
   const { data, isLoading, error } = useIngestionStatus();
   const trigger = useTriggerIngestion();
+  const reset = useResetAndReIngest();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const STATUS_CONFIG: Record<
     string,
@@ -105,11 +113,59 @@ export default function IngestionStatusPage() {
                   {t("runNow")}
                 </button>
               </div>
-              {trigger.isError && (
+              {(trigger.isError || reset.isError) && (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-                  {(trigger.error as Error).message}
+                  {((trigger.error || reset.error) as Error).message}
                 </p>
               )}
+            </div>
+
+            {/* Reset + Re-ingest */}
+            <div className="rounded-xl border border-red-300/30 bg-red-950/20 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-red-400">
+                    {t("resetTitle")}
+                  </p>
+                  <p className="text-xs text-red-400/70 mt-0.5">
+                    {t("resetDescription")}
+                  </p>
+                </div>
+                {!showConfirm ? (
+                  <button
+                    onClick={() => setShowConfirm(true)}
+                    disabled={data.isRunning || reset.isPending || !data.enableIngestion}
+                    className="flex shrink-0 items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t("resetButton")}
+                  </button>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      onClick={() => setShowConfirm(false)}
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+                    >
+                      {t("cancel")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        reset.mutate();
+                        setShowConfirm(false);
+                      }}
+                      disabled={reset.isPending}
+                      className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                    >
+                      {reset.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      {t("confirmReset")}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

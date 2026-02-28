@@ -13,4 +13,10 @@ object IngestionConfig {
     /** When true, load manuscript list from NTVMR API (100+ papyri + uncials) instead of seed JSON. For DEV. */
     val loadManuscriptsFromNtvmr: Boolean
         get() = System.getenv("LOAD_MANUSCRIPTS_FROM_NTVMR")?.lowercase() == "true"
+
+    val enableManuscriptIngestion: Boolean
+        get() = System.getenv("ENABLE_MANUSCRIPT_INGESTION")?.lowercase() != "false"
+
+    val enablePatristicIngestion: Boolean
+        get() = System.getenv("ENABLE_PATRISTIC_INGESTION")?.lowercase() != "false"
 }

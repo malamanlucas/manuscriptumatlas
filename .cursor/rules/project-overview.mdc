@@ -5,13 +5,13 @@ alwaysApply: true
 
 # Manuscriptum Atlas
 
-Sistema de análise de cobertura textual do Novo Testamento grego, baseado em manuscritos históricos. Calcula métricas de cobertura acumulativa por século e livro.
+Sistema de análise de cobertura textual do Novo Testamento grego, baseado em manuscritos históricos e testemunhos patrísticos. Calcula métricas de cobertura acumulativa por século e livro, e cataloga declarações dos Pais da Igreja sobre transmissão textual.
 
 ## Stack
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
-- **Frontend:** Next.js / React 19 / TypeScript / Tailwind CSS 4 / Recharts / TanStack Query
-- **Infra:** Docker Compose (postgres + app + frontend)
+- **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / Recharts / TanStack Query / next-intl
+- **Infra:** Docker Compose (postgres + init + app + frontend)
 
 ## Arquitetura em camadas
 
@@ -23,13 +23,18 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 
 | Pacote | Responsabilidade |
 |--------|-----------------|
-| `config` | Configuração (DB, Flyway, Ingestão) |
-| `model` | Tables (Exposed) e DTOs (`@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` |
-| `service` | Lógica de negócio e orquestração |
-| `routes` | Endpoints HTTP (Ktor routing) |
-| `scraper` | Clientes NTVMR e parsers TEI/XML |
-| `seed` | Dados canônicos (27 livros, 7.956 versículos) |
+| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 4 arquivos |
+| `model` | Tables (12 tabelas Exposed) e DTOs (37 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (9 repositórios) |
+| `service` | Lógica de negócio e orquestração (10 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (7 arquivos de rotas, 25 endpoints) |
+| `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
+| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 6 arquivos |
+| `util` | Utilitários (NtvmrUrl) |
+
+## Tabelas do banco
+
+`books`, `verses`, `manuscripts`, `manuscript_verses`, `manuscript_sources`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`
 
 ## Conceitos de domínio
 
@@ -38,6 +43,22 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 - **Tipos**: papyrus, uncial, minuscule, lectionary
 - **NTVMR**: API do INTF Münster para dados de manuscritos
 - **Ranges de versículos**: strings como "1:1-5" expandidas em versículos individuais
+- **TextualTopic**: MANUSCRIPTS, AUTOGRAPHS, APOCRYPHA, CANON, TEXTUAL_VARIANTS, TRANSLATION, CORRUPTION, SCRIPTURE_AUTHORITY
+- **Tradição patrística**: greek, latin, syriac, etc.
+- **pg_trgm**: busca fuzzy com trigram similarity para declarações textuais
+
+## Padrões importantes
+
+- Flyway não aplica migrations (naming issue); `SchemaUtils` cria tabelas + `applyExtraIndexesAndConstraints()` cria índices extras via SQL
+- Seed de pais/declarações é idempotente (chave lógica: fatherId + sourceWork + sourceReference)
+- Rotas literais (`/fathers/statements`) devem ser declaradas antes de rotas dinâmicas (`/fathers/{id}`) no Ktor
+- Queries paginadas usam ORDER BY determinístico (`approximate_year ASC NULLS LAST, id ASC`)
+
+## Checklist obrigatório para toda nova feature
+
+Toda feature deve considerar, sem exceção:
+1. **i18n** — textos visíveis ao usuário devem estar nos 3 arquivos de mensagens (pt, en, es); dados do backend devem suportar `?locale=` quando aplicável
+2. **Responsividade** — layouts devem funcionar em mobile, tablet e desktop; usar classes responsivas do Tailwind (`sm:`, `md:`, `lg:`) e testar em telas pequenas
 
 ## Idioma
 

@@ -4,7 +4,7 @@
 
 **NT Manuscriptum Atlas** é uma plataforma de **análise manuscritológica computacional do Novo Testamento**. O sistema responde à pergunta central da crítica textual: *quão bem o texto do Novo Testamento é atestado por evidências manuscritas dos primeiros séculos?*
 
-A aplicação calcula, para cada livro, capítulo e século, a proporção de versículos que possuem ao menos um manuscrito como testemunho. Inclui estatísticas globais, explorer de papiros (~140 Gregory-Aland), indicadores acadêmicos avançados e seção educacional.
+A aplicação calcula, para cada livro, capítulo e século, a proporção de versículos que possuem ao menos um manuscrito como testemunho. Inclui estatísticas globais, explorer de manuscritos (~140 Gregory-Aland), indicadores acadêmicos avançados, seção educacional, e um domínio de **Pais da Igreja** com declarações patrísticas sobre transmissão textual.
 
 ---
 
@@ -21,6 +21,7 @@ Permitir que pesquisadores, estudantes e interessados em crítica textual do NT:
 - **Explorar** manuscritos individuais (papiros, unciais) com detalhes e link NTVMR
 - **Consultar** métricas acadêmicas (growth rate, estabilização, fragmentação, densidade)
 - **Estudar** contexto histórico (origem dos papiros, códices, expansão textual)
+- **Pesquisar** declarações patrísticas sobre manuscritos, cânone e variantes textuais
 
 ### 1.2 Regras de Negócio
 
@@ -32,6 +33,7 @@ Permitir que pesquisadores, estudantes e interessados em crítica textual do NT:
 | **Escopo temporal** | Manuscritos até o século X são considerados. |
 | **Deduplicação** | O mesmo versículo em vários manuscritos conta **uma vez**. |
 | **Cânone** | 27 livros do NT, 7.956 versículos canônicos, estrutura tradicional. |
+| **Seed idempotente** | Ingestão de pais/declarações usa chave lógica para evitar duplicação em re-execuções. |
 
 ### 1.3 Casos de Uso Principais
 
@@ -41,8 +43,12 @@ Permitir que pesquisadores, estudantes e interessados em crítica textual do NT:
 - **Heatmap**: gradiente verde→amarelo→vermelho por capítulo
 - **Timeline evolutiva**: gráfico de percentual acumulado
 - **Versículos faltantes**: lista exata de versículos não cobertos
+- **Busca de versículos**: lookup de manuscritos que atestam um versículo específico
 - **Métricas acadêmicas**: Century Growth Rate, Stabilization Century, Fragmentation Index, Coverage Density, Manuscript Concentration Score
+- **Pais da Igreja**: catálogo de 35 pais com timeline, busca e filtros por tradição/século
+- **Declarações textuais**: 32+ citações patrísticas sobre transmissão textual, filtráveis por tópico, século e tradição
 - **História**: conteúdo educacional sobre transmissão textual
+- **FAQ**: perguntas frequentes sobre o projeto
 
 ---
 
@@ -57,32 +63,42 @@ Permitir que pesquisadores, estudantes e interessados em crítica textual do NT:
 | **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
 | **Visualização** | Recharts 3 |
 | **Data fetching** | TanStack React Query 5 |
-| **Infra** | Docker Compose (postgres, app, frontend) |
+| **i18n** | next-intl (pt, en, es) |
+| **Tema** | next-themes (light/dark/system) |
+| **Ícones** | Lucide React |
+| **Infra** | Docker Compose (postgres, app, frontend, init) |
 
 ### 2.2 Componentes
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  FRONTEND (Next.js :3000)                                               │
-│  /dashboard  /manuscripts  /manuscripts/[gaId]  /timeline  /compare      │
-│  /metrics  /metrics/[book]  /history                                    │
-│  StatsOverview, ManuscriptExplorer, MetricsPanel, HistorySection          │
-│  TanStack Query → /api/* (rewrite para backend)                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│  BACKEND (Ktor :8080)                                                   │
-│  /coverage  /century/{n}  /timeline  /missing/{book}/{century}           │
-│  /stats/overview  /manuscripts  /manuscripts/{gaId}                     │
-│  /metrics/nt  /metrics/{book}                                            │
-│  Filtros: ?type=papyrus,uncial  ?century=N  ?page=1&limit=50            │
-├─────────────────────────────────────────────────────────────────────────┤
-│  INGESTÃO                                                               │
-│  NTVMR API (fonte primária) → TEI/XML → NtvmrVerseParser                │
-│  manuscripts.json (fallback) → VerseExpander                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│  DADOS (PostgreSQL)                                                     │
-│  books | verses | manuscripts | manuscript_verses | manuscript_sources  │
-│  coverage_by_century                                                    │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  FRONTEND (Next.js :3000)                                                    │
+│  /dashboard  /manuscripts  /manuscripts/[gaId]  /timeline  /compare          │
+│  /metrics  /metrics/[book]  /book/[name]  /verse-lookup  /manuscript-count   │
+│  /fathers  /fathers/[id]  /fathers/testimony                                 │
+│  /history  /sources  /ingestion-status  /faq                                 │
+│  TanStack Query → /api/* (rewrite para backend)                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  BACKEND (Ktor :8080)                                                        │
+│  /coverage  /century/{n}  /timeline  /missing/{book}/{century}               │
+│  /stats/overview  /manuscripts  /manuscripts/{gaId}                          │
+│  /metrics/nt  /metrics/{book}  /books  /verses/manuscripts                   │
+│  /fathers  /fathers/{id}  /fathers/statements  /fathers/statements/search     │
+│  /admin/ingestion/*                                                          │
+│  Filtros: ?type=papyrus,uncial  ?century=N  ?page=1&limit=50                │
+│           ?topic=CANON  ?tradition=greek  ?q=keyword                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  INGESTÃO                                                                    │
+│  NTVMR API (fonte primária) → TEI/XML → NtvmrVerseParser                    │
+│  manuscripts.json (fallback) → VerseExpander                                 │
+│  ChurchFathersSeedData + TextualStatementsSeedData (curadoria manual)         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  DADOS (PostgreSQL)                                                          │
+│  books | verses | manuscripts | manuscript_verses | manuscript_sources        │
+│  coverage_by_century | ingestion_metadata | book_translations                │
+│  church_fathers | father_textual_statements                                  │
+│  church_father_translations | father_statement_translations                  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.3 Estrutura de Diretórios
@@ -90,34 +106,81 @@ Permitir que pesquisadores, estudantes e interessados em crítica textual do NT:
 ```
 manuscriptumatlas/
 ├── src/main/kotlin/com/ntcoverage/
-│   ├── Application.kt
-│   ├── config/          DatabaseConfig, FlywayConfig
-│   ├── model/           Tables, DTOs
-│   ├── repository/      CoverageRepository, ChapterCoverageRepository,
-│   │                    VerseRepository, ManuscriptRepository,
-│   │                    StatsRepository, MetricsRepository
-│   ├── service/         CoverageService, IngestionService, VerseExpander,
-│   │                    StatsService, ManuscriptService, MetricsService,
-│   │                    VerseRangeCompressor
-│   ├── routes/          CoverageRoutes, StatsRoutes, ManuscriptRoutes, MetricsRoutes
-│   ├── scraper/         NtvmrClient, NtvmrVerseParser
-│   ├── util/             NtvmrUrl
-│   └── seed/            CanonicalVerses, ManuscriptSeedData
+│   ├── Application.kt              Ponto de entrada, configuração Ktor, registro de rotas
+│   ├── config/
+│   │   ├── DatabaseConfig.kt       Configuração HikariCP/PostgreSQL
+│   │   ├── FlywayConfig.kt         Migrações Flyway + fallback SchemaUtils + índices extras
+│   │   ├── IngestionConfig.kt      Variáveis de ambiente para ingestão
+│   │   └── LocaleConfig.kt         Locales permitidos (en, pt, es)
+│   ├── model/
+│   │   ├── Tables.kt               12 tabelas Exposed (Books→FatherStatementTranslations)
+│   │   └── DTOs.kt                 37 DTOs @Serializable, enums (TextualTopic)
+│   ├── repository/
+│   │   ├── CoverageRepository.kt
+│   │   ├── ChapterCoverageRepository.kt
+│   │   ├── VerseRepository.kt
+│   │   ├── ManuscriptRepository.kt
+│   │   ├── StatsRepository.kt
+│   │   ├── MetricsRepository.kt
+│   │   ├── IngestionMetadataRepository.kt
+│   │   ├── ChurchFatherRepository.kt
+│   │   └── FatherTextualStatementRepository.kt
+│   ├── service/
+│   │   ├── CoverageService.kt
+│   │   ├── IngestionService.kt       Ingestão de manuscritos NTVMR
+│   │   ├── PatristicIngestionService.kt  Seed de pais + declarações
+│   │   ├── IngestionOrchestrator.kt   Orquestração com retry
+│   │   ├── StatsService.kt
+│   │   ├── ManuscriptService.kt
+│   │   ├── MetricsService.kt
+│   │   ├── ChurchFatherService.kt
+│   │   ├── VerseExpander.kt
+│   │   └── VerseRangeCompressor.kt
+│   ├── routes/
+│   │   ├── CoverageRoutes.kt
+│   │   ├── StatsRoutes.kt
+│   │   ├── ManuscriptRoutes.kt
+│   │   ├── MetricsRoutes.kt
+│   │   ├── VerseRoutes.kt
+│   │   ├── ChurchFatherRoutes.kt
+│   │   └── AdminRoutes.kt
+│   ├── scraper/
+│   │   ├── NtvmrClient.kt          Cliente HTTP para transcrições NTVMR
+│   │   ├── NtvmrListClient.kt      Listagem de manuscritos NTVMR
+│   │   ├── NtvmrVerseParser.kt     Parser TEI/XML
+│   │   └── WikipediaScraper.kt
+│   ├── seed/
+│   │   ├── CanonicalVerses.kt      27 livros, 7.956 versículos canônicos
+│   │   ├── ManuscriptSeedData.kt   Manuscritos pré-definidos
+│   │   ├── ChurchFathersSeedData.kt   35 pais da igreja
+│   │   ├── ChurchFatherTranslationsSeedData.kt  Traduções (pt, es) dos pais
+│   │   ├── TextualStatementsSeedData.kt  36 declarações textuais curadas
+│   │   └── TextualStatementTranslationsSeedData.kt  Traduções (pt, es) das declarações
+│   └── util/
+│       └── NtvmrUrl.kt
 ├── src/main/resources/
-│   ├── db/migration/    V1, V2, V3 (manuscript_sources + colunas extras)
-│   ├── seed/            manuscripts.json
-│   └── openapi/         documentation.yaml
+│   ├── db/migration/               V1–V8 (Flyway SQL)
+│   ├── seed/                       manuscripts.json
+│   └── openapi/                    documentation.yaml
 ├── frontend/
-│   ├── app/             dashboard, manuscripts, manuscripts/[gaId],
-│   │                    timeline, compare, metrics, metrics/[book], history
-│   ├── components/      CenturySlider, VerseGrid, Heatmap, StatsOverview,
-│   │                    ManuscriptExplorer, etc.
-│   ├── hooks/           useCoverage, useTimeline, useMissing, useStats,
-│   │                    useManuscripts, useMetrics
-│   ├── lib/             api.ts, utils.ts
-│   └── types/           interfaces TypeScript
-├── docker-compose.yml   postgres, app, frontend
-├── up.sh                Script para subir com build forçado (sem cache)
+│   ├── app/[locale]/               20 páginas (dashboard, fathers, metrics, etc.)
+│   ├── components/
+│   │   ├── charts/                 TimelineChart, Heatmap, ComparisonChart, FathersTimelineChart
+│   │   ├── coverage/               BookCard, CenturySlider, GospelPanel, VerseGrid
+│   │   ├── layout/                 Header, Sidebar, SidebarContext, LanguageSelector, ThemeToggle
+│   │   ├── stats/                  StatsOverview
+│   │   └── providers.tsx           React Query + Theme providers
+│   ├── hooks/                      9 hooks (useCoverage, useManuscripts, useChurchFathers, etc.)
+│   ├── lib/                        api.ts, utils.ts
+│   ├── types/                      index.ts (32 interfaces/tipos)
+│   └── messages/                   en.json, pt.json, es.json
+├── docker-compose.yml              Dev: postgres, app, frontend, init
+├── docker-compose.prod.yml         Prod: restart policies, limites de memória
+├── backup.sh                       pg_dump via Docker
+├── restore.sh                      pg_restore via Docker
+├── up.sh                           Menu dev/prod
+├── up.dev.sh                       Build dev com cache
+├── up.prod.sh                      Build prod sem cache
 └── cursor.md
 ```
 
@@ -138,18 +201,35 @@ manuscriptumatlas/
 | GET | `/timeline` | Timeline evolutiva (`?book=John&type=papyrus`) |
 | GET | `/timeline/full` | Timeline do NT completo |
 | GET | `/missing/{book}/{century}` | Lista de versículos não cobertos |
-| GET | `/stats/overview` | Estatísticas globais (totais, por tipo, por século, por livro) |
+| GET | `/stats/overview` | Estatísticas globais |
+| GET | `/stats/manuscripts-count` | Contagem por tipo de manuscrito |
 | GET | `/manuscripts` | Lista manuscritos (`?type=papyrus&century=3&page=1&limit=50`) |
-| GET | `/manuscripts/{gaId}` | Detalhe de manuscrito (livros, intervalos, link NTVMR) |
+| GET | `/manuscripts/{gaId}` | Detalhe de manuscrito |
+| GET | `/books` | Lista de livros (`?locale=pt`) |
+| GET | `/verses/manuscripts` | Manuscritos para um versículo (`?book=John&chapter=1&verse=1`) |
 | GET | `/metrics/nt` | Métricas acadêmicas do NT inteiro |
 | GET | `/metrics/{book}` | Métricas acadêmicas de um livro |
-| GET | `/swagger` | Documentação Swagger UI |
+| GET | `/fathers` | Lista pais da igreja (`?century=3&tradition=greek&locale=pt&page=1&limit=50`) |
+| GET | `/fathers/search` | Busca de pais (`?q=Augustine&limit=20&locale=pt`) |
+| GET | `/fathers/{id}` | Detalhe de um pai da igreja (`?locale=pt`) |
+| GET | `/fathers/{id}/statements` | Declarações textuais de um pai (`?locale=pt`) |
+| GET | `/fathers/statements` | Lista declarações (`?topic=CANON&century=4&tradition=latin&locale=pt&page=1&limit=20`) |
+| GET | `/fathers/statements/search` | Busca fuzzy em declarações (`?q=manuscripts&limit=20&locale=pt`) |
+| GET | `/fathers/statements/topics/summary` | Contagem de declarações por tópico |
+| GET | `/admin/ingestion/status` | Status da ingestão |
+| POST | `/admin/ingestion/run` | Disparar ingestão manual |
+| POST | `/admin/ingestion/reset` | Reset e re-ingestão |
+| GET | `/swagger` | Swagger UI |
 
 ### 3.2 Filtros
 
 - `?type=papyrus` ou `?type=uncial`
 - `?century=N` (1–10)
-- `?page=1&limit=50` (manuscripts)
+- `?page=1&limit=50` (paginação)
+- `?topic=MANUSCRIPTS` (tópicos: MANUSCRIPTS, AUTOGRAPHS, APOCRYPHA, CANON, TEXTUAL_VARIANTS, TRANSLATION, CORRUPTION, SCRIPTURE_AUTHORITY)
+- `?tradition=greek` (tradições: greek, latin, syriac, etc.)
+- `?q=keyword` (busca fuzzy com trigram similarity)
+- `?locale=pt` (i18n: pt, en, es)
 
 ---
 
@@ -157,41 +237,98 @@ manuscriptumatlas/
 
 ### 4.1 Tabelas
 
-- **books**: 27 livros canônicos
-- **verses**: 7.956 versículos (book_id, chapter, verse)
-- **manuscripts**: ga_id, century_min/max, manuscript_type, historical_notes, geographic_origin, discovery_location, ntvmr_url
+- **books**: 27 livros canônicos (name, abbreviation, totalChapters, totalVerses, bookOrder)
+- **verses**: 7.956 versículos (bookId, chapter, verse)
+- **manuscripts**: ga_id, centuryMin/Max, effectiveCentury, manuscriptType, historicalNotes, geographicOrigin, discoveryLocation, ntvmrUrl
 - **manuscript_verses**: N:N manuscrito ↔ versículo
-- **manuscript_sources**: metadados acadêmicos (source_name, ntvmr_url, historical_notes, geographic_origin, discovery_location) — 1:1 com manuscripts
-- **coverage_by_century**: cache materializado (century, book_id, covered_verses, total_verses, coverage_percent)
+- **manuscript_sources**: metadados acadêmicos (sourceName, ntvmrUrl, historicalNotes) — 1:1 com manuscripts
+- **coverage_by_century**: cache materializado (century, bookId, coveredVerses, totalVerses, coveragePercent)
+- **ingestion_metadata**: status da ingestão (status, startedAt, finishedAt, durationMs, contadores, errorMessage)
+- **book_translations**: nomes traduzidos dos livros (locale, name, abbreviation)
+- **church_fathers**: 35 pais da igreja (displayName, normalizedName, centuryMin/Max, shortDescription, primaryLocation, tradition, dataSource)
+- **father_textual_statements**: declarações textuais (fatherId, topic, statementText, originalLanguage, originalText, sourceWork, sourceReference, approximateYear)
+- **church_father_translations**: traduções i18n dos pais (fatherId, locale, displayName, shortDescription, primaryLocation)
+- **father_statement_translations**: traduções i18n das declarações (statementId, locale, statementText)
 
 ### 4.2 Migrations
 
 - **V1**: tabelas base (books, verses, manuscripts, manuscript_verses, coverage_by_century)
 - **V2**: índices (idx_manuscripts_type_century, idx_mv_verse_manuscript)
 - **V3**: manuscript_sources + colunas opcionais em manuscripts
+- **V4**: ingestion_metadata (status, timestamps, contadores)
+- **V5**: book_translations + dados iniciais (pt, es)
+- **V6**: church_fathers + extensão pg_trgm + índices GIN
+- **V7**: father_textual_statements + CHECK constraints (topic, approximate_year) + índices (father_id, topic, year, topic+year composto, GIN trigram em statement_text)
+- **V8**: church_father_translations + father_statement_translations + índices de lookup por locale + GIN trigram em statement_text traduzido
 
-**Importante**: Em banco novo via Docker, a migration V3 deve rodar automaticamente. Se o Flyway não aplicar V3 (ex.: baseline pré-existente), a tabela `manuscript_sources` pode não existir e o endpoint `/manuscripts/{gaId}` falhará. Solução: executar manualmente o SQL de V3 ou garantir que o volume do postgres seja limpo (`docker compose down -v` antes de `up`).
+### 4.3 Nota sobre Flyway
+
+O Flyway atualmente não aplica as migrações SQL por incompatibilidade de naming convention. O fallback é `Exposed SchemaUtils.createMissingTablesAndColumns()` que cria todas as tabelas registradas. Índices extras (GIN trigram, compostos) e a extensão `pg_trgm` são aplicados via SQL direto no método `applyExtraIndexesAndConstraints()` do `FlywayConfig`.
 
 ---
 
-## 5. Ingestão de Dados (NTVMR)
+## 5. Ingestão de Dados
 
-### 5.1 Fonte Primária: NTVMR
+### 5.1 Orquestração
+
+O `IngestionOrchestrator` executa no startup:
+1. **Seed canônico**: 27 livros + 7.956 versículos (sempre, idempotente)
+2. **Ingestão de manuscritos** (se `ENABLE_MANUSCRIPT_INGESTION=true`): NTVMR API → TEI/XML → manuscript_verses
+3. **Ingestão patrística** (se `ENABLE_PATRISTIC_INGESTION=true`): seed de 35 pais + 36 declarações textuais (idempotente via chave lógica)
+
+### 5.2 Fonte Primária: NTVMR
 
 - **URL**: `http://ntvmr.uni-muenster.de/community/vmr/api/transcript/get/`
 - **Parâmetros**: `docID` (5 dígitos), `indexContent` (livro), `format=teiraw`
 - **Lógica**: `<ab n="B04K8V12">` com filhos = verso presente
 
-### 5.2 Variáveis de Ambiente
+### 5.3 Seed Patrístico
+
+- **ChurchFathersSeedData**: 35 pais com nome, período, localização, tradição
+- **ChurchFatherTranslationsSeedData**: traduções (pt, es) dos 35 pais
+- **TextualStatementsSeedData**: 36 declarações curadas de Irenaeus, Origen, Eusebius, Jerome, Augustine, Athanasius, Tertullian e outros
+- **TextualStatementTranslationsSeedData**: traduções (pt, es) das 36 declarações
+- **Idempotência**: `insertIfNotExists` com chave lógica (fatherId, sourceWork, sourceReference)
+
+### 5.4 Variáveis de Ambiente
 
 | Variável | Padrão | Descrição |
 |----------|--------|-----------|
 | `USE_NTVMR` | `true` | Usar API NTVMR como fonte primária |
-| `NTVMR_DELAY_MS` | `500` | Delay entre requisições (evitar rate limit) |
+| `NTVMR_DELAY_MS` | `500` | Delay entre requisições |
+| `ENABLE_MANUSCRIPT_INGESTION` | `true` | Habilitar ingestão de manuscritos |
+| `ENABLE_PATRISTIC_INGESTION` | `true` | Habilitar ingestão patrística |
 
 ---
 
-## 6. Métricas Acadêmicas
+## 6. Domínio: Pais da Igreja
+
+### 6.1 Tópicos Textuais (TextualTopic)
+
+| Tópico | Descrição |
+|--------|-----------|
+| `MANUSCRIPTS` | Referências a manuscritos e cópias |
+| `AUTOGRAPHS` | Sobre os originais apostólicos |
+| `APOCRYPHA` | Textos apócrifos e pseudepígrafos |
+| `CANON` | Formação e limites do cânone |
+| `TEXTUAL_VARIANTS` | Variantes textuais e leituras |
+| `TRANSLATION` | Tradução das Escrituras |
+| `CORRUPTION` | Corrupção e adulteração textual |
+| `SCRIPTURE_AUTHORITY` | Autoridade e inspiração das Escrituras |
+
+### 6.2 Busca
+
+- **Pais**: busca por nome via ILIKE
+- **Declarações**: busca fuzzy via `pg_trgm` com `similarity()` e ranking por relevância
+- **Índices**: B-tree em father_id, topic, year; composto em (topic, year); GIN trigram em statement_text
+
+### 6.3 Filtragem por Século
+
+O filtro por século usa `century_min`/`century_max` da tabela `church_fathers` via JOIN, não o `approximate_year` da declaração, garantindo estabilidade.
+
+---
+
+## 7. Métricas Acadêmicas
 
 | Métrica | Fórmula |
 |---------|---------|
@@ -203,51 +340,79 @@ manuscriptumatlas/
 
 ---
 
-## 7. Docker e Scripts
+## 8. Docker e Scripts
 
-### 7.1 Subir com build forçado (sem cache)
+### 8.1 Scripts
+
+| Script | Função |
+|--------|--------|
+| `up.sh` | Menu interativo para escolher dev ou prod |
+| `up.dev.sh` | Build dev com cache, PG exposto, re-ingestão completa |
+| `up.prod.sh` | Build prod sem cache, limites de memória, skip-if-populated |
+| `backup.sh` | Backup PostgreSQL via `pg_dump -Fc` (Docker) |
+| `restore.sh` | Restore PostgreSQL via `pg_restore` (Docker) |
+
+### 8.2 Docker Compose
+
+**Serviços (docker-compose.yml)**:
+- **postgres** (5432): PostgreSQL 16 com volume persistente
+- **init**: restore de backup se disponível (executa e sai)
+- **app** (8080): Backend Kotlin/Ktor
+- **frontend** (3000): Next.js com rewrite `/api/*` → backend
+
+**Produção (docker-compose.prod.yml)**:
+- Restart policies
+- Limites de memória
+- Variáveis de ambiente de produção
+
+### 8.3 Subir manualmente
 
 ```bash
-./up.sh
+./gradlew clean jar
+docker compose up --build -d
 ```
-
-O script `up.sh`:
-1. Compila o backend (`./gradlew build -x test`)
-2. Faz build Docker sem cache (`docker compose build --no-cache`)
-3. Sobe os containers (`docker compose up -d`)
-
-### 7.2 Subir manualmente
-
-```bash
-./gradlew build -x test
-docker compose up -d
-```
-
-### 7.3 Parar
-
-```bash
-docker compose down
-```
-
-### 7.4 Serviços
-
-- **postgres** (5432): PostgreSQL 16
-- **app** (8080): Backend Kotlin
-- **frontend** (3000): Next.js (rewrite `/api/*` → backend)
-
-O frontend usa `BACKEND_URL` para proxy das requisições em produção.
 
 ---
 
-## 8. Decisões de Design
+## 9. Frontend — Páginas
+
+| Rota | Descrição |
+|------|-----------|
+| `/` | Home / redirect |
+| `/dashboard` | Dashboard com estatísticas globais |
+| `/manuscripts` | Explorer de manuscritos |
+| `/manuscripts/[gaId]` | Detalhe de manuscrito |
+| `/book/[name]` | Detalhe de livro |
+| `/timeline` | Timeline evolutiva |
+| `/compare` | Comparação de cobertura |
+| `/metrics` | Métricas acadêmicas gerais |
+| `/metrics/[book]` | Métricas de um livro |
+| `/verse-lookup` | Busca de versículos |
+| `/manuscript-count` | Contagem de manuscritos por tipo |
+| `/fathers` | Catálogo de pais da igreja |
+| `/fathers/[id]` | Detalhe de pai (abas: Informações, Declarações Textuais) |
+| `/fathers/testimony` | Testemunhos patrísticos com filtros globais |
+| `/history` | Conteúdo educacional |
+| `/sources` | Fontes e referências |
+| `/ingestion-status` | Status da ingestão de dados |
+| `/faq` | Perguntas frequentes |
+
+---
+
+## 10. Decisões de Design
 
 | Decisão | Razão |
 |---------|-------|
 | NTVMR como fonte primária | Precisão manuscritológica |
 | Cache materializado | Evitar recálculo a cada request |
-| Ingestão no startup | Dados prontos antes de servir |
+| Ingestão no startup com orchestrator | Dados prontos antes de servir, com retry |
 | Fallback seed por livro | Manuscritos não disponíveis no NTVMR |
+| SchemaUtils como fallback de Flyway | Flyway não aplica migrations (naming issue), SchemaUtils garante tabelas |
+| Índices GIN trigram | Busca fuzzy performática em declarações textuais |
+| CHECK constraints no banco | Integridade de topic e approximate_year no nível do banco |
+| Seed idempotente com chave lógica | Reexecução segura sem duplicação |
 | Next.js rewrites | Frontend e backend na mesma origem |
 | TanStack Query | Cache e estados de loading/erro |
-| manuscript_sources separada | Metadados acadêmicos extensos, opcionais |
-| getHistoricalNotesFromSource | Consulta opcional; falha se tabela não existir |
+| next-intl | Internacionalização (pt, en, es) |
+| Rotas literais antes de dinâmicas no Ktor | Evitar conflito de roteamento |
+| ORDER BY determinístico | `approximate_year ASC NULLS LAST, id ASC` para paginação estável |

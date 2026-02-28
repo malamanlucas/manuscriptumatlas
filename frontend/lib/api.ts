@@ -13,6 +13,12 @@ import type {
   ManuscriptsCountResponse,
   IngestionStatusResponse,
   VerseManuscriptsResponse,
+  ChurchFathersListResponse,
+  ChurchFatherDetail,
+  ChurchFatherSummary,
+  TextualStatementsListResponse,
+  TextualStatementDTO,
+  TopicsSummaryResponse,
 } from "@/types";
 
 const BASE = "/api";
@@ -158,4 +164,87 @@ export async function triggerIngestion(): Promise<{ message: string }> {
     throw new Error(`API error ${res.status}: ${body}`);
   }
   return res.json();
+}
+
+export async function resetAndReIngest(): Promise<{ message: string }> {
+  const res = await fetch(`${BASE}/admin/ingestion/reset`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+export function getChurchFathers(params?: {
+  century?: number;
+  tradition?: string;
+  page?: number;
+  limit?: number;
+  locale?: string;
+}): Promise<ChurchFathersListResponse> {
+  const q = buildParams({
+    century: params?.century?.toString(),
+    tradition: params?.tradition,
+    page: params?.page?.toString(),
+    limit: params?.limit?.toString(),
+    locale: params?.locale,
+  });
+  return fetchJson(`${BASE}/fathers${q}`);
+}
+
+export function getChurchFatherDetail(
+  id: number,
+  locale?: string
+): Promise<ChurchFatherDetail> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/fathers/${id}${q}`);
+}
+
+export function searchChurchFathers(
+  q: string,
+  limit?: number,
+  locale?: string
+): Promise<ChurchFatherSummary[]> {
+  const params = buildParams({ q, limit: limit?.toString(), locale });
+  return fetchJson(`${BASE}/fathers/search${params}`);
+}
+
+export function getFatherStatements(params?: {
+  topic?: string;
+  century?: number;
+  tradition?: string;
+  page?: number;
+  limit?: number;
+  locale?: string;
+}): Promise<TextualStatementsListResponse> {
+  const q = buildParams({
+    topic: params?.topic,
+    century: params?.century?.toString(),
+    tradition: params?.tradition,
+    page: params?.page?.toString(),
+    limit: params?.limit?.toString(),
+    locale: params?.locale,
+  });
+  return fetchJson(`${BASE}/fathers/statements${q}`);
+}
+
+export function getFatherStatementsById(
+  id: number,
+  locale?: string
+): Promise<TextualStatementDTO[]> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/fathers/${id}/statements${q}`);
+}
+
+export function searchStatements(
+  q: string,
+  limit?: number,
+  locale?: string
+): Promise<TextualStatementDTO[]> {
+  const params = buildParams({ q, limit: limit?.toString(), locale });
+  return fetchJson(`${BASE}/fathers/statements/search${params}`);
+}
+
+export function getTopicsSummary(): Promise<TopicsSummaryResponse> {
+  return fetchJson(`${BASE}/fathers/statements/topics/summary`);
 }

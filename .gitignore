@@ -6,3 +6,4 @@ out/
 *.class
 *.log
 .env
+open-api-key.txt

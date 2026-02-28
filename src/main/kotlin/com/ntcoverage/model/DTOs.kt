@@ -253,3 +253,74 @@ data class BookTranslationItem(
     val abbreviation: String,
     val order: Int
 )
+
+@Serializable
+data class ChurchFatherSummary(
+    val id: Int,
+    val displayName: String,
+    val normalizedName: String,
+    val centuryMin: Int,
+    val centuryMax: Int,
+    val tradition: String,
+    val primaryLocation: String? = null
+)
+
+@Serializable
+data class ChurchFatherDetail(
+    val id: Int,
+    val displayName: String,
+    val normalizedName: String,
+    val centuryMin: Int,
+    val centuryMax: Int,
+    val shortDescription: String? = null,
+    val primaryLocation: String? = null,
+    val tradition: String,
+    val source: String,
+    val mannerOfDeath: String? = null,
+    val biographySummary: String? = null,
+    val biographyOriginal: String? = null,
+    val biographyIsLong: Boolean = false
+)
+
+@Serializable
+data class ChurchFathersListResponse(
+    val total: Int,
+    val fathers: List<ChurchFatherSummary>
+)
+
+@Serializable
+enum class TextualTopic {
+    MANUSCRIPTS, AUTOGRAPHS, APOCRYPHA, CANON,
+    TEXTUAL_VARIANTS, TRANSLATION, CORRUPTION, SCRIPTURE_AUTHORITY
+}
+
+@Serializable
+data class TextualStatementDTO(
+    val id: Int,
+    val fatherId: Int,
+    val fatherName: String,
+    val topic: String,
+    val statementText: String,
+    val originalLanguage: String? = null,
+    val originalText: String? = null,
+    val sourceWork: String? = null,
+    val sourceReference: String? = null,
+    val approximateYear: Int? = null
+)
+
+@Serializable
+data class TextualStatementsListResponse(
+    val total: Int,
+    val statements: List<TextualStatementDTO>
+)
+
+@Serializable
+data class TopicSummaryDTO(
+    val topic: String,
+    val count: Int
+)
+
+@Serializable
+data class TopicsSummaryResponse(
+    val topics: List<TopicSummaryDTO>
+)

@@ -2,11 +2,10 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# NT Manuscriptum Atlas — PostgreSQL Restore
-# Restores a custom-format dump created by backup.sh.
-# Compatible with Linux and macOS.
-#
-# Usage: ./restore.sh backups/ntatlas_YYYYMMDD_HHMMSS.dump
+# NT Manuscriptum Atlas — PostgreSQL Restore (via Docker)
+# Uses pg_restore from inside the postgres container to avoid version mismatch.
+# Usage: ./restore.sh [backup_file]
+#   If no file is given, lists available backups to choose from.
 # ---------------------------------------------------------------------------
 
 RED='\033[0;31m'
@@ -18,54 +17,77 @@ info()  { echo -e "${YELLOW}[INFO]${NC}  $*"; }
 ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 
-if [ $# -lt 1 ]; then
-    fail "Usage: $0 <dump-file>"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
-DUMP_FILE="$1"
-
-if [ ! -f "$DUMP_FILE" ]; then
-    fail "File not found: ${DUMP_FILE}"
-fi
-
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-nt_coverage}"
 DB_USER="${DB_USER:-postgres}"
-DB_PASSWORD="${DB_PASSWORD:-postgres}"
+CONTAINER="${COMPOSE_PROJECT_NAME:-manuscriptumatlas}-postgres-1"
+BACKUP_DIR="backups"
 
-export PGPASSWORD="$DB_PASSWORD"
-
-if ! command -v pg_restore &>/dev/null; then
-    fail "pg_restore not found. Install PostgreSQL client tools first."
+if ! docker inspect "$CONTAINER" &>/dev/null; then
+    fail "Container '$CONTAINER' não encontrado. O docker compose está rodando?"
 fi
 
-if ! command -v psql &>/dev/null; then
-    fail "psql not found. Install PostgreSQL client tools first."
+# --- Select backup file ---------------------------------------------------
+
+if [ -n "${1:-}" ]; then
+    FILEPATH="$1"
+else
+    if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR"/*.dump 2>/dev/null)" ]; then
+        fail "Nenhum backup encontrado em $BACKUP_DIR/"
+    fi
+
+    echo ""
+    info "Backups disponíveis:"
+    echo ""
+    mapfile -t FILES < <(ls -t "$BACKUP_DIR"/*.dump)
+    for i in "${!FILES[@]}"; do
+        SIZE=$(du -h "${FILES[$i]}" | cut -f1)
+        echo "  [$i] $(basename "${FILES[$i]}") ($SIZE)"
+    done
+    echo ""
+    read -rp "Escolha o número do backup (default: 0 = mais recente): " choice
+    choice="${choice:-0}"
+    FILEPATH="${FILES[$choice]}"
 fi
 
-info "Terminating active connections to '${DB_NAME}'..."
-psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c \
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${DB_NAME}' AND pid <> pg_backend_pid();" \
+if [ ! -f "$FILEPATH" ]; then
+    fail "Arquivo não encontrado: $FILEPATH"
+fi
+
+FILENAME=$(basename "$FILEPATH")
+SIZE=$(du -h "$FILEPATH" | cut -f1)
+
+echo ""
+info "Restaurando: $FILENAME ($SIZE)"
+info "Database: $DB_NAME"
+echo ""
+read -rp "Isso vai APAGAR todos os dados atuais. Continuar? [y/N]: " confirm
+if [[ ! "$confirm" =~ ^[yYsS]$ ]]; then
+    info "Cancelado."
+    exit 0
+fi
+
+# --- Kill connections and recreate database --------------------------------
+
+info "Encerrando conexões ativas..."
+docker exec "$CONTAINER" psql -U "$DB_USER" -d postgres -c \
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$DB_NAME' AND pid <> pg_backend_pid();" \
     >/dev/null 2>&1 || true
 
-info "Dropping database '${DB_NAME}' (if exists)..."
-psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c \
-    "DROP DATABASE IF EXISTS \"${DB_NAME}\";"
+info "Recriando database '$DB_NAME'..."
+docker exec "$CONTAINER" psql -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS $DB_NAME;" >/dev/null
+docker exec "$CONTAINER" psql -U "$DB_USER" -d postgres -c "CREATE DATABASE $DB_NAME;" >/dev/null
 
-info "Creating database '${DB_NAME}'..."
-psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c \
-    "CREATE DATABASE \"${DB_NAME}\";"
+# --- Restore ---------------------------------------------------------------
 
-info "Restoring from ${DUMP_FILE}..."
-pg_restore \
-    --clean \
-    --if-exists \
-    --verbose \
-    -h "$DB_HOST" \
-    -p "$DB_PORT" \
-    -U "$DB_USER" \
-    -d "$DB_NAME" \
-    "$DUMP_FILE"
+info "Restaurando dump..."
+docker exec -i "$CONTAINER" \
+    pg_restore -U "$DB_USER" -d "$DB_NAME" --clean --if-exists --no-owner \
+    < "$FILEPATH"
 
-ok "Restore complete."
+ok "Restore concluído com sucesso!"
+echo ""
+info "Reinicie o backend para reconectar:"
+echo "    docker compose restart app"

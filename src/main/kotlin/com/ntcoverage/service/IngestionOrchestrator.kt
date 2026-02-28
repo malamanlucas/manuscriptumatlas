@@ -1,18 +1,22 @@
 package com.ntcoverage.service
 
 import com.ntcoverage.config.IngestionConfig
+import com.ntcoverage.model.*
 import com.ntcoverage.repository.IngestionMetadataRepository
 import com.ntcoverage.repository.StatsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.minutes
 
 class IngestionOrchestrator(
     private val ingestionService: IngestionService,
+    private val patristicIngestionService: PatristicIngestionService,
     private val metadataRepository: IngestionMetadataRepository,
     private val statsRepository: StatsRepository
 ) {
@@ -51,6 +55,34 @@ class IngestionOrchestrator(
 
     fun isCurrentlyRunning(): Boolean = isRunning.get()
 
+    fun resetAndReIngest(scope: CoroutineScope) {
+        if (!isRunning.compareAndSet(false, true)) {
+            throw IllegalStateException("Ingestion already running")
+        }
+        scope.launch {
+            try {
+                log.warn("DATABASE_RESET requested — wiping all data")
+                transaction {
+                    CoverageByCentury.deleteAll()
+                    ManuscriptVerses.deleteAll()
+                    ManuscriptSources.deleteAll()
+                    Manuscripts.deleteAll()
+                    Verses.deleteAll()
+                    Books.deleteAll()
+                    BookTranslations.deleteAll()
+                    FatherStatementTranslations.deleteAll()
+                    ChurchFatherTranslations.deleteAll()
+                }
+                log.info("DATABASE_RESET complete — starting fresh ingestion")
+                executeIngestionInner()
+            } catch (e: Throwable) {
+                log.error("RESET_AND_REINGEST failed: ${e.message}", e)
+            } finally {
+                isRunning.set(false)
+            }
+        }
+    }
+
     private suspend fun executeIngestion() {
         if (!isRunning.compareAndSet(false, true)) {
             log.warn("INGESTION_SKIPPED — already running")
@@ -82,23 +114,40 @@ class IngestionOrchestrator(
     }
 
     private suspend fun executeIngestionInner() {
-        log.info("INGESTION_STARTED")
+        log.info("INGESTION_STARTED (manuscripts=${IngestionConfig.enableManuscriptIngestion}, patristic=${IngestionConfig.enablePatristicIngestion})")
         metadataRepository.markRunning()
         val startTime = System.currentTimeMillis()
 
         try {
-            val timeoutMinutes = IngestionConfig.timeoutMinutes
-            val result = withTimeout(timeoutMinutes.minutes) {
-                ingestionService.ingestManuscriptsAsync()
+            var manuscriptsIngested = 0
+            var versesLinked = 0
+
+            if (IngestionConfig.enableManuscriptIngestion) {
+                val timeoutMinutes = IngestionConfig.timeoutMinutes
+                val result = withTimeout(timeoutMinutes.minutes) {
+                    ingestionService.ingestManuscriptsAsync()
+                }
+
+                withTimeout(timeoutMinutes.minutes) {
+                    ingestionService.materializeCoverageAsync()
+                }
+
+                manuscriptsIngested = result.manuscriptsIngested
+                versesLinked = result.versesLinked
+            } else {
+                log.info("MANUSCRIPT_INGESTION_SKIPPED — ENABLE_MANUSCRIPT_INGESTION=false")
             }
 
-            withTimeout(timeoutMinutes.minutes) {
-                ingestionService.materializeCoverageAsync()
+            if (IngestionConfig.enablePatristicIngestion) {
+                val patristicCount = patristicIngestionService.ingestFromSeed()
+                log.info("PATRISTIC_INGESTION: $patristicCount new fathers ingested from seed")
+            } else {
+                log.info("PATRISTIC_INGESTION_SKIPPED — ENABLE_PATRISTIC_INGESTION=false")
             }
 
             val durationMs = System.currentTimeMillis() - startTime
-            metadataRepository.markSuccess(durationMs, result.manuscriptsIngested, result.versesLinked)
-            log.info("INGESTION_FINISHED duration=${durationMs}ms manuscripts=${result.manuscriptsIngested} verses=${result.versesLinked}")
+            metadataRepository.markSuccess(durationMs, manuscriptsIngested, versesLinked)
+            log.info("INGESTION_FINISHED duration=${durationMs}ms manuscripts=$manuscriptsIngested verses=$versesLinked")
         } catch (e: Throwable) {
             val durationMs = System.currentTimeMillis() - startTime
             metadataRepository.markFailed(durationMs, e.message ?: "Unknown error")

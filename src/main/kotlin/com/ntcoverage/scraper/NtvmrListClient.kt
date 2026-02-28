@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,9 +54,10 @@ class NtvmrListClient {
             list.mapNotNull { doc ->
                 val centuryMin = yearToCentury(doc.origEarly)
                 val centuryMax = yearToCentury(doc.origLate)
+                val gaId = doc.gaNum.content
                 ManuscriptSeed(
-                    gaId = doc.gaNum,
-                    name = "GA ${doc.gaNum}",
+                    gaId = gaId,
+                    name = "GA $gaId",
                     centuryMin = centuryMin,
                     centuryMax = centuryMax,
                     type = type,
@@ -99,7 +101,7 @@ class NtvmrListClient {
     @Serializable
     private data class NtvmrManuscriptEntry(
         val docID: Int,
-        val gaNum: String,
+        val gaNum: JsonPrimitive,
         val origEarly: Int = 0,
         val origLate: Int = 0,
         val orig: String? = null

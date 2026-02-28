@@ -93,3 +93,54 @@ object BookTranslations : IntIdTable("book_translations") {
         uniqueIndex(bookId, locale)
     }
 }
+
+object ChurchFathers : IntIdTable("church_fathers") {
+    val displayName = varchar("display_name", 200)
+    val normalizedName = varchar("normalized_name", 200).uniqueIndex()
+    val centuryMin = integer("century_min")
+    val centuryMax = integer("century_max")
+    val shortDescription = text("short_description").nullable()
+    val primaryLocation = varchar("primary_location", 200).nullable()
+    val tradition = varchar("tradition", 20)
+    val dataSource = varchar("source", 100).default("seed")
+    val createdAt = timestampWithTimeZone("created_at")
+    val updatedAt = timestampWithTimeZone("updated_at")
+    val mannerOfDeath = varchar("manner_of_death", 200).nullable()
+    val biographyOriginal = text("biography_original").nullable()
+    val biographySummary = text("biography_summary").nullable()
+    val biographySummaryReviewed = bool("biography_summary_reviewed").default(false)
+}
+
+object FatherTextualStatements : IntIdTable("father_textual_statements") {
+    val fatherId = integer("father_id").references(ChurchFathers.id)
+    val topic = varchar("topic", 40)
+    val statementText = text("statement_text")
+    val originalLanguage = varchar("original_language", 20).nullable()
+    val originalText = text("original_text").nullable()
+    val sourceWork = varchar("source_work", 200).nullable()
+    val sourceReference = varchar("source_reference", 200).nullable()
+    val approximateYear = integer("approximate_year").nullable()
+    val createdAt = timestampWithTimeZone("created_at")
+}
+
+object ChurchFatherTranslations : IntIdTable("church_father_translations") {
+    val fatherId = reference("father_id", ChurchFathers)
+    val locale = varchar("locale", 5)
+    val displayName = varchar("display_name", 200)
+    val shortDescription = text("short_description").nullable()
+    val primaryLocation = varchar("primary_location", 200).nullable()
+    val mannerOfDeath = varchar("manner_of_death", 200).nullable()
+    val biographyOriginal = text("biography_original").nullable()
+    val biographySummary = text("biography_summary").nullable()
+    val translationSource = varchar("translation_source", 20).default("seed")
+
+    init { uniqueIndex(fatherId, locale) }
+}
+
+object FatherStatementTranslations : IntIdTable("father_statement_translations") {
+    val statementId = reference("statement_id", FatherTextualStatements)
+    val locale = varchar("locale", 5)
+    val statementText = text("statement_text")
+
+    init { uniqueIndex(statementId, locale) }
+}

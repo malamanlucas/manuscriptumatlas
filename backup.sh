@@ -2,9 +2,8 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# NT Manuscriptum Atlas — PostgreSQL Backup
-# Generates a custom-format dump suitable for efficient restore via pg_restore.
-# Compatible with Linux and macOS.
+# NT Manuscriptum Atlas — PostgreSQL Backup (via Docker)
+# Uses pg_dump from inside the postgres container to avoid version mismatch.
 # ---------------------------------------------------------------------------
 
 RED='\033[0;31m'
@@ -16,17 +15,12 @@ info()  { echo -e "${YELLOW}[INFO]${NC}  $*"; }
 ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 DB_NAME="${DB_NAME:-nt_coverage}"
 DB_USER="${DB_USER:-postgres}"
-DB_PASSWORD="${DB_PASSWORD:-postgres}"
-
-export PGPASSWORD="$DB_PASSWORD"
-
-if ! command -v pg_dump &>/dev/null; then
-    fail "pg_dump not found. Install PostgreSQL client tools first."
-fi
+CONTAINER="${COMPOSE_PROJECT_NAME:-manuscriptumatlas}-postgres-1"
 
 BACKUP_DIR="backups"
 mkdir -p "$BACKUP_DIR"
@@ -35,14 +29,17 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 FILENAME="ntatlas_${TIMESTAMP}.dump"
 FILEPATH="${BACKUP_DIR}/${FILENAME}"
 
-info "Starting backup of database '${DB_NAME}' on ${DB_HOST}:${DB_PORT}..."
+if ! docker inspect "$CONTAINER" &>/dev/null; then
+    fail "Container '$CONTAINER' não encontrado. O docker compose está rodando?"
+fi
 
-pg_dump -Fc \
-    -h "$DB_HOST" \
-    -p "$DB_PORT" \
-    -U "$DB_USER" \
-    -d "$DB_NAME" \
-    -f "$FILEPATH"
+PG_VERSION=$(docker exec "$CONTAINER" pg_dump --version | grep -oE '[0-9]+\.[0-9]+')
+info "Backup via container (pg_dump $PG_VERSION)..."
+info "Database: $DB_NAME"
+
+docker exec "$CONTAINER" \
+    pg_dump -Fc -U "$DB_USER" -d "$DB_NAME" \
+    > "$FILEPATH"
 
 SIZE=$(du -h "$FILEPATH" | cut -f1)
-ok "Backup complete: ${FILEPATH} (${SIZE})"
+ok "Backup: ${FILEPATH} (${SIZE})"

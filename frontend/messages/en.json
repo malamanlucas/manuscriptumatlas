@@ -33,6 +33,8 @@
     "compare": "Comparative",
     "metrics": "Metrics",
     "history": "History",
+    "fathers": "Church Fathers",
+    "testimony": "Patristic Testimony",
     "info": "Information",
     "manuscriptCount": "Manuscripts",
     "sources": "Sources",
@@ -291,7 +293,12 @@
     "duration": "Duration",
     "manuscripts": "Manuscripts",
     "versesLinked": "Verses Linked",
-    "lastRun": "Last Run"
+    "lastRun": "Last Run",
+    "resetTitle": "Wipe Database & Re-ingest",
+    "resetDescription": "Deletes all data and runs a fresh ingestion from scratch.",
+    "resetButton": "Wipe & Re-ingest",
+    "confirmReset": "Confirm Reset",
+    "cancel": "Cancel"
   },
   "bookDetail": {
     "coverageAsOf": "Coverage as of Century {century}",
@@ -309,6 +316,11 @@
   },
   "centurySlider": {
     "century": "Century"
+  },
+  "centuryFilter": {
+    "all": "All",
+    "allCenturies": "All Centuries",
+    "sliderLabel": "Select century"
   },
   "gospelPanel": {
     "gospels": "Gospels",
@@ -366,7 +378,72 @@
     "Jude": "Jude",
     "Revelation": "Revelation"
   },
+  "fathers": {
+    "title": "Church Fathers",
+    "subtitle": "Historical Overview of Centuries I–X",
+    "allCenturies": "All Centuries",
+    "filterByCentury": "Filter by Century",
+    "filterByTradition": "Tradition",
+    "searchPlaceholder": "Search by name...",
+    "traditions": {
+      "all": "All",
+      "greek": "Greek",
+      "latin": "Latin",
+      "syriac": "Syriac",
+      "coptic": "Coptic"
+    },
+    "contemporaries": "Contemporaries of Century {century}",
+    "contemporariesDescription": "Fathers who lived during century {century}",
+    "contemporariesOf": "Contemporaries of {name}",
+    "timelineTitle": "Church Fathers Timeline",
+    "tableTitle": "Full List",
+    "name": "Name",
+    "centuries": "Centuries",
+    "tradition": "Tradition",
+    "location": "Location",
+    "description": "Description",
+    "source": "Source",
+    "detail": "Details",
+    "backToList": "Back to list",
+    "noResults": "No results found",
+    "scrollHint": "Scroll to see more",
+    "tabs": {
+      "info": "Information",
+      "statements": "Textual Statements"
+    },
+    "topics": {
+      "MANUSCRIPTS": "Manuscripts",
+      "AUTOGRAPHS": "Autographs",
+      "APOCRYPHA": "Apocrypha",
+      "CANON": "Canon",
+      "TEXTUAL_VARIANTS": "Textual Variants",
+      "TRANSLATION": "Translation",
+      "CORRUPTION": "Corruption",
+      "SCRIPTURE_AUTHORITY": "Scripture Authority"
+    },
+    "statements": {
+      "noStatements": "No textual statements found."
+    },
+    "biography": "Biography",
+    "readFullBiography": "Read Full Biography",
+    "collapseFullBiography": "Collapse",
+    "mannerOfDeath": "Manner of Death",
+    "testimony": {
+      "title": "Patristic Testimony",
+      "subtitle": "Textual Statements from the Church Fathers",
+      "filterByTopic": "Topic",
+      "allTopics": "All Topics",
+      "searchKeyword": "Keyword Search",
+      "searchPlaceholder": "Search in statements...",
+      "topicsSummary": "Topics"
+    }
+  },
   "languageSelector": {
     "label": "Language"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   }
 }

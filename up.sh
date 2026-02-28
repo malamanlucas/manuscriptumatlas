@@ -2,33 +2,16 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
 
-DOCKER_NODE_IMAGE="node:20-alpine"
-
-echo "==> Parando containers antigos..."
-docker compose down --remove-orphans 2>/dev/null || true
-
+echo "Uso:"
+echo "  ./up.dev.sh   — Dev: build com cache, PG exposto, re-ingestão completa"
+echo "  ./up.prod.sh  — Prod: build limpo, JVM limitada, skip-if-populated, PG interno"
 echo ""
-echo "==> Compilando backend (JAR)..."
-./gradlew build -x test
 
-echo ""
-echo "==> Sincronizando package-lock.json com Node $DOCKER_NODE_IMAGE..."
-docker run --rm -v "$SCRIPT_DIR/frontend":/app -w /app "$DOCKER_NODE_IMAGE" \
-  sh -c "npm install --package-lock-only --ignore-scripts 2>/dev/null && echo 'Lock file atualizado.' || echo 'Lock file já está em dia.'"
+read -rp "Executar qual? [dev/prod] (default: dev): " choice
+choice="${choice:-dev}"
 
-echo ""
-echo "==> Build Docker (sem cache)..."
-docker compose build --no-cache
-
-echo ""
-echo "==> Subindo containers..."
-docker compose up -d
-
-echo ""
-echo "==> Pronto! Aguarde a ingestão de dados (~1-2 min)."
-echo "    Backend:  http://localhost:8080"
-echo "    Frontend: http://localhost:3000"
-echo ""
-echo "    Logs: docker compose logs -f"
+case "$choice" in
+  prod) exec "$SCRIPT_DIR/up.prod.sh" ;;
+  *)    exec "$SCRIPT_DIR/up.dev.sh" ;;
+esac

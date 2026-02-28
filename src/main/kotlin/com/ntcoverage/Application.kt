@@ -9,18 +9,24 @@ import com.ntcoverage.repository.ManuscriptRepository
 import com.ntcoverage.repository.MetricsRepository
 import com.ntcoverage.repository.StatsRepository
 import com.ntcoverage.repository.VerseRepository
+import com.ntcoverage.repository.ChurchFatherRepository
+import com.ntcoverage.repository.FatherTextualStatementRepository
 import com.ntcoverage.routes.adminRoutes
+import com.ntcoverage.routes.churchFatherRoutes
 import com.ntcoverage.routes.coverageRoutes
 import com.ntcoverage.routes.manuscriptRoutes
 import com.ntcoverage.routes.metricsRoutes
 import com.ntcoverage.routes.statsRoutes
 import com.ntcoverage.routes.verseRoutes
 import com.ntcoverage.scraper.NtvmrListClient
+import com.ntcoverage.service.BiographySummarizationService
+import com.ntcoverage.service.ChurchFatherService
 import com.ntcoverage.service.CoverageService
 import com.ntcoverage.service.IngestionOrchestrator
 import com.ntcoverage.service.IngestionService
 import com.ntcoverage.service.ManuscriptService
 import com.ntcoverage.service.MetricsService
+import com.ntcoverage.service.PatristicIngestionService
 import com.ntcoverage.service.StatsService
 import com.ntcoverage.service.VerseExpander
 import io.ktor.http.*
@@ -103,7 +109,12 @@ fun Application.module() {
     val manuscriptService = ManuscriptService(manuscriptRepository)
     val metricsRepository = MetricsRepository(coverageRepository)
     val metricsService = MetricsService(metricsRepository)
-    val orchestrator = IngestionOrchestrator(ingestionService, ingestionMetadataRepository, statsRepository)
+    val churchFatherRepository = ChurchFatherRepository()
+    val statementRepository = FatherTextualStatementRepository()
+    val biographySummarizationService = BiographySummarizationService()
+    val patristicIngestionService = PatristicIngestionService(churchFatherRepository, statementRepository, biographySummarizationService)
+    val churchFatherService = ChurchFatherService(churchFatherRepository, statementRepository)
+    val orchestrator = IngestionOrchestrator(ingestionService, patristicIngestionService, ingestionMetadataRepository, statsRepository)
 
     ingestionService.seedBooksAndVerses()
     log.info("Canonical seed complete. API is ready.")
@@ -136,6 +147,13 @@ fun Application.module() {
                     "GET /metrics/{book} - Book-level metrics",
                     "GET /admin/ingestion/status - Ingestion status",
                     "POST /admin/ingestion/run - Trigger manual ingestion",
+                    "GET /fathers - Church fathers list (filterable by century, tradition)",
+                    "GET /fathers/search?q= - Search church fathers by name",
+                    "GET /fathers/{id} - Church father detail",
+                    "GET /fathers/statements - Textual statements (filterable by topic, century, tradition)",
+                    "GET /fathers/statements/search?q= - Search statements by keyword",
+                    "GET /fathers/statements/topics/summary - Statement count by topic",
+                    "GET /fathers/{id}/statements - Statements by a specific father",
                     "GET /swagger - Swagger UI documentation"
                 )
             ))
@@ -145,6 +163,7 @@ fun Application.module() {
         manuscriptRoutes(manuscriptService)
         metricsRoutes(metricsService)
         verseRoutes(verseRepository)
+        churchFatherRoutes(churchFatherService)
         adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
     }
 

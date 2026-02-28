@@ -1,122 +1,128 @@
-# NT Manuscript Coverage - Sistema de Cobertura Textual do Novo Testamento
+# Manuscriptum Atlas
 
-Sistema em Kotlin que analisa manuscritos públicos do Novo Testamento datados até o século V e calcula a cobertura textual acumulada por livro.
+Plataforma de análise manuscritológica computacional do Novo Testamento grego. Calcula cobertura textual acumulativa por livro, capítulo e século, cataloga ~140 manuscritos Gregory-Aland, e inclui um domínio de **Pais da Igreja** com declarações patrísticas sobre transmissão textual.
 
-## Stack Tecnológica
+## Stack
 
-- **Kotlin** + **Ktor** (servidor HTTP)
-- **PostgreSQL** (banco de dados)
-- **Exposed** (ORM type-safe)
-- **Flyway** (migrações de banco)
-- **Jsoup** (scraping HTML)
-- **kotlinx.serialization** (JSON)
+| Camada | Tecnologia |
+|--------|------------|
+| **Backend** | Kotlin 2.1, Ktor 3.1, JVM 21 |
+| **Banco** | PostgreSQL 16, Exposed ORM, Flyway |
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| **Visualização** | Recharts 3 |
+| **Data fetching** | TanStack React Query 5 |
+| **i18n** | next-intl (pt, en, es) |
+| **Tema** | next-themes (light/dark/system) |
+| **Infra** | Docker Compose (postgres, init, app, frontend) |
 
-## Execução com Docker (recomendado)
+## Execução
 
-```bash
-# Compilar o projeto
-./gradlew build
-
-# Subir PostgreSQL + aplicação
-docker compose up -d --build
-
-# Verificar logs
-docker compose logs -f app
-
-# Parar
-docker compose down
-
-# Parar e limpar dados do banco
-docker compose down -v
-```
-
-A aplicação estará disponível em `http://localhost:8080`.
-
-## Execução Local (sem Docker)
-
-### Pré-requisitos
-- Java 21+
-- PostgreSQL 14+
-
-### Configuração do Banco
+### Docker (recomendado)
 
 ```bash
-createdb nt_coverage
+# Menu interativo (dev ou prod)
+./up.sh
+
+# Ou diretamente:
+./up.dev.sh    # Desenvolvimento (PG exposto, cache habilitado)
+./up.prod.sh   # Produção (sem cache, limites de memória)
 ```
 
-Variáveis de ambiente (opcional):
+**Serviços:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- PostgreSQL: localhost:5432 (somente dev)
+
+### Manual
 
 ```bash
-export DATABASE_URL="jdbc:postgresql://localhost:5432/nt_coverage"
-export DATABASE_USER="postgres"
-export DATABASE_PASSWORD="postgres"
+# Pré-requisitos: Java 21+, PostgreSQL 16+, Node.js 22+
+./gradlew clean jar
+docker compose up --build -d
 ```
 
-### Build e Execução
+### Backup e Restore
 
 ```bash
-./gradlew build
-./gradlew run
+./backup.sh              # Gera dump em backups/
+./restore.sh [arquivo]   # Restaura dump específico
 ```
 
-O servidor inicia na porta 8080 (configurável via variável `PORT`).
+## Arquitetura
 
-Na inicialização:
-1. Flyway executa as migrações de esquema
-2. Os 27 livros e 7.956 versículos canônicos do NT são inseridos
-3. Os manuscritos do seed são carregados e expandidos em versículos individuais
-4. A tabela de cobertura por século é materializada
-
-## Endpoints da API
-
-| Endpoint | Descrição |
-|---|---|
-| `GET /` | Informações do serviço |
-| `GET /coverage` | Relatório completo de cobertura (séculos I-V) |
-| `GET /coverage/{book}` | Cobertura de um livro específico (ex: `Matthew`, `1 Corinthians`) |
-| `GET /century/{number}` | Cobertura acumulada até o século N (1-5) |
-
-### Exemplo de resposta - `GET /century/4`
-
-```json
-{
-  "century": 4,
-  "summary": {
-    "totalNtVerses": 7956,
-    "coveredVerses": 7956,
-    "overallCoveragePercent": 100.00
-  },
-  "books": [
-    {
-      "bookName": "Matthew",
-      "coveredVerses": 1071,
-      "totalVerses": 1071,
-      "coveragePercent": 100.00
-    }
-  ],
-  "fullyAttested": ["Matthew", "Mark", ...],
-  "notFullyAttested": []
-}
 ```
+Routes → Service → Repository → Database (Exposed/PostgreSQL)
+```
+
+**Backend** (44 arquivos Kotlin):
+- 4 configs, 12 tabelas, 37 DTOs, 9 repositórios, 10 serviços, 7 arquivos de rotas, 4 scrapers, 6 seeds
+
+**Frontend** (Next.js):
+- 20 páginas, 15 componentes, 9 hooks, 32 tipos, 3 locales
+
+## API REST
+
+25 endpoints organizados em 7 grupos:
+
+| Grupo | Endpoints |
+|-------|-----------|
+| **Cobertura** | `/coverage`, `/coverage/{book}`, `/coverage/{book}/chapters/{century}`, `/coverage/gospels/{century}`, `/century/{number}`, `/timeline`, `/timeline/full`, `/missing/{book}/{century}` |
+| **Estatísticas** | `/stats/overview`, `/stats/manuscripts-count` |
+| **Manuscritos** | `/manuscripts`, `/manuscripts/{gaId}` |
+| **Métricas** | `/metrics/nt`, `/metrics/{book}` |
+| **Versículos** | `/books`, `/verses/manuscripts` |
+| **Pais da Igreja** | `/fathers`, `/fathers/search`, `/fathers/{id}`, `/fathers/{id}/statements`, `/fathers/statements`, `/fathers/statements/search`, `/fathers/statements/topics/summary` |
+| **Admin** | `/admin/ingestion/status`, `/admin/ingestion/run`, `/admin/ingestion/reset` |
+
+Filtros: `?type=papyrus`, `?century=N`, `?page=1&limit=50`, `?topic=CANON`, `?tradition=greek`, `?q=keyword`, `?locale=pt`
 
 ## Modelo de Dados
 
-- **books** - 27 livros canônicos do NT
-- **verses** - 7.956 versículos individuais (chave: book_id + chapter + verse)
-- **manuscripts** - Manuscritos com século estimado e tipo (papiro/uncial)
-- **manuscript_verses** - Relação N:N entre manuscritos e versículos atestados
-- **coverage_by_century** - Cache materializado de cobertura acumulada
+12 tabelas PostgreSQL:
 
-## Manuscritos Incluídos
+| Tabela | Descrição |
+|--------|-----------|
+| `books` | 27 livros canônicos do NT |
+| `verses` | 7.956 versículos |
+| `manuscripts` | Manuscritos com GA-ID, datação, tipo |
+| `manuscript_verses` | N:N manuscrito ↔ versículo |
+| `manuscript_sources` | Metadados acadêmicos 1:1 |
+| `coverage_by_century` | Cache materializado de cobertura |
+| `ingestion_metadata` | Status da ingestão |
+| `book_translations` | Traduções i18n de livros |
+| `church_fathers` | 35 pais da igreja |
+| `father_textual_statements` | 36 declarações textuais curadas |
+| `church_father_translations` | Traduções i18n dos pais (pt, es) |
+| `father_statement_translations` | Traduções i18n das declarações (pt, es) |
 
-O seed inclui ~55 manuscritos dos séculos I-V:
-- Papiros: P1, P4, P5, P9, P10, P12, P13, P15, P16, P17, P18, P20, P22, P23, P24, P27, P30, P32, P37, P38, P39, P40, P45, P46, P47, P48, P49, P51, P52, P53, P64, P65, P66, P69, P70, P72, P74, P75, P77, P78, P87, P90, P98, P100, P103, P104, P115
-- Unciais: 01 (Sinaiticus), 02 (Alexandrinus), 03 (Vaticanus), 04 (Ephraemi), 05 (Bezae), 032 (Washingtonianus), 048, 0162, 0171, 0189
+## Ingestão
+
+Orquestrada pelo `IngestionOrchestrator` no startup:
+
+1. **Seed canônico**: 27 livros + 7.956 versículos (idempotente)
+2. **Manuscritos** (`ENABLE_MANUSCRIPT_INGESTION`): NTVMR API → TEI/XML → manuscript_verses
+3. **Patrístico** (`ENABLE_PATRISTIC_INGESTION`): 35 pais + 36 declarações + traduções (idempotente)
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `ENABLE_INGESTION` | `true` | Habilitar ingestão |
+| `ENABLE_MANUSCRIPT_INGESTION` | `true` | Ingestão de manuscritos |
+| `ENABLE_PATRISTIC_INGESTION` | `true` | Ingestão patrística |
+| `INGESTION_SKIP_IF_POPULATED` | `false` | Pular se banco já populado |
+| `USE_NTVMR` | `true` | Usar API NTVMR |
+| `NTVMR_DELAY_MS` | `500` | Delay entre requisições |
+| `LOAD_MANUSCRIPTS_FROM_NTVMR` | `false` | Carregar lista de manuscritos da API |
+| `INGESTION_TIMEOUT_MINUTES` | `30` | Timeout global |
 
 ## Regras de Negócio
 
-- Século estimado com intervalo (ex: "II/III") usa o **mais antigo**
-- Manuscritos posteriores ao século V são **ignorados**
-- Cobertura é **cumulativa**: século III inclui tudo dos séculos I-III
-- Um versículo conta como **coberto** se aparece em ao menos um manuscrito
-- Duplicações entre manuscritos **não** são contadas duas vezes
+- Cobertura binária: versículo coberto se aparece em ao menos um manuscrito
+- Cobertura cumulativa: século N inclui manuscritos dos séculos 1..N
+- Datação conservadora: intervalos usam o século mais antigo
+- Manuscritos até o século X são considerados
+- Seed patrístico idempotente via chave lógica
+
+## Documentação Adicional
+
+- [`cursor.md`](cursor.md) — Documentação técnica completa
+- [`docs/ingestion-architecture.md`](docs/ingestion-architecture.md) — Diagramas Mermaid do fluxo de ingestão

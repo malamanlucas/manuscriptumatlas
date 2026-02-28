@@ -39,4 +39,18 @@ fun Route.adminRoutes(
             call.respond(HttpStatusCode.Conflict, MessageResponse(e.message ?: "Ingestion already running"))
         }
     }
+
+    post("/admin/ingestion/reset") {
+        if (!IngestionConfig.enableIngestion) {
+            call.respond(HttpStatusCode.Forbidden, MessageResponse("Ingestion is disabled via ENABLE_INGESTION=false"))
+            return@post
+        }
+
+        try {
+            orchestrator.resetAndReIngest(ingestionScope)
+            call.respond(HttpStatusCode.Accepted, MessageResponse("Database reset and re-ingestion started"))
+        } catch (e: IllegalStateException) {
+            call.respond(HttpStatusCode.Conflict, MessageResponse(e.message ?: "Ingestion already running"))
+        }
+    }
 }

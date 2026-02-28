@@ -183,3 +183,71 @@ export interface VerseManuscriptsResponse {
   verse: number;
   manuscripts: VerseManuscriptItem[];
 }
+
+export interface ChurchFatherSummary {
+  id: number;
+  displayName: string;
+  normalizedName: string;
+  centuryMin: number;
+  centuryMax: number;
+  tradition: string;
+  primaryLocation: string | null;
+}
+
+export interface ChurchFatherDetail {
+  id: number;
+  displayName: string;
+  normalizedName: string;
+  centuryMin: number;
+  centuryMax: number;
+  shortDescription: string | null;
+  primaryLocation: string | null;
+  tradition: string;
+  source: string;
+  mannerOfDeath: string | null;
+  biographySummary: string | null;
+  biographyOriginal: string | null;
+  biographyIsLong: boolean;
+}
+
+export interface ChurchFathersListResponse {
+  total: number;
+  fathers: ChurchFatherSummary[];
+}
+
+export type TextualTopic =
+  | "MANUSCRIPTS"
+  | "AUTOGRAPHS"
+  | "APOCRYPHA"
+  | "CANON"
+  | "TEXTUAL_VARIANTS"
+  | "TRANSLATION"
+  | "CORRUPTION"
+  | "SCRIPTURE_AUTHORITY";
+
+export interface TextualStatementDTO {
+  id: number;
+  fatherId: number;
+  fatherName: string;
+  topic: TextualTopic;
+  statementText: string;
+  originalLanguage: string | null;
+  originalText: string | null;
+  sourceWork: string | null;
+  sourceReference: string | null;
+  approximateYear: number | null;
+}
+
+export interface TextualStatementsListResponse {
+  total: number;
+  statements: TextualStatementDTO[];
+}
+
+export interface TopicSummaryDTO {
+  topic: string;
+  count: number;
+}
+
+export interface TopicsSummaryResponse {
+  topics: TopicSummaryDTO[];
+}

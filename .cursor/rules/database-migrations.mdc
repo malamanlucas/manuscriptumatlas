@@ -14,15 +14,39 @@ alwaysApply: false
 
 `V{N}__{descricao_snake_case}.sql` (dois underscores após o número)
 
-Exemplos existentes:
-- `V1__create_tables.sql`
-- `V2__add_indexes_for_type_filter.sql`
-- `V3__create_manuscript_sources.sql`
-- `V4__create_ingestion_metadata.sql`
+## Migrações existentes
+
+- `V1__create_tables.sql` — Tabelas base (books, verses, manuscripts, manuscript_verses, coverage_by_century)
+- `V2__add_indexes_for_type_filter.sql` — Índices para filtro por tipo
+- `V3__create_manuscript_sources.sql` — manuscript_sources + colunas opcionais em manuscripts
+- `V4__create_ingestion_metadata.sql` — Metadados de ingestão (status, timestamps, contadores)
+- `V5__create_book_translations.sql` — Traduções de nomes de livros (pt, es)
+- `V6__create_church_fathers.sql` — Pais da igreja + extensão pg_trgm + índices GIN
+- `V7__create_father_textual_statements.sql` — Declarações textuais + CHECK constraints + índices (B-tree, GIN trigram, composto)
+- `V8__create_church_father_translations.sql` — Traduções i18n: church_father_translations + father_statement_translations + índices de lookup + GIN trigram
 
 ## Regras
 
 - Sempre incremental — nunca alterar migrações já aplicadas
-- Incluir índices relevantes na mesma migração ou em migração separada
-- PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, etc.)
-- Tabelas principais: `books`, `verses`, `manuscripts`, `manuscript_verses`, `coverage_by_century`, `manuscript_sources`, `ingestion_metadata`
+- Incluir índices relevantes na mesma migração
+- PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
+- Usar CHECK constraints para validar enums e ranges no nível do banco
+- Próxima migração: **V9**
+
+## Nota sobre Flyway
+
+O Flyway atualmente não executa as migrações (incompatibilidade de naming convention). O fallback é `Exposed SchemaUtils.createMissingTablesAndColumns()` no `FlywayConfig.kt`. Índices extras (GIN trigram, compostos) e extensão `pg_trgm` são aplicados via SQL direto em `applyExtraIndexesAndConstraints()`.
+
+Ao adicionar novas tabelas:
+1. Criar a migração SQL normalmente em `V{N}__...sql`
+2. Adicionar o objeto Table em `Tables.kt`
+3. Registrar o Table na lista do `SchemaUtils.createMissingTablesAndColumns` em `FlywayConfig.kt`
+4. Se necessário, adicionar índices extras em `applyExtraIndexesAndConstraints()`
+
+## Tabelas registradas no SchemaUtils
+
+```
+Books, Verses, Manuscripts, ManuscriptVerses, ManuscriptSources,
+CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
+FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations
+```

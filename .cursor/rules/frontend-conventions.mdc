@@ -8,26 +8,81 @@ alwaysApply: false
 
 ## Stack
 
-- Next.js (App Router) com TypeScript
+- Next.js 16 (App Router) com TypeScript
+- React 19 com componentes funcionais
 - Tailwind CSS 4 para estilização
-- TanStack Query para data fetching e cache
-- Recharts para visualizações/gráficos
+- TanStack React Query 5 para data fetching e cache
+- Recharts 3 para visualizações/gráficos
 - Lucide React para ícones
+- next-themes para tema (light/dark/system)
+- next-intl para internacionalização (pt, en, es)
+
+## Estrutura
+
+```
+frontend/
+├── app/[locale]/          Páginas (20 rotas) — App Router com i18n
+├── components/
+│   ├── charts/            TimelineChart, Heatmap, ComparisonChart, FathersTimelineChart
+│   ├── coverage/          BookCard, CenturySlider, GospelPanel, VerseGrid
+│   ├── layout/            Header, Sidebar, SidebarContext, LanguageSelector, ThemeToggle
+│   ├── stats/             StatsOverview
+│   └── providers.tsx      React Query + Theme providers
+├── hooks/                 9 hooks customizados
+├── lib/                   api.ts (funções fetch), utils.ts
+├── types/                 index.ts (32 interfaces/tipos)
+└── messages/              en.json, pt.json, es.json
+```
 
 ## Padrões
 
 - Componentes funcionais com TypeScript
-- Hooks customizados em `frontend/hooks/`
-- Utilitários em `frontend/lib/`
+- Hooks customizados em `frontend/hooks/` (um por domínio: useCoverage, useManuscripts, useChurchFathers, useTextualStatements, etc.)
+- Utilitários e funções de API em `frontend/lib/`
+- Tipos centralizados em `frontend/types/index.ts`
 - Preferir Server Components; usar `"use client"` apenas quando necessário
 - Tipagem explícita — evitar `any`
 
 ## Data Fetching
 
 - Usar TanStack Query (`useQuery`, `useMutation`) para chamadas à API
-- API backend disponível em `http://localhost:8080` (dev) ou via Docker network
+- API backend disponível via rewrite `/api/*` → `http://app:8080` (Docker) ou `http://localhost:8080` (dev)
+- Funções de fetch centralizadas em `lib/api.ts`
 
 ## Estilização
 
 - Tailwind CSS utility-first
 - Sem CSS modules ou styled-components
+
+## Responsividade
+
+- Todo componente e página deve funcionar em mobile (≥320px), tablet e desktop
+- Usar breakpoints do Tailwind: `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
+- Layouts com grid/flex devem adaptar colunas por breakpoint (ex.: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`)
+- Tabelas largas devem ter scroll horizontal em mobile (`overflow-x-auto`)
+- Sidebar deve colapsar em telas pequenas
+- Textos e espaçamentos devem escalar (ex.: `text-sm md:text-base`, `p-4 md:p-6`)
+- Testar sempre em viewport mobile antes de considerar a feature pronta
+
+## Internacionalização
+
+- Arquivos de mensagens em `messages/{locale}.json`
+- Usar `useTranslations()` do next-intl para acessar strings
+- Todas as rotas sob `[locale]/`
+- Idiomas suportados: pt (português), en (inglês), es (espanhol)
+- **Nenhum texto visível ao usuário deve ser hardcoded** — sempre usar chaves de tradução
+- Ao adicionar novas features, atualizar os 3 arquivos de mensagens simultaneamente
+- Endpoints do backend que retornam textos traduzíveis devem suportar `?locale=`
+
+## Checklist por feature
+
+Antes de considerar uma feature pronta:
+1. **i18n**: todos os textos visíveis estão nos 3 locales (pt, en, es)?
+2. **Responsividade**: funciona em mobile (320px), tablet (768px) e desktop (1280px)?
+3. **Tema**: funciona em light e dark mode?
+4. **Tipos**: TypeScript sem `any`, interfaces em `types/index.ts`?
+5. **Loading/Error**: estados de carregamento e erro tratados?
+
+## Páginas
+
+Dashboard, Manuscripts, Book Detail, Timeline, Compare, Metrics, Verse Lookup, Manuscript Count, Church Fathers (lista, detalhe com abas, testimony), History, Sources, Ingestion Status, FAQ

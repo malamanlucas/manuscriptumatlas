@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -17,6 +19,25 @@
   --ring: #1e40af;
   --radius: 0.5rem;
   --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #334155;
+  --secondary-foreground: #f1f5f9;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #334155;
+  --accent-foreground: #f1f5f9;
+  --border: #334155;
+  --ring: #3b82f6;
+  --sidebar: #020617;
   --sidebar-foreground: #f1f5f9;
 }
 
@@ -42,31 +63,16 @@
   --radius: var(--radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --card: #1e293b;
-    --card-foreground: #f1f5f9;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --secondary: #334155;
-    --secondary-foreground: #f1f5f9;
-    --muted: #334155;
-    --muted-foreground: #94a3b8;
-    --accent: #334155;
-    --accent-foreground: #f1f5f9;
-    --border: #334155;
-    --ring: #3b82f6;
-    --sidebar: #020617;
-    --sidebar-foreground: #f1f5f9;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+body,
+main,
+aside {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
 * {

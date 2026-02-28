@@ -1,0 +1,34 @@
+services:
+  postgres:
+    ports: !override []
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    shm_size: "128mb"
+
+  app:
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "jdbc:postgresql://postgres:5432/nt_coverage"
+      DATABASE_USER: "postgres"
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JAVA_OPTS: "-Xms128m -Xmx512m"
+      USE_NTVMR: "true"
+      NTVMR_DELAY_MS: "1000"
+      ENABLE_INGESTION: "true"
+      ENABLE_MANUSCRIPT_INGESTION: "true"
+      ENABLE_PATRISTIC_INGESTION: "true"
+      INGESTION_SKIP_IF_POPULATED: "true"
+      INGESTION_TIMEOUT_MINUTES: "45"
+      LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  frontend:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M

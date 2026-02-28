@@ -33,6 +33,8 @@
     "compare": "Comparativo",
     "metrics": "Métricas",
     "history": "Historia",
+    "fathers": "Padres de la Iglesia",
+    "testimony": "Testimonio Patrístico",
     "info": "Información",
     "manuscriptCount": "Manuscritos",
     "sources": "Fuentes",
@@ -291,7 +293,12 @@
     "duration": "Duración",
     "manuscripts": "Manuscritos",
     "versesLinked": "Versículos Vinculados",
-    "lastRun": "Última Ejecución"
+    "lastRun": "Última Ejecución",
+    "resetTitle": "Limpiar Base y Re-ingerir",
+    "resetDescription": "Elimina todos los datos y ejecuta una nueva ingestión desde cero.",
+    "resetButton": "Limpiar y Re-ingerir",
+    "confirmReset": "Confirmar Reset",
+    "cancel": "Cancelar"
   },
   "bookDetail": {
     "coverageAsOf": "Cobertura hasta el Siglo {century}",
@@ -309,6 +316,11 @@
   },
   "centurySlider": {
     "century": "Siglo"
+  },
+  "centuryFilter": {
+    "all": "Todos",
+    "allCenturies": "Todos los Siglos",
+    "sliderLabel": "Seleccionar siglo"
   },
   "gospelPanel": {
     "gospels": "Evangelios",
@@ -366,7 +378,72 @@
     "Jude": "Judas",
     "Revelation": "Apocalipsis"
   },
+  "fathers": {
+    "title": "Padres de la Iglesia",
+    "subtitle": "Panorama Histórico de los Siglos I–X",
+    "allCenturies": "Todos los Siglos",
+    "filterByCentury": "Filtro por Siglo",
+    "filterByTradition": "Tradición",
+    "searchPlaceholder": "Buscar por nombre...",
+    "traditions": {
+      "all": "Todas",
+      "greek": "Griega",
+      "latin": "Latina",
+      "syriac": "Siríaca",
+      "coptic": "Copta"
+    },
+    "contemporaries": "Contemporáneos del Siglo {century}",
+    "contemporariesDescription": "Padres que vivieron durante el siglo {century}",
+    "contemporariesOf": "Contemporáneos de {name}",
+    "timelineTitle": "Línea Temporal de los Padres de la Iglesia",
+    "tableTitle": "Lista Completa",
+    "name": "Nombre",
+    "centuries": "Siglos",
+    "tradition": "Tradición",
+    "location": "Ubicación",
+    "description": "Descripción",
+    "source": "Fuente",
+    "detail": "Detalles",
+    "backToList": "Volver a la lista",
+    "noResults": "No se encontraron resultados",
+    "scrollHint": "Deslice para ver más",
+    "tabs": {
+      "info": "Información",
+      "statements": "Declaraciones Textuales"
+    },
+    "topics": {
+      "MANUSCRIPTS": "Manuscritos",
+      "AUTOGRAPHS": "Autógrafos",
+      "APOCRYPHA": "Apócrifos",
+      "CANON": "Canon",
+      "TEXTUAL_VARIANTS": "Variantes Textuales",
+      "TRANSLATION": "Traducción",
+      "CORRUPTION": "Corrupción Textual",
+      "SCRIPTURE_AUTHORITY": "Autoridad de las Escrituras"
+    },
+    "statements": {
+      "noStatements": "No se encontraron declaraciones textuales."
+    },
+    "biography": "Biografía",
+    "readFullBiography": "Leer Biografía Completa",
+    "collapseFullBiography": "Colapsar",
+    "mannerOfDeath": "Modo de Muerte",
+    "testimony": {
+      "title": "Testimonio Patrístico",
+      "subtitle": "Declaraciones Textuales de los Padres de la Iglesia",
+      "filterByTopic": "Tema",
+      "allTopics": "Todos los Temas",
+      "searchKeyword": "Búsqueda por Palabra Clave",
+      "searchPlaceholder": "Buscar en declaraciones...",
+      "topicsSummary": "Temas"
+    }
+  },
   "languageSelector": {
     "label": "Idioma"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
   }
 }

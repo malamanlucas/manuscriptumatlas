@@ -10,8 +10,9 @@ alwaysApply: false
 
 - Classes/Objects: `PascalCase` (`IngestionService`, `ManuscriptRepository`)
 - Funções: `camelCase` (`ingestManuscriptsAsync`, `getCoverageByCentury`)
-- Tabelas Exposed: `PascalCase` plural (`Manuscripts`, `Verses`)
-- DTOs: `PascalCase` descritivo (`CoverageSummary`, `ManuscriptDetailResponse`)
+- Tabelas Exposed: `PascalCase` plural (`Manuscripts`, `Verses`, `FatherTextualStatements`)
+- DTOs: `PascalCase` descritivo (`CoverageSummary`, `ManuscriptDetailResponse`, `TextualStatementDTO`)
+- Enums: `PascalCase` com valores `UPPER_SNAKE_CASE` (`TextualTopic.MANUSCRIPTS`)
 
 ## Padrões obrigatórios
 
@@ -19,27 +20,57 @@ alwaysApply: false
 - Transações de banco sempre via `transaction { }` do Exposed
 - Operações assíncronas com Kotlin Coroutines (`suspend fun`, `async`, `withContext`)
 - Injeção de dependência por construtor, sem frameworks de DI
+- Logging via `LoggerFactory.getLogger`
 
 ## Ktor Routes
 
 ```kotlin
 fun Route.myRoutes(service: MyService) {
-    route("/my-endpoint") {
-        get {
-            call.respond(service.getData())
-        }
-    }
+    get("/my-endpoint/specific") { ... }    // Rotas literais ANTES
+    get("/my-endpoint/{id}") { ... }        // Rotas dinâmicas DEPOIS
 }
 ```
 
+Rotas literais devem ser declaradas antes de rotas com parâmetros dinâmicos para evitar conflitos.
+
 ## Repository
 
-- Cada repository opera sobre uma tabela Exposed
+- Cada repository opera sobre uma ou mais tabelas Exposed
 - Queries dentro de `transaction { }` ou `newSuspendedTransaction { }`
 - Retornar DTOs, nunca ResultRows diretamente nas camadas superiores
+- Para SQL customizado (trigram, similarity), usar `object : Op<Boolean>()` com `toQueryBuilder`
+- Operações de insert idempotentes devem verificar existência antes (chave lógica)
+- Queries paginadas: sempre `ORDER BY` determinístico + `limit` + `offset`
+
+## Service
+
+- Recebe repositórios via construtor
+- Contém lógica de negócio e orquestração
+- Não acessa `transaction {}` diretamente (delega ao repository)
 
 ## Tratamento de erros
 
 - Logar erros com `LoggerFactory.getLogger`
 - Usar `try/catch` com mensagens descritivas
 - Retry com backoff para chamadas externas (NTVMR)
+- `IngestionOrchestrator` centraliza retry e tratamento de falhas
+
+## i18n no Backend
+
+- Locales definidos em `LocaleConfig.kt` (en, pt, es)
+- Endpoints que suportam `?locale=` retornam dados traduzidos via JOINs com tabelas `*_translations`
+- Seed de traduções em `seed/` (`ChurchFatherTranslationsSeedData`, `TextualStatementTranslationsSeedData`)
+
+## Registrar novos domínios
+
+Ao adicionar um novo domínio:
+1. Criar Table em `model/Tables.kt` (incluir tabela de traduções se i18n)
+2. Criar DTOs em `model/DTOs.kt`
+3. Criar Repository em `repository/`
+4. Criar Service em `service/`
+5. Criar Routes em `routes/` — endpoints com texto traduzível devem aceitar `?locale=`
+6. Registrar no `Application.kt` (instanciar, conectar, chamar rotas)
+7. Registrar Table no `FlywayConfig.kt` (SchemaUtils + índices extras se necessário)
+8. Criar migração SQL em `src/main/resources/db/migration/`
+9. Se houver seed, criar em `seed/` (dados + traduções pt/es) e registrar no `PatristicIngestionService` ou equivalente
+10. No frontend: adicionar chaves nos 3 arquivos de mensagens (pt, en, es) e garantir layout responsivo

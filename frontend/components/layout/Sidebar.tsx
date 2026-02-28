@@ -16,9 +16,12 @@ import {
   HelpCircle,
   Activity,
   Search,
+  Users,
+  Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSelector } from "./LanguageSelector";
+import { ThemeToggle } from "./ThemeToggle";
 import { useSidebar } from "./SidebarContext";
 
 export function Sidebar() {
@@ -34,6 +37,8 @@ export function Sidebar() {
     { href: "/compare", label: t("compare"), icon: GitCompareArrows },
     { href: "/metrics", label: t("metrics"), icon: BarChart3 },
     { href: "/history", label: t("history"), icon: BookMarked },
+    { href: "/fathers", label: t("fathers"), icon: Users },
+    { href: "/fathers/testimony", label: t("testimony"), icon: Quote },
   ];
 
   const infoItems = [
@@ -139,6 +144,7 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t border-white/10 px-6 py-4 space-y-3">
+          <ThemeToggle />
           <LanguageSelector />
           <p className="text-xs text-white/40">{t("version")}</p>
         </div>

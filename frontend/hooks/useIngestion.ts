@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getIngestionStatus, triggerIngestion } from "@/lib/api";
+import {
+  getIngestionStatus,
+  triggerIngestion,
+  resetAndReIngest,
+} from "@/lib/api";
 
 export function useIngestionStatus() {
   const query = useQuery({
@@ -18,7 +22,21 @@ export function useTriggerIngestion() {
   return useMutation({
     mutationFn: triggerIngestion,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "ingestion", "status"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "ingestion", "status"],
+      });
+    },
+  });
+}
+
+export function useResetAndReIngest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetAndReIngest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "ingestion", "status"],
+      });
     },
   });
 }

@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Manuscriptum Atlas — Frontend
 
-## Getting Started
+Frontend do Manuscriptum Atlas, construído com Next.js 16 (App Router), React 19 e TypeScript.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** com App Router e Server Components
+- **React 19** com componentes funcionais
+- **TypeScript 5.9**
+- **Tailwind CSS 4** para estilização
+- **TanStack React Query 5** para data fetching e cache
+- **Recharts 3** para visualizações e gráficos
+- **next-intl** para internacionalização (pt, en, es)
+- **next-themes** para tema (light/dark/system)
+- **Lucide React** para ícones
+
+## Execução
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O frontend roda em http://localhost:3000 e faz proxy de `/api/*` para o backend em http://localhost:8080.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Em Docker, o backend é acessível via `http://app:8080` (variável `BACKEND_URL`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Estrutura
 
-## Learn More
+```
+frontend/
+├── app/
+│   ├── [locale]/              20 páginas com i18n
+│   │   ├── dashboard/         Dashboard com estatísticas globais
+│   │   ├── manuscripts/       Explorer de manuscritos + detalhe [gaId]
+│   │   ├── book/[name]/       Detalhe de livro
+│   │   ├── timeline/          Timeline evolutiva
+│   │   ├── compare/           Comparação de cobertura
+│   │   ├── metrics/           Métricas acadêmicas + detalhe [book]
+│   │   ├── verse-lookup/      Busca de versículos
+│   │   ├── manuscript-count/  Contagem por tipo
+│   │   ├── fathers/           Pais da Igreja (lista, [id], testimony)
+│   │   ├── history/           Conteúdo educacional
+│   │   ├── sources/           Fontes e referências
+│   │   ├── ingestion-status/  Status da ingestão
+│   │   └── faq/               Perguntas frequentes
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── charts/                TimelineChart, Heatmap, ComparisonChart, FathersTimelineChart
+│   ├── coverage/              BookCard, CenturySlider, GospelPanel, VerseGrid
+│   ├── layout/                Header, Sidebar, SidebarContext, LanguageSelector, ThemeToggle
+│   ├── stats/                 StatsOverview
+│   └── providers.tsx          React Query + Theme providers
+├── hooks/                     9 hooks (useCoverage, useManuscripts, useChurchFathers, etc.)
+├── lib/                       api.ts (25 funções fetch), utils.ts
+├── types/                     index.ts (32 interfaces/tipos)
+└── messages/                  en.json, pt.json, es.json
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Convenções
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Hooks customizados um por domínio em `hooks/`
+- Funções de API centralizadas em `lib/api.ts`
+- Tipos centralizados em `types/index.ts`
+- Internacionalização via `useTranslations()` do next-intl
+- Ao adicionar features, atualizar os 3 arquivos de mensagens

@@ -58,10 +58,17 @@ services:
       USE_NTVMR: "true"
       NTVMR_DELAY_MS: "500"
       ENABLE_INGESTION: "true"
+      ENABLE_MANUSCRIPT_INGESTION: "false"
+      ENABLE_PATRISTIC_INGESTION: "true"
       INGESTION_SKIP_IF_POPULATED: "false"
       INGESTION_TIMEOUT_MINUTES: "30"
       # DEV: load full catalog from NTVMR (140+ papyri + uncials) instead of seed JSON (57)
       LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
+      OPENAI_API_KEY: "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"
+      OPENAI_MODEL: "gpt-4o-mini"
+      OPENAI_TIMEOUT_MS: "12000"
+      ENABLE_BIO_SUMMARIZATION: "true"
+      ENABLE_BIO_TRANSLATION: "true"
     depends_on:
       init:
         condition: service_completed_successfully
