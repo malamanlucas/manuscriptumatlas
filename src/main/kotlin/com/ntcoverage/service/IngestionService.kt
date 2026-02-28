@@ -93,8 +93,12 @@ class IngestionService(
         val parser = NtvmrVerseParser()
         var ntvmrSuccessCount = 0
         var seedFallbackCount = 0
+        var skippedCount = 0
         var ntvmrAvailable = true
         var totalVersesLinked = 0
+
+        val seedLookup = ManuscriptSeedData.load().associateBy { it.gaId }
+        log.info("Loaded ${seedLookup.size} seed manuscripts as fallback")
 
         val client = NtvmrClient()
         try {
@@ -103,6 +107,8 @@ class IngestionService(
                     log.debug("Skipping ${ms.gaId} (century ${ms.centuryMin} > X)")
                     continue
                 }
+
+                val effectiveMs = if (ms.content.isEmpty()) seedLookup[ms.gaId] ?: ms else ms
 
                 val manuscriptId = manuscriptRepository.insertIfNotExists(
                     gaId = ms.gaId,
@@ -113,30 +119,33 @@ class IngestionService(
                 )
 
                 if (!ntvmrAvailable) {
-                    val linked = linkFromSeed(manuscriptId, ms)
-                    totalVersesLinked += linked
-                    seedFallbackCount++
+                    val linked = linkFromSeed(manuscriptId, effectiveMs)
+                    if (linked > 0) {
+                        totalVersesLinked += linked
+                        seedFallbackCount++
+                    } else {
+                        skippedCount++
+                    }
                     continue
                 }
 
-                val linked = tryNtvmrIngestion(client, parser, manuscriptId, ms)
+                val linked = tryNtvmrIngestion(client, parser, manuscriptId, effectiveMs)
                 if (linked != null) {
                     log.info("${ms.gaId} (NTVMR, century ${ms.centuryMin}): linked $linked verses")
                     totalVersesLinked += linked
                     ntvmrSuccessCount++
-                } else {
-                    if (ms.content.isNotEmpty()) {
-                        val seedLinked = linkFromSeed(manuscriptId, ms)
-                        log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
-                        totalVersesLinked += seedLinked
-                        seedFallbackCount++
-                        if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
-                            log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
-                            ntvmrAvailable = false
-                        }
-                    } else {
-                        log.debug("${ms.gaId}: no transcript in NTVMR, skipping (no seed content)")
+                } else if (effectiveMs.content.isNotEmpty()) {
+                    val seedLinked = linkFromSeed(manuscriptId, effectiveMs)
+                    log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
+                    totalVersesLinked += seedLinked
+                    seedFallbackCount++
+                    if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
+                        log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
+                        ntvmrAvailable = false
                     }
+                } else {
+                    skippedCount++
+                    log.debug("${ms.gaId}: no transcript in NTVMR and no seed content")
                 }
 
                 delay(ntvmrDelayMs)
@@ -145,7 +154,7 @@ class IngestionService(
             client.close()
         }
 
-        log.info("=== Ingestion summary: $ntvmrSuccessCount from NTVMR, $seedFallbackCount from seed ===")
+        log.info("=== Ingestion summary: $ntvmrSuccessCount from NTVMR, $seedFallbackCount from seed, $skippedCount skipped ===")
         return IngestionResult(
             manuscriptsIngested = ntvmrSuccessCount + seedFallbackCount,
             versesLinked = totalVersesLinked
