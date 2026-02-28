@@ -1,11 +1,13 @@
 package com.ntcoverage.service
 
+import com.ntcoverage.config.IngestionConfig
 import com.ntcoverage.model.IngestionResult
 import com.ntcoverage.model.ManuscriptSeed
 import com.ntcoverage.repository.CoverageRepository
 import com.ntcoverage.repository.ManuscriptRepository
 import com.ntcoverage.repository.VerseRepository
 import com.ntcoverage.scraper.NtvmrClient
+import com.ntcoverage.scraper.NtvmrListClient
 import com.ntcoverage.scraper.NtvmrVerseParser
 import com.ntcoverage.seed.CanonicalVerses
 import com.ntcoverage.seed.ManuscriptSeedData
@@ -16,7 +18,8 @@ class IngestionService(
     private val verseRepository: VerseRepository,
     private val manuscriptRepository: ManuscriptRepository,
     private val coverageRepository: CoverageRepository,
-    private val verseExpander: VerseExpander
+    private val verseExpander: VerseExpander,
+    private val ntvmrListClient: NtvmrListClient
 ) {
     private val log = LoggerFactory.getLogger(IngestionService::class.java)
     private val useNtvmr = System.getenv("USE_NTVMR")?.lowercase() != "false"
@@ -50,8 +53,13 @@ class IngestionService(
 
     suspend fun ingestManuscriptsAsync(): IngestionResult {
         log.info("Starting manuscript ingestion...")
-        val manuscripts = ManuscriptSeedData.load()
-        log.info("Loaded ${manuscripts.size} manuscripts from seed data")
+        val manuscripts = if (IngestionConfig.loadManuscriptsFromNtvmr) {
+            log.info("LOAD_MANUSCRIPTS_FROM_NTVMR=true — fetching catalog from NTVMR API")
+            ntvmrListClient.fetchManuscripts()
+        } else {
+            ManuscriptSeedData.load()
+        }
+        log.info("Loaded ${manuscripts.size} manuscripts from ${if (IngestionConfig.loadManuscriptsFromNtvmr) "NTVMR catalog" else "seed data"}")
 
         val result = if (useNtvmr) {
             log.info("=== NTVMR integration ENABLED — fetching precise verse data from INTF Münster ===")
@@ -117,14 +125,17 @@ class IngestionService(
                     totalVersesLinked += linked
                     ntvmrSuccessCount++
                 } else {
-                    val seedLinked = linkFromSeed(manuscriptId, ms)
-                    log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
-                    totalVersesLinked += seedLinked
-                    seedFallbackCount++
-
-                    if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
-                        log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
-                        ntvmrAvailable = false
+                    if (ms.content.isNotEmpty()) {
+                        val seedLinked = linkFromSeed(manuscriptId, ms)
+                        log.info("${ms.gaId} (seed fallback, century ${ms.centuryMin}): linked $seedLinked verses")
+                        totalVersesLinked += seedLinked
+                        seedFallbackCount++
+                        if (ntvmrSuccessCount == 0 && seedFallbackCount >= 3) {
+                            log.warn("NTVMR appears unavailable after $seedFallbackCount failures — switching to seed-only mode")
+                            ntvmrAvailable = false
+                        }
+                    } else {
+                        log.debug("${ms.gaId}: no transcript in NTVMR, skipping (no seed content)")
                     }
                 }
 
@@ -148,6 +159,11 @@ class IngestionService(
         ms: ManuscriptSeed
     ): Int? {
         val docId = client.gaIdToDocId(ms.gaId)
+
+        if (ms.content.isEmpty()) {
+            return ingestFromFullTranscript(client, parser, manuscriptId, ms.gaId, docId)
+        }
+
         var totalLinked = 0
         var anySuccess = false
 
@@ -178,6 +194,28 @@ class IngestionService(
         }
 
         return if (anySuccess) totalLinked else null
+    }
+
+    /** When manuscript has no seed content (e.g. from NTVMR list API), fetch full transcript once and link all present verses. */
+    private suspend fun ingestFromFullTranscript(
+        client: NtvmrClient,
+        parser: NtvmrVerseParser,
+        manuscriptId: Int,
+        gaId: String,
+        docId: String
+    ): Int? {
+        val teiXml = client.fetchTranscript(docId, null) ?: return null
+        if (!teiXml.contains("<ab")) return null
+        val presentVerses = parser.extractPresentVerses(teiXml)
+        var totalLinked = 0
+        for ((bookName, verses) in presentVerses) {
+            if (verses.isEmpty()) continue
+            val bookId = verseRepository.findBookIdByName(bookName) ?: continue
+            val linked = linkVersesByChapterVerse(manuscriptId, bookId, verses)
+            totalLinked += linked
+            log.debug("  $gaId/$bookName: full transcript -> $linked verses")
+        }
+        return if (totalLinked > 0) totalLinked else null
     }
 
     private fun linkVersesByChapterVerse(

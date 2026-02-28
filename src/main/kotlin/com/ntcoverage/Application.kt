@@ -14,6 +14,8 @@ import com.ntcoverage.routes.coverageRoutes
 import com.ntcoverage.routes.manuscriptRoutes
 import com.ntcoverage.routes.metricsRoutes
 import com.ntcoverage.routes.statsRoutes
+import com.ntcoverage.routes.verseRoutes
+import com.ntcoverage.scraper.NtvmrListClient
 import com.ntcoverage.service.CoverageService
 import com.ntcoverage.service.IngestionOrchestrator
 import com.ntcoverage.service.IngestionService
@@ -94,7 +96,8 @@ fun Application.module() {
     val verseExpander = VerseExpander()
     val ingestionMetadataRepository = IngestionMetadataRepository()
 
-    val ingestionService = IngestionService(verseRepository, manuscriptRepository, coverageRepository, verseExpander)
+    val ntvmrListClient = NtvmrListClient()
+    val ingestionService = IngestionService(verseRepository, manuscriptRepository, coverageRepository, verseExpander, ntvmrListClient)
     val coverageService = CoverageService(coverageRepository, chapterCoverageRepository)
     val statsService = StatsService(statsRepository, coverageRepository)
     val manuscriptService = ManuscriptService(manuscriptRepository)
@@ -128,6 +131,7 @@ fun Application.module() {
                     "GET /stats/manuscripts-count - Manuscript count by type",
                     "GET /manuscripts?type=papyrus&century=3 - Manuscript explorer",
                     "GET /manuscripts/{gaId} - Manuscript detail",
+                    "GET /verses/manuscripts?book=&chapter=&verse= - Manuscripts that contain a verse",
                     "GET /metrics/nt - NT-wide academic metrics",
                     "GET /metrics/{book} - Book-level metrics",
                     "GET /admin/ingestion/status - Ingestion status",
@@ -140,6 +144,7 @@ fun Application.module() {
         statsRoutes(statsService)
         manuscriptRoutes(manuscriptService)
         metricsRoutes(metricsService)
+        verseRoutes(verseRepository)
         adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
     }
 

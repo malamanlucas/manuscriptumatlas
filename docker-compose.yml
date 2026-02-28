@@ -60,6 +60,8 @@ services:
       ENABLE_INGESTION: "true"
       INGESTION_SKIP_IF_POPULATED: "false"
       INGESTION_TIMEOUT_MINUTES: "30"
+      # DEV: load full catalog from NTVMR (140+ papyri + uncials) instead of seed JSON (57)
+      LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
     depends_on:
       init:
         condition: service_completed_successfully

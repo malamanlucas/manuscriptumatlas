@@ -12,6 +12,7 @@ import type {
   NtMetricsResponse,
   ManuscriptsCountResponse,
   IngestionStatusResponse,
+  VerseManuscriptsResponse,
 } from "@/types";
 
 const BASE = "/api";
@@ -117,6 +118,21 @@ export function getManuscripts(params?: {
 
 export function getManuscriptDetail(gaId: string): Promise<ManuscriptDetailResponse> {
   return fetchJson(`${BASE}/manuscripts/${encodeURIComponent(gaId)}`);
+}
+
+export function getManuscriptsForVerse(
+  book: string,
+  chapter: number,
+  verse: number,
+  type?: string
+): Promise<VerseManuscriptsResponse> {
+  const params = buildParams({
+    book,
+    chapter: chapter.toString(),
+    verse: verse.toString(),
+    type,
+  });
+  return fetchJson(`${BASE}/verses/manuscripts${params}`);
 }
 
 export function getNtMetrics(): Promise<NtMetricsResponse> {

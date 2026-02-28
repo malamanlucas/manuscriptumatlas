@@ -15,12 +15,14 @@ import {
   Database,
   HelpCircle,
   Activity,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/manuscripts", label: "Explorer", icon: Library },
+  { href: "/verse-lookup", label: "Consulta versículo", icon: Search },
   { href: "/timeline", label: "Timeline", icon: Clock },
   { href: "/compare", label: "Comparativo", icon: GitCompareArrows },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },

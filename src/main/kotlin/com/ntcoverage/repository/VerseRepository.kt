@@ -1,11 +1,13 @@
 package com.ntcoverage.repository
 
 import com.ntcoverage.model.Books
+import com.ntcoverage.model.Manuscripts
 import com.ntcoverage.model.ManuscriptVerses
 import com.ntcoverage.model.Verses
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -78,5 +80,34 @@ class VerseRepository {
                     verseId = it[Verses.id].value
                 )
             }
+    }
+
+    data class ManuscriptForVerse(
+        val gaId: String,
+        val name: String?,
+        val centuryMin: Int,
+        val centuryMax: Int,
+        val type: String?,
+        val ntvmrUrl: String?
+    )
+
+    fun getManuscriptsForVerse(verseId: Int, type: String? = null): List<ManuscriptForVerse> = transaction {
+        val base = ManuscriptVerses
+            .join(Manuscripts, JoinType.INNER, ManuscriptVerses.manuscriptId, Manuscripts.id)
+            .selectAll()
+            .where {
+                val verseMatch = ManuscriptVerses.verseId eq verseId
+                type?.let { (Manuscripts.manuscriptType eq it) and verseMatch } ?: verseMatch
+            }
+        base.map { row ->
+            ManuscriptForVerse(
+                gaId = row[Manuscripts.gaId],
+                name = row[Manuscripts.name],
+                centuryMin = row[Manuscripts.centuryMin],
+                centuryMax = row[Manuscripts.centuryMax],
+                type = row[Manuscripts.manuscriptType],
+                ntvmrUrl = row[Manuscripts.ntvmrUrl]
+            )
+        }
     }
 }

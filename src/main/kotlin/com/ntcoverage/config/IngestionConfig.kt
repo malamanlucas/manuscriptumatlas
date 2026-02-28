@@ -9,4 +9,8 @@ object IngestionConfig {
 
     val timeoutMinutes: Long
         get() = System.getenv("INGESTION_TIMEOUT_MINUTES")?.toLongOrNull() ?: 30L
+
+    /** When true, load manuscript list from NTVMR API (100+ papyri + uncials) instead of seed JSON. For DEV. */
+    val loadManuscriptsFromNtvmr: Boolean
+        get() = System.getenv("LOAD_MANUSCRIPTS_FROM_NTVMR")?.lowercase() == "true"
 }

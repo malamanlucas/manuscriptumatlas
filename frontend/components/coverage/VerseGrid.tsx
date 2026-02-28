@@ -1,14 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { ChapterCoverage } from "@/types";
 
 interface VerseGridProps {
   chapters: ChapterCoverage[];
   previousChapters?: ChapterCoverage[];
+  bookName?: string;
 }
 
-export function VerseGrid({ chapters, previousChapters }: VerseGridProps) {
+export function VerseGrid({ chapters, previousChapters, bookName }: VerseGridProps) {
   const prevCoveredMap = new Map<string, Set<number>>();
   if (previousChapters) {
     for (const ch of previousChapters) {
@@ -39,21 +41,37 @@ export function VerseGrid({ chapters, previousChapters }: VerseGridProps) {
                 const isNew =
                   isCovered && prevCovered && !prevCovered.has(v);
 
-                return (
-                  <div
-                    key={v}
-                    title={`${ch.chapter}:${v} - ${isCovered ? "covered" : "missing"}`}
+                const cell = (
+                  <span
+                    title={
+                      bookName
+                        ? `Ver manuscritos para ${bookName} ${ch.chapter}:${v}`
+                        : `${ch.chapter}:${v} - ${isCovered ? "covered" : "missing"}`
+                    }
                     className={cn(
                       "flex h-6 w-6 items-center justify-center rounded text-[10px] font-mono transition-all",
                       isCovered
                         ? isNew
                           ? "bg-amber-400 text-black"
                           : "bg-emerald-500 text-white"
-                        : "bg-red-400/80 text-white"
+                        : "bg-red-400/80 text-white",
+                      bookName && "cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-1"
                     )}
                   >
                     {v}
-                  </div>
+                  </span>
+                );
+
+                return bookName ? (
+                  <Link
+                    key={v}
+                    href={`/verse-lookup?book=${encodeURIComponent(bookName)}&chapter=${ch.chapter}&verse=${v}`}
+                    className="inline-block"
+                  >
+                    {cell}
+                  </Link>
+                ) : (
+                  <div key={v}>{cell}</div>
                 );
               })}
             </div>

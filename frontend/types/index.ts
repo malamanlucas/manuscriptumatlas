@@ -167,3 +167,19 @@ export interface IngestionStatusResponse {
   isRunning: boolean;
   enableIngestion: boolean;
 }
+
+export interface VerseManuscriptItem {
+  gaId: string;
+  name: string | null;
+  centuryMin: number;
+  centuryMax: number;
+  type: string | null;
+  ntvmrUrl: string | null;
+}
+
+export interface VerseManuscriptsResponse {
+  book: string;
+  chapter: number;
+  verse: number;
+  manuscripts: VerseManuscriptItem[];
+}

@@ -127,6 +127,7 @@ export default function BookDetailPage() {
               <VerseGrid
                 chapters={chapterData.chapters}
                 previousChapters={prevChapterData?.chapters}
+                bookName={bookName}
               />
             </div>
           </>

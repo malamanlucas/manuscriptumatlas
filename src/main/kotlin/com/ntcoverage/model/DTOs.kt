@@ -227,3 +227,21 @@ data class IngestionResult(
     val manuscriptsIngested: Int,
     val versesLinked: Int
 )
+
+@Serializable
+data class VerseManuscriptItem(
+    val gaId: String,
+    val name: String? = null,
+    val centuryMin: Int,
+    val centuryMax: Int,
+    val type: String? = null,
+    val ntvmrUrl: String? = null
+)
+
+@Serializable
+data class VerseManuscriptsResponse(
+    val book: String,
+    val chapter: Int,
+    val verse: Int,
+    val manuscripts: List<VerseManuscriptItem>
+)
