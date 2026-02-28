@@ -1,0 +1,45 @@
+---
+description: Convenções de código Kotlin para o backend Ktor/Exposed
+globs: "**/*.kt"
+alwaysApply: false
+---
+
+# Kotlin — Convenções
+
+## Nomenclatura
+
+- Classes/Objects: `PascalCase` (`IngestionService`, `ManuscriptRepository`)
+- Funções: `camelCase` (`ingestManuscriptsAsync`, `getCoverageByCentury`)
+- Tabelas Exposed: `PascalCase` plural (`Manuscripts`, `Verses`)
+- DTOs: `PascalCase` descritivo (`CoverageSummary`, `ManuscriptDetailResponse`)
+
+## Padrões obrigatórios
+
+- Serialização com `kotlinx.serialization` (`@Serializable`), nunca Jackson
+- Transações de banco sempre via `transaction { }` do Exposed
+- Operações assíncronas com Kotlin Coroutines (`suspend fun`, `async`, `withContext`)
+- Injeção de dependência por construtor, sem frameworks de DI
+
+## Ktor Routes
+
+```kotlin
+fun Route.myRoutes(service: MyService) {
+    route("/my-endpoint") {
+        get {
+            call.respond(service.getData())
+        }
+    }
+}
+```
+
+## Repository
+
+- Cada repository opera sobre uma tabela Exposed
+- Queries dentro de `transaction { }` ou `newSuspendedTransaction { }`
+- Retornar DTOs, nunca ResultRows diretamente nas camadas superiores
+
+## Tratamento de erros
+
+- Logar erros com `LoggerFactory.getLogger`
+- Usar `try/catch` com mensagens descritivas
+- Retry com backoff para chamadas externas (NTVMR)

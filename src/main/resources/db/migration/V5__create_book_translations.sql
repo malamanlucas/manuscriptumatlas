@@ -1,0 +1,70 @@
+CREATE TABLE book_translations (
+    id           SERIAL PRIMARY KEY,
+    book_id      INTEGER     NOT NULL REFERENCES books(id),
+    locale       VARCHAR(5)  NOT NULL,
+    name         VARCHAR(50) NOT NULL,
+    abbreviation VARCHAR(10) NOT NULL,
+    UNIQUE(book_id, locale)
+);
+
+CREATE INDEX idx_book_translations_locale ON book_translations(locale);
+
+-- Portuguese (pt)
+INSERT INTO book_translations (book_id, locale, name, abbreviation) VALUES
+( 1, 'pt', 'Mateus',             'Mt'),
+( 2, 'pt', 'Marcos',             'Mc'),
+( 3, 'pt', 'Lucas',              'Lc'),
+( 4, 'pt', 'João',               'Jo'),
+( 5, 'pt', 'Atos',               'At'),
+( 6, 'pt', 'Romanos',            'Rm'),
+( 7, 'pt', '1 Coríntios',        '1Co'),
+( 8, 'pt', '2 Coríntios',        '2Co'),
+( 9, 'pt', 'Gálatas',            'Gl'),
+(10, 'pt', 'Efésios',            'Ef'),
+(11, 'pt', 'Filipenses',         'Fp'),
+(12, 'pt', 'Colossenses',        'Cl'),
+(13, 'pt', '1 Tessalonicenses',  '1Ts'),
+(14, 'pt', '2 Tessalonicenses',  '2Ts'),
+(15, 'pt', '1 Timóteo',          '1Tm'),
+(16, 'pt', '2 Timóteo',          '2Tm'),
+(17, 'pt', 'Tito',               'Tt'),
+(18, 'pt', 'Filemom',            'Fl'),
+(19, 'pt', 'Hebreus',            'Hb'),
+(20, 'pt', 'Tiago',              'Tg'),
+(21, 'pt', '1 Pedro',            '1Pe'),
+(22, 'pt', '2 Pedro',            '2Pe'),
+(23, 'pt', '1 João',             '1Jo'),
+(24, 'pt', '2 João',             '2Jo'),
+(25, 'pt', '3 João',             '3Jo'),
+(26, 'pt', 'Judas',              'Jd'),
+(27, 'pt', 'Apocalipse',         'Ap');
+
+-- Spanish (es)
+INSERT INTO book_translations (book_id, locale, name, abbreviation) VALUES
+( 1, 'es', 'Mateo',              'Mt'),
+( 2, 'es', 'Marcos',             'Mc'),
+( 3, 'es', 'Lucas',              'Lc'),
+( 4, 'es', 'Juan',               'Jn'),
+( 5, 'es', 'Hechos',             'Hch'),
+( 6, 'es', 'Romanos',            'Rm'),
+( 7, 'es', '1 Corintios',        '1Co'),
+( 8, 'es', '2 Corintios',        '2Co'),
+( 9, 'es', 'Gálatas',            'Gl'),
+(10, 'es', 'Efesios',            'Ef'),
+(11, 'es', 'Filipenses',         'Flp'),
+(12, 'es', 'Colosenses',         'Col'),
+(13, 'es', '1 Tesalonicenses',   '1Ts'),
+(14, 'es', '2 Tesalonicenses',   '2Ts'),
+(15, 'es', '1 Timoteo',          '1Tm'),
+(16, 'es', '2 Timoteo',          '2Tm'),
+(17, 'es', 'Tito',               'Tit'),
+(18, 'es', 'Filemón',            'Flm'),
+(19, 'es', 'Hebreos',            'Hb'),
+(20, 'es', 'Santiago',           'Stg'),
+(21, 'es', '1 Pedro',            '1Pe'),
+(22, 'es', '2 Pedro',            '2Pe'),
+(23, 'es', '1 Juan',             '1Jn'),
+(24, 'es', '2 Juan',             '2Jn'),
+(25, 'es', '3 Juan',             '3Jn'),
+(26, 'es', 'Judas',              'Jud'),
+(27, 'es', 'Apocalipsis',        'Ap');

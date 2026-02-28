@@ -13,6 +13,7 @@ import {
   Legend,
 } from "recharts";
 import { toRoman } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { TimelineEntry } from "@/types";
 
 interface TimelineChartProps {
@@ -24,6 +25,8 @@ export function TimelineChart({
   entries,
   showDelta = false,
 }: TimelineChartProps) {
+  const t = useTranslations("charts");
+
   const data = entries.map((e) => ({
     ...e,
     name: toRoman(e.century),
@@ -44,16 +47,16 @@ export function TimelineChart({
             }}
             formatter={(value, name) => {
               const v = Number(value);
-              if (name === "newVersesCount") return [v, "New Verses"];
+              if (name === "newVersesCount") return [v, t("newVerses")];
               if (name === "growthPercent")
-                return [`${v.toFixed(2)}%`, "Growth"];
+                return [`${v.toFixed(2)}%`, t("growth")];
               return [v, String(name)];
             }}
           />
           <Legend />
           <Bar
             dataKey="newVersesCount"
-            name="New Verses"
+            name={t("newVerses")}
             fill="#3b82f6"
             radius={[4, 4, 0, 0]}
           />
@@ -84,7 +87,7 @@ export function TimelineChart({
             border: "1px solid var(--border)",
             borderRadius: "8px",
           }}
-          formatter={(value) => [`${Number(value).toFixed(2)}%`, "Coverage"]}
+          formatter={(value) => [`${Number(value).toFixed(2)}%`, t("coverage")]}
         />
         <Area
           type="monotone"

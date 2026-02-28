@@ -1,0 +1,33 @@
+---
+description: Convenções do frontend Next.js/React/TypeScript
+globs: "frontend/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Frontend — Convenções
+
+## Stack
+
+- Next.js (App Router) com TypeScript
+- Tailwind CSS 4 para estilização
+- TanStack Query para data fetching e cache
+- Recharts para visualizações/gráficos
+- Lucide React para ícones
+
+## Padrões
+
+- Componentes funcionais com TypeScript
+- Hooks customizados em `frontend/hooks/`
+- Utilitários em `frontend/lib/`
+- Preferir Server Components; usar `"use client"` apenas quando necessário
+- Tipagem explícita — evitar `any`
+
+## Data Fetching
+
+- Usar TanStack Query (`useQuery`, `useMutation`) para chamadas à API
+- API backend disponível em `http://localhost:8080` (dev) ou via Docker network
+
+## Estilização
+
+- Tailwind CSS utility-first
+- Sem CSS modules ou styled-components

@@ -1,0 +1,95 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+import { Header } from "@/components/layout/Header";
+
+export default function SourcesPage() {
+  const t = useTranslations("sources");
+
+  return (
+    <div className="min-h-screen">
+      <Header
+        title={t("title")}
+        subtitle={t("subtitle")}
+      />
+
+      <div className="p-6 space-y-8 max-w-3xl">
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {t("primarySource")}
+          </h2>
+          <p className="text-muted-foreground leading-relaxed mb-3">
+            {t("primarySourceText1", { ntvmr: t("ntvmrName") })}
+          </p>
+          <p className="text-muted-foreground leading-relaxed mb-3">
+            {t("primarySourceText2", {
+              formatParam: "format=teiraw",
+              abElement: "<ab>",
+            })}
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            {t("primarySourceText3")}
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {t("gregoryAland")}
+          </h2>
+          <p className="text-muted-foreground leading-relaxed mb-3">
+            {t("gregoryAlandText1")}
+          </p>
+          <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+            <li>{t("gregoryAlandPapyri")}</li>
+            <li>{t("gregoryAlandUncials")}</li>
+            <li>{t("gregoryAlandMinuscules")}</li>
+            <li>{t("gregoryAlandLectionaries")}</li>
+          </ul>
+          <p className="text-muted-foreground leading-relaxed mt-3">
+            {t("gregoryAlandText2")}
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {t("datingMethodology")}
+          </h2>
+          <p className="text-muted-foreground leading-relaxed mb-3">
+            {t("datingMethodologyText1", {
+              conservative: t("conservative"),
+              centuryMin: "centuryMin",
+            })}
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            {t("datingMethodologyText2", {
+              cumulativeCoverage: t("cumulativeCoverage"),
+            })}
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {t("limitations")}
+          </h2>
+          <div className="space-y-3 text-muted-foreground leading-relaxed">
+            <p>
+              <strong className="text-foreground">{t("limitationFragmentaryLabel")}</strong>{" "}
+              {t("limitationFragmentary")}
+            </p>
+            <p>
+              <strong className="text-foreground">{t("limitationDatingLabel")}</strong>{" "}
+              {t("limitationDating")}
+            </p>
+            <p>
+              <strong className="text-foreground">{t("limitationVariantsLabel")}</strong>{" "}
+              {t("limitationVariants", {
+                coverage: t("coverageTerm"),
+                textualVariation: t("textualVariationTerm"),
+              })}
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

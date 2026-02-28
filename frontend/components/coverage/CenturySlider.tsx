@@ -1,6 +1,7 @@
 "use client";
 
 import { toRoman } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface CenturySliderProps {
   value: number;
@@ -15,10 +16,12 @@ export function CenturySlider({
   min = 1,
   max = 10,
 }: CenturySliderProps) {
+  const t = useTranslations("centurySlider");
+
   return (
     <div className="flex items-center gap-4">
       <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-        Seculo
+        {t("century")}
       </label>
       <div className="flex items-center gap-3 flex-1">
         <span className="text-xs font-mono text-muted-foreground w-6 text-right">

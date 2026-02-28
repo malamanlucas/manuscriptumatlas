@@ -1,0 +1,28 @@
+---
+description: Convenções para migrações de banco e schema
+globs: "src/main/resources/db/migration/**/*.sql"
+alwaysApply: false
+---
+
+# Migrações SQL (Flyway)
+
+## Localização
+
+`src/main/resources/db/migration/`
+
+## Nomenclatura
+
+`V{N}__{descricao_snake_case}.sql` (dois underscores após o número)
+
+Exemplos existentes:
+- `V1__create_tables.sql`
+- `V2__add_indexes_for_type_filter.sql`
+- `V3__create_manuscript_sources.sql`
+- `V4__create_ingestion_metadata.sql`
+
+## Regras
+
+- Sempre incremental — nunca alterar migrações já aplicadas
+- Incluir índices relevantes na mesma migração ou em migração separada
+- PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, etc.)
+- Tabelas principais: `books`, `verses`, `manuscripts`, `manuscript_verses`, `coverage_by_century`, `manuscript_sources`, `ingestion_metadata`

@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cn, coverageColor } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { BookCoverage } from "@/types";
 
 interface BookCardProps {
@@ -10,6 +11,9 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, century }: BookCardProps) {
+  const t = useTranslations("bookCard");
+  const tBooks = useTranslations("books");
+
   return (
     <Link
       href={`/book/${encodeURIComponent(book.bookName)}?century=${century}`}
@@ -17,7 +21,7 @@ export function BookCard({ book, century }: BookCardProps) {
     >
       <div className="flex items-start justify-between">
         <h3 className="text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors">
-          {book.bookName}
+          {tBooks(book.bookName)}
         </h3>
         <span
           className={cn(
@@ -36,7 +40,7 @@ export function BookCard({ book, century }: BookCardProps) {
           />
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground">
-          {book.coveredVerses} / {book.totalVerses} verses
+          {t("verses", { covered: book.coveredVerses, total: book.totalVerses })}
         </p>
       </div>
     </Link>

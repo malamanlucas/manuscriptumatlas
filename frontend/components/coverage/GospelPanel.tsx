@@ -2,6 +2,7 @@
 
 import { useGospelCoverage } from "@/hooks/useCoverage";
 import { cn, coverageColor } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface GospelPanelProps {
   century: number;
@@ -10,6 +11,8 @@ interface GospelPanelProps {
 
 export function GospelPanel({ century, type }: GospelPanelProps) {
   const { data, isLoading } = useGospelCoverage(century, type);
+  const t = useTranslations("gospelPanel");
+  const tBooks = useTranslations("books");
 
   if (isLoading) {
     return (
@@ -29,7 +32,7 @@ export function GospelPanel({ century, type }: GospelPanelProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Gospels</h2>
+        <h2 className="text-base font-semibold">{t("gospels")}</h2>
         <span
           className={cn(
             "rounded-full px-3 py-1 text-sm font-bold",
@@ -45,7 +48,7 @@ export function GospelPanel({ century, type }: GospelPanelProps) {
             key={book.bookName}
             className="rounded-lg bg-secondary/50 p-3 text-center"
           >
-            <p className="text-sm font-medium">{book.bookName}</p>
+            <p className="text-sm font-medium">{tBooks(book.bookName)}</p>
             <p className="mt-1 text-2xl font-bold">
               {book.coveragePercent.toFixed(1)}%
             </p>
@@ -57,7 +60,7 @@ export function GospelPanel({ century, type }: GospelPanelProps) {
       </div>
       {data.missingVerses.length > 0 && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {data.missingVerses.length} verses missing across all gospels
+          {t("missingVerses", { count: data.missingVerses.length })}
         </p>
       )}
     </div>

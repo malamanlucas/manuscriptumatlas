@@ -82,3 +82,14 @@ object IngestionMetadata : Table("ingestion_metadata") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object BookTranslations : IntIdTable("book_translations") {
+    val bookId = reference("book_id", Books)
+    val locale = varchar("locale", 5)
+    val name = varchar("name", 50)
+    val abbreviation = varchar("abbreviation", 10)
+
+    init {
+        uniqueIndex(bookId, locale)
+    }
+}

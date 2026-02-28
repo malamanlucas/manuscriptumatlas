@@ -3,9 +3,11 @@
 import { useStatsOverview } from "@/hooks/useStats";
 import { toRoman } from "@/lib/utils";
 import { BookOpen, FileText, Layers, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function StatsOverview() {
   const { data, isLoading, error } = useStatsOverview();
+  const t = useTranslations("stats");
 
   if (isLoading) {
     return (
@@ -25,7 +27,7 @@ export function StatsOverview() {
   if (error || !data) {
     return (
       <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-        Failed to load statistics
+        {t("failedToLoad")}
       </div>
     );
   }
@@ -45,7 +47,7 @@ export function StatsOverview() {
               {data.totalManuscripts.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">
-              Total Manuscripts
+              {t("totalManuscripts")}
             </p>
           </div>
         </div>
@@ -60,7 +62,7 @@ export function StatsOverview() {
               {papyrusCount} / {uncialCount}
             </p>
             <p className="text-xs text-muted-foreground">
-              Papyri / Uncials
+              {t("papyriUncials")}
             </p>
           </div>
         </div>
@@ -75,7 +77,7 @@ export function StatsOverview() {
               {data.avgBooksPerManuscript.toFixed(1)}
             </p>
             <p className="text-xs text-muted-foreground">
-              Avg Books per Manusc.
+              {t("avgBooks")}
             </p>
           </div>
         </div>
@@ -90,7 +92,7 @@ export function StatsOverview() {
               {data.overallCoveragePercent.toFixed(1)}%
             </p>
             <p className="text-xs text-muted-foreground">
-              Total Coverage (C. X)
+              {t("totalCoverage")}
             </p>
           </div>
         </div>

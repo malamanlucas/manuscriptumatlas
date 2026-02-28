@@ -1,0 +1,45 @@
+---
+description: Visão geral do projeto Manuscriptum Atlas e suas convenções
+alwaysApply: true
+---
+
+# Manuscriptum Atlas
+
+Sistema de análise de cobertura textual do Novo Testamento grego, baseado em manuscritos históricos. Calcula métricas de cobertura acumulativa por século e livro.
+
+## Stack
+
+- **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
+- **Frontend:** Next.js / React 19 / TypeScript / Tailwind CSS 4 / Recharts / TanStack Query
+- **Infra:** Docker Compose (postgres + app + frontend)
+
+## Arquitetura em camadas
+
+```
+Routes → Service → Repository → Database (Exposed/PostgreSQL)
+```
+
+## Pacotes (`com.ntcoverage.*`)
+
+| Pacote | Responsabilidade |
+|--------|-----------------|
+| `config` | Configuração (DB, Flyway, Ingestão) |
+| `model` | Tables (Exposed) e DTOs (`@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` |
+| `service` | Lógica de negócio e orquestração |
+| `routes` | Endpoints HTTP (Ktor routing) |
+| `scraper` | Clientes NTVMR e parsers TEI/XML |
+| `seed` | Dados canônicos (27 livros, 7.956 versículos) |
+
+## Conceitos de domínio
+
+- **GA-ID**: identificador Gregory-Aland de manuscritos
+- **Cobertura acumulativa**: século N inclui todos os séculos anteriores
+- **Tipos**: papyrus, uncial, minuscule, lectionary
+- **NTVMR**: API do INTF Münster para dados de manuscritos
+- **Ranges de versículos**: strings como "1:1-5" expandidas em versículos individuais
+
+## Idioma
+
+- Código-fonte, variáveis e nomes de classes: **inglês**
+- Comunicação com o usuário: **português**

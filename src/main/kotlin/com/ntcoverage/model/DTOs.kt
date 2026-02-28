@@ -245,3 +245,11 @@ data class VerseManuscriptsResponse(
     val verse: Int,
     val manuscripts: List<VerseManuscriptItem>
 )
+
+@Serializable
+data class BookTranslationItem(
+    val canonicalName: String,
+    val localizedName: String,
+    val abbreviation: String,
+    val order: Int
+)

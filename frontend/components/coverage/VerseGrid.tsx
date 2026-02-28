@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { ChapterCoverage } from "@/types";
 
 interface VerseGridProps {
@@ -11,6 +12,8 @@ interface VerseGridProps {
 }
 
 export function VerseGrid({ chapters, previousChapters, bookName }: VerseGridProps) {
+  const t = useTranslations("verseGrid");
+
   const prevCoveredMap = new Map<string, Set<number>>();
   if (previousChapters) {
     for (const ch of previousChapters) {
@@ -29,7 +32,7 @@ export function VerseGrid({ chapters, previousChapters, bookName }: VerseGridPro
           <div key={ch.chapter} className="rounded-lg border border-border p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-semibold">
-                Chapter {ch.chapter}
+                {t("chapter", { num: ch.chapter })}
               </span>
               <span className="text-xs text-muted-foreground">
                 {ch.coveredVerses}/{ch.totalVerses} ({ch.coveragePercent.toFixed(1)}%)
@@ -45,8 +48,8 @@ export function VerseGrid({ chapters, previousChapters, bookName }: VerseGridPro
                   <span
                     title={
                       bookName
-                        ? `Ver manuscritos para ${bookName} ${ch.chapter}:${v}`
-                        : `${ch.chapter}:${v} - ${isCovered ? "covered" : "missing"}`
+                        ? t("viewManuscripts", { book: bookName, chapter: ch.chapter, verse: v })
+                        : t("verseStatus", { chapter: ch.chapter, verse: v, status: isCovered ? t("covered") : t("missing") })
                     }
                     className={cn(
                       "flex h-6 w-6 items-center justify-center rounded text-[10px] font-mono transition-all",
