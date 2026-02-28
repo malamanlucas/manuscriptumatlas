@@ -4,9 +4,24 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+REQUIRED_JAVA=21
 DOCKER_NODE_IMAGE="node:20-alpine"
 COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
 
+echo "==> [PROD] Verificando Java $REQUIRED_JAVA..."
+if java -version 2>&1 | grep -q "version \"$REQUIRED_JAVA"; then
+  echo "    Java $REQUIRED_JAVA encontrado."
+else
+  echo "    Java $REQUIRED_JAVA não encontrado. Instalando..."
+  apt-get update -qq
+  apt-get install -y -qq openjdk-${REQUIRED_JAVA}-jdk-headless > /dev/null
+  echo "    Java $REQUIRED_JAVA instalado com sucesso."
+fi
+
+export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+echo "    JAVA_HOME=$JAVA_HOME"
+
+echo ""
 echo "==> [PROD] Parando containers antigos..."
 docker compose $COMPOSE_FILES down --remove-orphans 2>/dev/null || true
 
