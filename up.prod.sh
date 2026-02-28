@@ -29,9 +29,9 @@ docker compose $COMPOSE_FILES up -d
 
 echo ""
 echo "==> [PROD] Deploy concluído!"
-echo "    Frontend: http://localhost:3000"
-echo "    Backend:  http://localhost:8080"
-echo "    Postgres: não exposto externamente"
+echo "    Frontend: http://localhost:35855"
+echo "    Backend:  http://localhost:35856"
+echo "    Postgres: localhost:35857 (user: postgres)"
 echo ""
 echo "    Logs:    docker compose $COMPOSE_FILES logs -f"
 echo "    Status:  docker compose $COMPOSE_FILES ps"

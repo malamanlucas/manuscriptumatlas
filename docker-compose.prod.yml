@@ -1,17 +1,20 @@
 services:
   postgres:
-    ports: !override []
+    ports: !override
+      - "35857:5432"
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: "jK5KSAktJtLbCwbVFy4X5YXvIgpGEHR"
     shm_size: "128mb"
 
   app:
+    ports: !override
+      - "35856:8080"
     restart: unless-stopped
     environment:
       DATABASE_URL: "jdbc:postgresql://postgres:5432/nt_coverage"
       DATABASE_USER: "postgres"
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_PASSWORD: "jK5KSAktJtLbCwbVFy4X5YXvIgpGEHR"
       JAVA_OPTS: "-Xms128m -Xmx512m"
       USE_NTVMR: "true"
       NTVMR_DELAY_MS: "1000"
@@ -27,6 +30,8 @@ services:
           memory: 768M
 
   frontend:
+    ports: !override
+      - "35855:3000"
     restart: unless-stopped
     deploy:
       resources:
