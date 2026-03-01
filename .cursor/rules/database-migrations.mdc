@@ -24,6 +24,8 @@ alwaysApply: false
 - `V6__create_church_fathers.sql` — Pais da igreja + extensão pg_trgm + índices GIN
 - `V7__create_father_textual_statements.sql` — Declarações textuais + CHECK constraints + índices (B-tree, GIN trigram, composto)
 - `V8__create_church_father_translations.sql` — Traduções i18n: church_father_translations + father_statement_translations + índices de lookup + GIN trigram
+- `V9__extend_church_fathers_biography.sql` — Colunas de biografia em church_fathers (manner_of_death, biography_original, biography_summary, biography_summary_reviewed) e traduções correspondentes em church_father_translations
+- `V10__add_translation_source.sql` — Coluna translation_source em church_father_translations (seed vs. outra origem)
 
 ## Regras
 
@@ -31,7 +33,7 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V9**
+- Próxima migração: **V11**
 
 ## Nota sobre Flyway
 

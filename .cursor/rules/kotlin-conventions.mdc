@@ -47,6 +47,9 @@ Rotas literais devem ser declaradas antes de rotas com parâmetros dinâmicos pa
 - Recebe repositórios via construtor
 - Contém lógica de negócio e orquestração
 - Não acessa `transaction {}` diretamente (delega ao repository)
+- Utilitários de domínio (`VerseExpander`, `VerseRangeCompressor`) ficam no pacote service
+- `MetricsRepository` é criado internamente pelo `MetricsService` via delegação ao `CoverageRepository`
+- `BiographySummarizationService` lida com resumo de biografias dos Pais da Igreja
 
 ## Tratamento de erros
 

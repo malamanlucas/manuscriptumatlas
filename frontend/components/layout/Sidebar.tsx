@@ -67,13 +67,13 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
+        <Link href="/" onClick={close} className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
           <ScrollText className="h-7 w-7 text-blue-400" />
           <div>
             <h1 className="text-sm font-bold leading-tight">{t("title")}</h1>
             <p className="text-xs text-white/60">{t("subtitle")}</p>
           </div>
-        </div>
+        </Link>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {navItems.map((item) => {
