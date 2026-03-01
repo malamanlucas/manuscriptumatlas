@@ -50,11 +50,11 @@ object TextualStatementTranslationsSeedData {
         // === JEROME ===
         StatementTranslationEntry("jerome", "Ep. 27.1 (ad Marcellam)", "pt",
             "Não sou tão estúpido a ponto de pensar que qualquer das palavras do Senhor precisa de correção ou não é divinamente inspirada; mas os manuscritos latinos das Escrituras provam-se defeituosos pelas variações que todos exibem, e meu objetivo tem sido restaurá-los à forma do original grego."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "pt",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §1", "pt",
             "Vocês me compelem a fazer uma nova obra a partir de uma antiga, e depois de tantas cópias das Escrituras terem sido espalhadas pelo mundo, a sentar em julgamento e decidir quais delas concordam com o original grego."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "pt",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §2", "pt",
             "Os textos latinos são tão numerosos quanto as cópias. Cada pessoa adicionou ou alterou o que achou conveniente, e há quase tantas leituras quanto manuscritos."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "pt",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §3", "pt",
             "Usei como base de minha correção os antigos códices gregos. Comparei-os com aqueles que chamamos pelos nomes de Luciano e Hesíquio, e que a falsa erudição dos homens perverteu."),
         StatementTranslationEntry("jerome", "2.17", "pt",
             "A passagem sobre a mulher apanhada em adultério, no Evangelho segundo João, é encontrada em muitas cópias, tanto gregas quanto latinas."),
@@ -70,9 +70,9 @@ object TextualStatementTranslationsSeedData {
             "Em matéria de Escrituras canônicas, deve-se seguir a autoridade da maioria das igrejas católicas, entre as quais estão aquelas que mereceram ter sedes apostólicas e receber epístolas."),
 
         // === ATHANASIUS ===
-        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39", "pt",
+        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39, §1", "pt",
             "Estas são as fontes da salvação, para que os sedentos possam se satisfazer com as palavras vivas que contêm. Somente nestas é proclamada a doutrina da piedade. Que ninguém acrescente a elas, nem tire algo delas."),
-        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39", "pt",
+        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39, §2", "pt",
             "Além disso, há outros livros além dos anteriores, que não estão incluídos no Cânon, mas foram designados pelos Pais para serem lidos por aqueles que se juntam a nós recentemente e desejam instrução: a Sabedoria de Salomão, e a Sabedoria de Siraque, e Ester, e Judite, e Tobias, e a Didaquê, e o Pastor."),
         StatementTranslationEntry("athanasius_of_alexandria", "1.1", "pt",
             "As santas Escrituras inspiradas por Deus são autossuficientes para a pregação da verdade."),
@@ -142,11 +142,11 @@ object TextualStatementTranslationsSeedData {
         // === JEROME ===
         StatementTranslationEntry("jerome", "Ep. 27.1 (ad Marcellam)", "es",
             "No soy tan estúpido como para pensar que alguna de las palabras del Señor necesita corrección o no es divinamente inspirada; pero los manuscritos latinos de las Escrituras se prueban defectuosos por las variaciones que todos exhiben, y mi objetivo ha sido restaurarlos a la forma del original griego."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "es",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §1", "es",
             "Me obligan a hacer una obra nueva a partir de una antigua, y después de que tantas copias de las Escrituras se han esparcido por el mundo, a sentarme en juicio y decidir cuáles de ellas concuerdan con el original griego."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "es",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §2", "es",
             "Los textos latinos son tan numerosos como las copias. Cada persona ha añadido o cambiado lo que le pareció conveniente, y hay casi tantas lecturas como manuscritos."),
-        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels", "es",
+        StatementTranslationEntry("jerome", "Preface to the Vulgate Gospels, §3", "es",
             "He usado como base de mi corrección los antiguos códices griegos. Los he comparado con aquellos que llamamos por los nombres de Luciano y Hesiquio, y que la falsa erudición de los hombres ha pervertido."),
         StatementTranslationEntry("jerome", "2.17", "es",
             "El pasaje sobre la mujer sorprendida en adulterio, en el Evangelio según Juan, se encuentra en muchas copias, tanto griegas como latinas."),
@@ -162,9 +162,9 @@ object TextualStatementTranslationsSeedData {
             "En materia de Escrituras canónicas, debe seguirse la autoridad de la mayoría de las iglesias católicas, entre las cuales están aquellas que han merecido tener sedes apostólicas y recibir epístolas."),
 
         // === ATHANASIUS ===
-        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39", "es",
+        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39, §1", "es",
             "Estas son las fuentes de la salvación, para que los sedientos puedan satisfacerse con las palabras vivas que contienen. Solo en estas se proclama la doctrina de la piedad. Que nadie añada a ellas, ni quite algo de ellas."),
-        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39", "es",
+        StatementTranslationEntry("athanasius_of_alexandria", "Festal Letter 39, §2", "es",
             "Además, hay otros libros aparte de los anteriores, que no están incluidos en el Canon, pero fueron designados por los Padres para ser leídos por quienes se unen a nosotros recientemente y desean instrucción: la Sabiduría de Salomón, y la Sabiduría de Sirácida, y Ester, y Judit, y Tobías, y la Didajé, y el Pastor."),
         StatementTranslationEntry("athanasius_of_alexandria", "1.1", "es",
             "Las santas Escrituras inspiradas por Dios son autosuficientes para la predicación de la verdad."),

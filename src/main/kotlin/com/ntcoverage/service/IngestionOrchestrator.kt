@@ -63,17 +63,22 @@ class IngestionOrchestrator(
             try {
                 log.warn("DATABASE_RESET requested — wiping all data")
                 transaction {
+                    FatherStatementTranslations.deleteAll()
+                    ChurchFatherTranslations.deleteAll()
+                    FatherTextualStatements.deleteAll()
+                    ChurchFathers.deleteAll()
                     CoverageByCentury.deleteAll()
+                    BookTranslations.deleteAll()
                     ManuscriptVerses.deleteAll()
                     ManuscriptSources.deleteAll()
                     Manuscripts.deleteAll()
                     Verses.deleteAll()
                     Books.deleteAll()
-                    BookTranslations.deleteAll()
-                    FatherStatementTranslations.deleteAll()
-                    ChurchFatherTranslations.deleteAll()
+                    IngestionMetadata.deleteAll()
                 }
-                log.info("DATABASE_RESET complete — starting fresh ingestion")
+                log.info("DATABASE_RESET complete — re-seeding canonical data")
+                ingestionService.seedBooksAndVerses()
+                log.info("Re-seed complete — starting fresh ingestion")
                 executeIngestionInner()
             } catch (e: Throwable) {
                 log.error("RESET_AND_REINGEST failed: ${e.message}", e)

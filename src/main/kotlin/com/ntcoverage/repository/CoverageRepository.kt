@@ -12,39 +12,8 @@ import java.math.RoundingMode
 class CoverageRepository {
 
     fun calculateCoverage(upToCentury: Int, types: List<String>? = null): List<BookCoverage> = transaction {
-        val coveredCount = Verses.id.countDistinct()
-
-        val baseJoin = Books
-            .join(Verses, JoinType.INNER, Books.id, Verses.bookId)
-            .join(ManuscriptVerses, JoinType.INNER, Verses.id, ManuscriptVerses.verseId)
-            .join(Manuscripts, JoinType.INNER, ManuscriptVerses.manuscriptId, Manuscripts.id)
-
-        val centuryFilter: Op<Boolean> = Manuscripts.effectiveCentury lessEq upToCentury
-        val whereClause = if (!types.isNullOrEmpty()) {
-            centuryFilter and (Manuscripts.manuscriptType inList types)
-        } else {
-            centuryFilter
-        }
-
-        baseJoin
-            .select(Books.id, Books.name, Books.totalVerses, Books.bookOrder, coveredCount)
-            .where { whereClause }
-            .groupBy(Books.id, Books.name, Books.totalVerses, Books.bookOrder)
-            .orderBy(Books.bookOrder)
-            .map { row ->
-                val covered = row[coveredCount]
-                val total = row[Books.totalVerses]
-                val pct = if (total > 0)
-                    BigDecimal(covered).multiply(BigDecimal(100))
-                        .divide(BigDecimal(total), 2, RoundingMode.HALF_UP).toDouble()
-                else 0.0
-                BookCoverage(
-                    bookName = row[Books.name],
-                    coveredVerses = covered,
-                    totalVerses = total,
-                    coveragePercent = pct
-                )
-            }
+        val coveredByBook = queryCoveredVerses(upToCentury, types)
+        allBooksWithCoverage(coveredByBook)
     }
 
     fun calculateCoverageForBooks(
@@ -52,6 +21,15 @@ class CoverageRepository {
         upToCentury: Int,
         types: List<String>? = null
     ): List<BookCoverage> = transaction {
+        val coveredByBook = queryCoveredVerses(upToCentury, types, bookIds)
+        allBooksWithCoverage(coveredByBook, bookIds)
+    }
+
+    private fun queryCoveredVerses(
+        upToCentury: Int,
+        types: List<String>? = null,
+        filterBookIds: List<Int>? = null
+    ): Map<String, Long> {
         val coveredCount = Verses.id.countDistinct()
 
         val baseJoin = Books
@@ -59,26 +37,43 @@ class CoverageRepository {
             .join(ManuscriptVerses, JoinType.INNER, Verses.id, ManuscriptVerses.verseId)
             .join(Manuscripts, JoinType.INNER, ManuscriptVerses.manuscriptId, Manuscripts.id)
 
-        var whereClause: Op<Boolean> = (Manuscripts.effectiveCentury lessEq upToCentury) and
-                (Books.id inList bookIds)
+        var whereClause: Op<Boolean> = Manuscripts.effectiveCentury lessEq upToCentury
         if (!types.isNullOrEmpty()) {
             whereClause = whereClause and (Manuscripts.manuscriptType inList types)
         }
+        if (!filterBookIds.isNullOrEmpty()) {
+            whereClause = whereClause and (Books.id inList filterBookIds)
+        }
 
-        baseJoin
-            .select(Books.id, Books.name, Books.totalVerses, Books.bookOrder, coveredCount)
+        return baseJoin
+            .select(Books.name, coveredCount)
             .where { whereClause }
-            .groupBy(Books.id, Books.name, Books.totalVerses, Books.bookOrder)
+            .groupBy(Books.name)
+            .associate { row -> row[Books.name] to row[coveredCount] }
+    }
+
+    private fun allBooksWithCoverage(
+        coveredByBook: Map<String, Long>,
+        filterBookIds: List<Int>? = null
+    ): List<BookCoverage> {
+        val booksQuery = if (!filterBookIds.isNullOrEmpty()) {
+            Books.selectAll().where { Books.id inList filterBookIds }
+        } else {
+            Books.selectAll()
+        }
+
+        return booksQuery
             .orderBy(Books.bookOrder)
             .map { row ->
-                val covered = row[coveredCount]
+                val bookName = row[Books.name]
                 val total = row[Books.totalVerses]
+                val covered = coveredByBook[bookName] ?: 0L
                 val pct = if (total > 0)
                     BigDecimal(covered).multiply(BigDecimal(100))
                         .divide(BigDecimal(total), 2, RoundingMode.HALF_UP).toDouble()
                 else 0.0
                 BookCoverage(
-                    bookName = row[Books.name],
+                    bookName = bookName,
                     coveredVerses = covered,
                     totalVerses = total,
                     coveragePercent = pct
@@ -110,9 +105,15 @@ class CoverageRepository {
             .single()[count]
     }
 
+    fun clearCoverageCache(): Unit = transaction {
+        CoverageByCentury.deleteAll()
+    }
+
     fun materializeCoverage(century: Int, coverages: List<Pair<Int, BookCoverage>>): Unit = transaction {
+        CoverageByCentury.deleteWhere { CoverageByCentury.century eq century }
+
         coverages.forEach { (bookId, cov) ->
-            CoverageByCentury.insertIgnore {
+            CoverageByCentury.insert {
                 it[CoverageByCentury.century] = century
                 it[CoverageByCentury.bookId] = bookId
                 it[coveredVerses] = cov.coveredVerses.toInt()

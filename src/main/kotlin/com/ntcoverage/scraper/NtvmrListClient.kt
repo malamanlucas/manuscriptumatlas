@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
  * Used when LOAD_MANUSCRIPTS_FROM_NTVMR=true to load all papyri (1xxxx) and uncials (2xxxx)
  * instead of the curated seed JSON.
  */
-class NtvmrListClient {
+class NtvmrListClient : AutoCloseable {
 
     private val log = LoggerFactory.getLogger(NtvmrListClient::class.java)
     private val listBaseUrl = "http://ntvmr.uni-muenster.de/community/vmr/api/metadata/liste/search/"
@@ -41,20 +41,27 @@ class NtvmrListClient {
     }
 
     private suspend fun fetchRange(docIdRange: String, type: String): List<ManuscriptSeed> {
-        return try {
+        val allResults = mutableListOf<ManuscriptSeed>()
+
+        try {
             val response = client.get(listBaseUrl) {
                 parameter("docID", docIdRange)
                 parameter("format", "json")
                 parameter("detail", "document")
-                parameter("limit", 500)
             }
             val body = response.bodyAsText()
             val parsed = json.decodeFromString<NtvmrListResponse>(body)
             val list = parsed.data?.manuscripts?.manuscript ?: emptyList()
-            list.mapNotNull { doc ->
+
+            val page = list.mapNotNull { doc ->
                 val centuryMin = yearToCentury(doc.origEarly)
                 val centuryMax = yearToCentury(doc.origLate)
-                val gaId = doc.gaNum.content
+                val rawGaId = doc.gaNum.content
+                val gaId = if (type == "uncial" && rawGaId.firstOrNull()?.isDigit() == true && !rawGaId.startsWith("0")) {
+                    "0$rawGaId"
+                } else {
+                    rawGaId
+                }
                 ManuscriptSeed(
                     gaId = gaId,
                     name = "GA $gaId",
@@ -64,10 +71,12 @@ class NtvmrListClient {
                     content = emptyList()
                 )
             }
+            allResults.addAll(page)
         } catch (e: Exception) {
             log.error("Failed to fetch NTVMR list for $type (docID=$docIdRange): ${e.message}")
-            emptyList()
         }
+
+        return allResults
     }
 
     /** Converts NTVMR year (e.g. 200, 599) to century 1-10. */
@@ -77,7 +86,7 @@ class NtvmrListClient {
         return maxOf(1, minOf(10, c))
     }
 
-    fun close() {
+    override fun close() {
         client.close()
     }
 

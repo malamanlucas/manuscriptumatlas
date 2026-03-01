@@ -74,26 +74,6 @@ class NtvmrClient : AutoCloseable {
         return fetchTranscript(docId, ntvmrBook)
     }
 
-    /**
-     * Converts a Gregory-Aland ID to a 5-digit NTVMR docID.
-     * Papyri: P52 -> 10052, Uncials: 01 -> 20001
-     */
-    fun gaIdToDocId(gaId: String): String {
-        val papyrusMatch = Regex("""^P(\d+)$""").matchEntire(gaId)
-        if (papyrusMatch != null) {
-            val num = papyrusMatch.groupValues[1].toInt()
-            return "1${num.toString().padStart(4, '0')}"
-        }
-
-        val uncialMatch = Regex("""^0?(\d+)$""").matchEntire(gaId)
-        if (uncialMatch != null) {
-            val num = uncialMatch.groupValues[1].toInt()
-            return "2${num.toString().padStart(4, '0')}"
-        }
-
-        return gaId
-    }
-
     override fun close() {
         client.close()
     }

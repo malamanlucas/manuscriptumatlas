@@ -17,13 +17,18 @@ services:
       DATABASE_PASSWORD: "jK5KSAktJtLbCwbVFy4X5YXvIgpGEHR"
       JAVA_OPTS: "-Xms128m -Xmx512m"
       USE_NTVMR: "true"
-      NTVMR_DELAY_MS: "1000"
+      NTVMR_DELAY_MS: "100"
       ENABLE_INGESTION: "true"
       ENABLE_MANUSCRIPT_INGESTION: "true"
       ENABLE_PATRISTIC_INGESTION: "true"
-      INGESTION_SKIP_IF_POPULATED: "true"
-      INGESTION_TIMEOUT_MINUTES: "45"
+      INGESTION_SKIP_IF_POPULATED: "false"
+      INGESTION_TIMEOUT_MINUTES: "30"
       LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      OPENAI_MODEL: "gpt-4o-mini"
+      OPENAI_TIMEOUT_MS: "12000"
+      ENABLE_BIO_SUMMARIZATION: "true"
+      ENABLE_BIO_TRANSLATION: "true"
     deploy:
       resources:
         limits:

@@ -1,0 +1,47 @@
+---
+description: Manter as regras .cursor/rules/ atualizadas após cada implementação
+alwaysApply: true
+---
+
+# Atualização obrigatória das regras
+
+Após toda implementação que altere a estrutura, convenções ou dados do projeto, **atualize as regras afetadas em `.cursor/rules/`** antes de encerrar a tarefa.
+
+## Quando atualizar
+
+Atualizar as regras sempre que uma implementação:
+
+- Adicionar/remover/renomear tabelas, DTOs, repositórios, serviços, rotas ou páginas
+- Alterar contagens documentadas (número de tabelas, DTOs, endpoints, rotas, hooks, etc.)
+- Introduzir nova migração SQL (atualizar lista e próximo número em `database-migrations.mdc`)
+- Adicionar/alterar pacotes, dependências ou ferramentas da stack
+- Criar novos componentes, hooks ou utilitários no frontend
+- Modificar padrões arquiteturais ou convenções de código
+- Adicionar novos conceitos de domínio ou enums
+- Alterar a estrutura de diretórios documentada
+
+## O que atualizar em cada regra
+
+| Regra | Atualizar quando... |
+|-------|---------------------|
+| `project-overview.mdc` | Mudar stack, pacotes, tabelas, conceitos de domínio, contagens ou padrões gerais |
+| `kotlin-conventions.mdc` | Mudar convenções Kotlin, adicionar novos padrões de serviço/repository, alterar checklist de domínio |
+| `frontend-conventions.mdc` | Mudar estrutura frontend, adicionar componentes/hooks/páginas, alterar padrões de estilização ou data fetching |
+| `database-migrations.mdc` | Adicionar migrações, tabelas ou alterar regras de schema |
+
+## Como atualizar
+
+1. Identificar quais regras são afetadas pela implementação realizada
+2. Ler a regra atual com a ferramenta Read
+3. Atualizar apenas as seções relevantes (contagens, listas, descrições)
+4. Manter o formato e a estrutura existentes da regra
+5. Não remover informações que ainda são válidas
+
+## Exemplo
+
+Se uma nova tabela `timeline_events` for criada com um `TimelineRepository`, `TimelineService` e endpoint `/timeline-events`:
+
+- `project-overview.mdc`: atualizar contagem de tabelas (12→13), repositórios (9→10), serviços (11→12), endpoints (28→29), lista de tabelas
+- `kotlin-conventions.mdc`: nenhuma alteração (convenções não mudaram)
+- `database-migrations.mdc`: adicionar `V11__create_timeline_events.sql` à lista, atualizar próxima migração para V12, adicionar tabela ao SchemaUtils
+- `frontend-conventions.mdc`: atualizar se houve mudança no frontend

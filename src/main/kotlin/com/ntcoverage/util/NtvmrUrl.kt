@@ -1,7 +1,7 @@
 package com.ntcoverage.util
 
 object NtvmrUrl {
-    private const val BASE = "http://ntvmr.uni-muenster.de/community/vmr/api/transcript/get/"
+    private const val BASE = "https://ntvmr.uni-muenster.de/manuscript-workspace"
 
     fun gaIdToDocId(gaId: String): String {
         val papyrusMatch = Regex("""^P(\d+)$""").matchEntire(gaId)

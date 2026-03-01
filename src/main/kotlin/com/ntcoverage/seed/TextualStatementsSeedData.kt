@@ -151,7 +151,7 @@ object TextualStatementsSeedData {
             topic = "TRANSLATION",
             statementText = "You compel me to make a new work out of an old one, and after so many copies of the Scriptures have been scattered throughout the world, to sit in judgment and decide which of them agree with the Greek original.",
             sourceWork = "Praefatio in Quatuor Evangelia",
-            sourceReference = "Preface to the Vulgate Gospels",
+            sourceReference = "Preface to the Vulgate Gospels, §1",
             approximateYear = 383
         ),
         TextualStatementSeedEntry(
@@ -159,7 +159,7 @@ object TextualStatementsSeedData {
             topic = "CORRUPTION",
             statementText = "The Latin texts are as numerous as the copies. Each person has added or changed what he thought fit, and there are nearly as many readings as manuscripts.",
             sourceWork = "Praefatio in Quatuor Evangelia",
-            sourceReference = "Preface to the Vulgate Gospels",
+            sourceReference = "Preface to the Vulgate Gospels, §2",
             approximateYear = 383
         ),
         TextualStatementSeedEntry(
@@ -167,7 +167,7 @@ object TextualStatementsSeedData {
             topic = "MANUSCRIPTS",
             statementText = "I have used as the basis of my correction the old Greek codices. I have compared them with those which we call by the names of Lucian and Hesychius, and which the false scholarship of men has perverted.",
             sourceWork = "Praefatio in Quatuor Evangelia",
-            sourceReference = "Preface to the Vulgate Gospels",
+            sourceReference = "Preface to the Vulgate Gospels, §3",
             approximateYear = 383
         ),
         TextualStatementSeedEntry(
@@ -221,7 +221,7 @@ object TextualStatementsSeedData {
             topic = "CANON",
             statementText = "These are the fountains of salvation, that they who thirst may be satisfied with the living words they contain. In these alone is proclaimed the doctrine of godliness. Let no man add to these, neither let him take aught from these.",
             sourceWork = "Epistula Festalis",
-            sourceReference = "Festal Letter 39",
+            sourceReference = "Festal Letter 39, §1",
             approximateYear = 367
         ),
         TextualStatementSeedEntry(
@@ -229,7 +229,7 @@ object TextualStatementsSeedData {
             topic = "CANON",
             statementText = "Again, there are other books besides the foregoing, which are not indeed included in the Canon, but appointed by the Fathers to be read by those who newly join us, and who wish for instruction: the Wisdom of Solomon, and the Wisdom of Sirach, and Esther, and Judith, and Tobit, and the Didache, and the Shepherd.",
             sourceWork = "Epistula Festalis",
-            sourceReference = "Festal Letter 39",
+            sourceReference = "Festal Letter 39, §2",
             approximateYear = 367
         ),
         TextualStatementSeedEntry(
