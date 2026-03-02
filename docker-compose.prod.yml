@@ -29,6 +29,7 @@ services:
       OPENAI_TIMEOUT_MS: "12000"
       ENABLE_BIO_SUMMARIZATION: "true"
       ENABLE_BIO_TRANSLATION: "true"
+      NEW_RELIC_ENVIRONMENT: "prod"
     deploy:
       resources:
         limits:
@@ -38,6 +39,8 @@ services:
     ports: !override
       - "35855:3000"
     restart: unless-stopped
+    environment:
+      NEW_RELIC_APP_NAME: "manuscriptum-atlas-frontend-prod"
     deploy:
       resources:
         limits:

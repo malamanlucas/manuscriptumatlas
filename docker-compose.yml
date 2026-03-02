@@ -59,7 +59,7 @@ services:
       NTVMR_DELAY_MS: "50"
       ENABLE_INGESTION: "true"
       ENABLE_MANUSCRIPT_INGESTION: "true"
-      ENABLE_PATRISTIC_INGESTION: "false"
+      ENABLE_PATRISTIC_INGESTION: "true"
       INGESTION_SKIP_IF_POPULATED: "false"
       INGESTION_TIMEOUT_MINUTES: "15"
       # DEV: load full catalog from NTVMR (140+ papyri + uncials) instead of seed JSON (57)
@@ -69,6 +69,7 @@ services:
       OPENAI_TIMEOUT_MS: "12000"
       ENABLE_BIO_SUMMARIZATION: "true"
       ENABLE_BIO_TRANSLATION: "true"
+      NEW_RELIC_ENVIRONMENT: "dev"
     depends_on:
       init:
         condition: service_completed_successfully
@@ -83,6 +84,7 @@ services:
       - "3000:3000"
     environment:
       BACKEND_URL: "http://app:8080"
+      NEW_RELIC_APP_NAME: "manuscriptum-atlas-frontend-dev"
     depends_on:
       - app
 

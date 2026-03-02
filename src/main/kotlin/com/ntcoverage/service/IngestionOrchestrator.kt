@@ -144,8 +144,10 @@ class IngestionOrchestrator(
             }
 
             if (IngestionConfig.enablePatristicIngestion) {
+                val patristicStart = System.currentTimeMillis()
                 val patristicCount = patristicIngestionService.ingestFromSeed()
-                log.info("PATRISTIC_INGESTION: $patristicCount new fathers ingested from seed")
+                val patristicDuration = System.currentTimeMillis() - patristicStart
+                log.info("PATRISTIC_INGESTION: $patristicCount new fathers ingested from seed, durationMs=$patristicDuration")
             } else {
                 log.info("PATRISTIC_INGESTION_SKIPPED — ENABLE_PATRISTIC_INGESTION=false")
             }

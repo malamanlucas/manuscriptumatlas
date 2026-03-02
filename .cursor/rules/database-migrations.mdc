@@ -48,7 +48,7 @@ Ao adicionar novas tabelas:
 ## Tabelas registradas no SchemaUtils
 
 ```
-Books, Verses, Manuscripts, ManuscriptVerses, ManuscriptSources,
+Books, Verses, Manuscripts, ManuscriptSources, ManuscriptVerses,
 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations
 ```

@@ -31,17 +31,25 @@ Atualizar as regras sempre que uma implementação:
 
 ## Como atualizar
 
-1. Identificar quais regras são afetadas pela implementação realizada
-2. Ler a regra atual com a ferramenta Read
-3. Atualizar apenas as seções relevantes (contagens, listas, descrições)
-4. Manter o formato e a estrutura existentes da regra
-5. Não remover informações que ainda são válidas
+Ao finalizar qualquer tarefa que altere a estrutura do projeto, **execute o script de atualização automática**:
+
+```
+python scripts/update_rules.py
+```
+
+O script analisa o codebase e atualiza automaticamente contagens e listas em `project-overview.mdc`, `database-migrations.mdc` e `frontend-conventions.mdc`.
+
+Após executar o script, **revise manualmente** e complemente se necessário:
+
+1. Descrições de novas migrações em `database-migrations.mdc` (o script preserva as existentes mas migrações novas ficam sem descrição)
+2. Conceitos de domínio, padrões ou convenções que mudaram em `project-overview.mdc` ou `kotlin-conventions.mdc`
+3. Novos padrões de estilização ou data fetching em `frontend-conventions.mdc`
 
 ## Exemplo
 
 Se uma nova tabela `timeline_events` for criada com um `TimelineRepository`, `TimelineService` e endpoint `/timeline-events`:
 
-- `project-overview.mdc`: atualizar contagem de tabelas (12→13), repositórios (9→10), serviços (11→12), endpoints (28→29), lista de tabelas
-- `kotlin-conventions.mdc`: nenhuma alteração (convenções não mudaram)
-- `database-migrations.mdc`: adicionar `V11__create_timeline_events.sql` à lista, atualizar próxima migração para V12, adicionar tabela ao SchemaUtils
-- `frontend-conventions.mdc`: atualizar se houve mudança no frontend
+1. Executar `python scripts/update_rules.py` — atualiza contagens e listas automaticamente
+2. Adicionar descrição da nova migração em `database-migrations.mdc` (ex: `— Tabela de eventos do timeline`)
+3. `kotlin-conventions.mdc`: nenhuma alteração (convenções não mudaram)
+4. `frontend-conventions.mdc`: atualizar se houve mudança manual no frontend (padrões, convenções)

@@ -17,11 +17,17 @@ class PatristicIngestionService(
     private val log = LoggerFactory.getLogger(PatristicIngestionService::class.java)
 
     suspend fun ingestFromSeed(): Int {
+        val totalStart = System.currentTimeMillis()
+        log.info("PATRISTIC_INGESTION_START: beginning full patristic seed ingestion")
+
         val entries = ChurchFathersSeedData.entries
         var inserted = 0
         var skipped = 0
 
-        for (entry in entries) {
+        log.info("PATRISTIC_SEED_START: processing ${entries.size} church fathers")
+        val seedStart = System.currentTimeMillis()
+
+        for ((index, entry) in entries.withIndex()) {
             val normalizedName = normalize(entry.displayName)
             val existing = repository.findByNormalizedName(normalizedName)
 
@@ -47,22 +53,37 @@ class PatristicIngestionService(
 
             if (existing == null) {
                 inserted++
+                log.info("PATRISTIC_SEED: [${index + 1}/${entries.size}] inserted '${entry.displayName}'")
             } else {
                 skipped++
+                log.debug("PATRISTIC_SEED: [${index + 1}/${entries.size}] already exists '${entry.displayName}'")
             }
         }
 
-        log.info("PATRISTIC_SEED: $inserted inserted, $skipped already existed (total ${entries.size})")
+        val seedDuration = System.currentTimeMillis() - seedStart
+        log.info("PATRISTIC_SEED_DONE: $inserted inserted, $skipped already existed (total ${entries.size}) durationMs=$seedDuration")
 
+        val statementsStart = System.currentTimeMillis()
+        log.info("TEXTUAL_STATEMENTS_SEED_START: processing ${TextualStatementsSeedData.entries.size} statements")
         val statementsInserted = seedTextualStatements()
-        log.info("TEXTUAL_STATEMENTS_SEED: $statementsInserted new statements inserted")
+        val statementsDuration = System.currentTimeMillis() - statementsStart
+        log.info("TEXTUAL_STATEMENTS_SEED_DONE: $statementsInserted new statements inserted, durationMs=$statementsDuration")
 
+        val translationsStart = System.currentTimeMillis()
+        log.info("TRANSLATIONS_SEED_START: seeding father and statement translations")
         val fatherTranslations = seedFatherTranslations()
         val statementTranslations = seedStatementTranslations()
-        log.info("TRANSLATIONS_SEED: $fatherTranslations father translations, $statementTranslations statement translations inserted")
+        val translationsDuration = System.currentTimeMillis() - translationsStart
+        log.info("TRANSLATIONS_SEED_DONE: $fatherTranslations father translations, $statementTranslations statement translations inserted, durationMs=$translationsDuration")
 
+        val bioStart = System.currentTimeMillis()
+        log.info("BIO_TRANSLATIONS_START: translating biographies to pt/es")
         val bioTranslations = translateBiographies()
-        log.info("BIO_TRANSLATIONS: $bioTranslations biography translations generated")
+        val bioDuration = System.currentTimeMillis() - bioStart
+        log.info("BIO_TRANSLATIONS_DONE: $bioTranslations biography translations generated, durationMs=$bioDuration")
+
+        val totalDuration = System.currentTimeMillis() - totalStart
+        log.info("PATRISTIC_INGESTION_DONE: fathers=$inserted, statements=$statementsInserted, fatherTranslations=$fatherTranslations, statementTranslations=$statementTranslations, bioTranslations=$bioTranslations, totalDurationMs=$totalDuration")
 
         return inserted
     }
@@ -70,11 +91,14 @@ class PatristicIngestionService(
     private fun seedTextualStatements(): Int {
         val entries = TextualStatementsSeedData.entries
         var inserted = 0
+        var skippedExisting = 0
+        var skippedNoFather = 0
 
-        for (entry in entries) {
+        for ((index, entry) in entries.withIndex()) {
             val father = repository.findByNormalizedName(entry.fatherNormalizedName)
             if (father == null) {
-                log.warn("STATEMENT_SEED: father not found for '${entry.fatherNormalizedName}', skipping")
+                skippedNoFather++
+                log.warn("STATEMENT_SEED: [${index + 1}/${entries.size}] father not found for '${entry.fatherNormalizedName}', skipping")
                 continue
             }
 
@@ -89,20 +113,29 @@ class PatristicIngestionService(
                 approximateYear = entry.approximateYear
             )
 
-            if (result != null) inserted++
+            if (result != null) {
+                inserted++
+                log.info("STATEMENT_SEED: [${index + 1}/${entries.size}] inserted statement for '${entry.fatherNormalizedName}' ref='${entry.sourceReference}'")
+            } else {
+                skippedExisting++
+                log.debug("STATEMENT_SEED: [${index + 1}/${entries.size}] already exists for '${entry.fatherNormalizedName}' ref='${entry.sourceReference}'")
+            }
         }
 
+        log.info("STATEMENT_SEED_SUMMARY: inserted=$inserted, alreadyExisted=$skippedExisting, noFather=$skippedNoFather, total=${entries.size}")
         return inserted
     }
 
     private fun seedFatherTranslations(): Int {
         val entries = ChurchFatherTranslationsSeedData.entries
         var inserted = 0
+        var skippedNoFather = 0
 
-        for (entry in entries) {
+        for ((index, entry) in entries.withIndex()) {
             val father = repository.findByNormalizedName(entry.normalizedName)
             if (father == null) {
-                log.warn("FATHER_TRANSLATION_SEED: father not found for '${entry.normalizedName}', skipping")
+                skippedNoFather++
+                log.warn("FATHER_TRANSLATION_SEED: [${index + 1}/${entries.size}] father not found for '${entry.normalizedName}', skipping")
                 continue
             }
 
@@ -117,19 +150,24 @@ class PatristicIngestionService(
                 biographySummary = entry.biographySummary
             )
             inserted++
+            log.debug("FATHER_TRANSLATION_SEED: [${index + 1}/${entries.size}] inserted locale=${entry.locale} for '${entry.normalizedName}'")
         }
 
+        log.info("FATHER_TRANSLATION_SEED_SUMMARY: inserted=$inserted, noFather=$skippedNoFather, total=${entries.size}")
         return inserted
     }
 
     private fun seedStatementTranslations(): Int {
         val entries = TextualStatementTranslationsSeedData.entries
         var inserted = 0
+        var skippedNoFather = 0
+        var skippedNoStatement = 0
 
-        for (entry in entries) {
+        for ((index, entry) in entries.withIndex()) {
             val father = repository.findByNormalizedName(entry.fatherNormalizedName)
             if (father == null) {
-                log.warn("STATEMENT_TRANSLATION_SEED: father not found for '${entry.fatherNormalizedName}', skipping")
+                skippedNoFather++
+                log.warn("STATEMENT_TRANSLATION_SEED: [${index + 1}/${entries.size}] father not found for '${entry.fatherNormalizedName}', skipping")
                 continue
             }
 
@@ -138,7 +176,8 @@ class PatristicIngestionService(
             }
 
             if (statementId == null) {
-                log.warn("STATEMENT_TRANSLATION_SEED: statement not found for father='${entry.fatherNormalizedName}', ref='${entry.sourceReference}', skipping")
+                skippedNoStatement++
+                log.warn("STATEMENT_TRANSLATION_SEED: [${index + 1}/${entries.size}] statement not found for father='${entry.fatherNormalizedName}', ref='${entry.sourceReference}', skipping")
                 continue
             }
 
@@ -148,8 +187,10 @@ class PatristicIngestionService(
                 statementText = entry.statementText
             )
             inserted++
+            log.debug("STATEMENT_TRANSLATION_SEED: [${index + 1}/${entries.size}] inserted locale=${entry.locale} for '${entry.fatherNormalizedName}' ref='${entry.sourceReference}'")
         }
 
+        log.info("STATEMENT_TRANSLATION_SEED_SUMMARY: inserted=$inserted, noFather=$skippedNoFather, noStatement=$skippedNoStatement, total=${entries.size}")
         return inserted
     }
 
@@ -161,31 +202,49 @@ class PatristicIngestionService(
     private suspend fun translateBiographies(): Int {
         val targetLocales = listOf("pt", "es")
         var translated = 0
+        var skippedExisting = 0
+        var skippedReviewed = 0
+        var skippedNoBio = 0
+        var failed = 0
+        val fathersWithBio = ChurchFathersSeedData.entries.filter { !it.biographyOriginal.isNullOrBlank() }
 
-        for (entry in ChurchFathersSeedData.entries) {
-            if (entry.biographyOriginal.isNullOrBlank()) continue
+        log.info("BIO_TRANSLATE_START: ${fathersWithBio.size} fathers with biographies, ${targetLocales.size} target locales (${fathersWithBio.size * targetLocales.size} potential translations)")
 
+        for ((fatherIndex, entry) in fathersWithBio.withIndex()) {
             val normalizedName = normalize(entry.displayName)
-            val father = repository.findByNormalizedName(normalizedName) ?: continue
+            val father = repository.findByNormalizedName(normalizedName)
+            if (father == null) {
+                skippedNoBio++
+                continue
+            }
 
             for (locale in targetLocales) {
                 val meta = repository.findTranslationMeta(father.id, locale)
 
                 if (meta != null && !meta.biographyOriginal.isNullOrBlank()) {
-                    log.debug("BIO_TRANSLATE: skipping father=${entry.displayName} locale=$locale — already translated")
+                    skippedExisting++
+                    log.debug("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] skipping '${entry.displayName}' locale=$locale — already translated")
                     continue
                 }
 
                 if (meta != null && meta.translationSource == "reviewed") {
-                    log.info("BIO_TRANSLATE: skipping father=${entry.displayName} locale=$locale — human-reviewed")
+                    skippedReviewed++
+                    log.info("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] skipping '${entry.displayName}' locale=$locale — human-reviewed")
                     continue
                 }
 
+                log.info("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] translating '${entry.displayName}' to $locale")
                 val translatedOriginal = summarizationService.translateBiography(
-                    text = entry.biographyOriginal,
+                    text = entry.biographyOriginal!!,
                     targetLocale = locale,
                     fatherName = entry.displayName
-                ) ?: continue
+                )
+
+                if (translatedOriginal == null) {
+                    failed++
+                    log.warn("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] translation failed for '${entry.displayName}' locale=$locale")
+                    continue
+                }
 
                 val translatedSummary = summarizationService.summarizeIfNeeded(translatedOriginal)
 
@@ -200,9 +259,11 @@ class PatristicIngestionService(
                     translationSource = "machine"
                 )
                 translated++
+                log.info("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] completed '${entry.displayName}' locale=$locale")
             }
         }
 
+        log.info("BIO_TRANSLATE_SUMMARY: translated=$translated, alreadyExisted=$skippedExisting, humanReviewed=$skippedReviewed, failed=$failed")
         return translated
     }
 

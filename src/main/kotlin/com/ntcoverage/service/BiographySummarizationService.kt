@@ -31,7 +31,10 @@ class BiographySummarizationService {
 
     suspend fun summarizeIfNeeded(original: String?): String? {
         if (original == null) return null
-        if (!isLong(original)) return original
+        if (!isLong(original)) {
+            log.debug("BIO_SUMMARIZATION: text is short (${wordCount(original)} words), returning original")
+            return original
+        }
 
         if (!summarizationEnabled) {
             log.info("BIO_SUMMARIZATION disabled — returning original for text with ${wordCount(original)} words")
@@ -42,13 +45,24 @@ class BiographySummarizationService {
             return original
         }
 
-        return callWithRetry(
+        log.info("BIO_SUMMARIZATION: summarizing text with ${wordCount(original)} words via OpenAI")
+        val startMs = System.currentTimeMillis()
+        val result = callWithRetry(
             systemPrompt = "Summarize the following Church Father biography in a neutral academic tone, " +
                 "5-8 sentences, preserving historical precision. Do not introduce theological judgments.",
             userContent = original,
             fallback = original,
             logPrefix = "BIO_SUMMARIZATION"
         )
+        val durationMs = System.currentTimeMillis() - startMs
+
+        if (result != null && result != original) {
+            log.info("BIO_SUMMARIZATION: success, ${wordCount(original)}->${wordCount(result)} words, durationMs=$durationMs")
+        } else {
+            log.warn("BIO_SUMMARIZATION: returned fallback (original), durationMs=$durationMs")
+        }
+
+        return result
     }
 
     suspend fun translateBiography(text: String, targetLocale: String, fatherName: String = ""): String? {
