@@ -34,12 +34,20 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-// ── Cookie helpers ──
+// ── Token storage (localStorage primary + cookie fallback) ──
+
+const TOKEN_KEY = "observatory_token";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name: string, value: string, maxAge: number) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Strict${secure}`;
 }
 
 function deleteCookie(name: string) {
@@ -48,16 +56,20 @@ function deleteCookie(name: string) {
 }
 
 export function getAuthToken(): string | null {
-  return getCookie("observatory_token");
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY) ?? getCookie(TOKEN_KEY);
 }
 
 export function setAuthToken(token: string, maxAge: number) {
-  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `observatory_token=${encodeURIComponent(token)}; max-age=${maxAge}; path=/; SameSite=Strict${secure}`;
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEY, token);
+  setCookie(TOKEN_KEY, token, maxAge);
 }
 
 export function clearAuthToken() {
-  deleteCookie("observatory_token");
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  deleteCookie(TOKEN_KEY);
 }
 
 // ── Auth error class ──

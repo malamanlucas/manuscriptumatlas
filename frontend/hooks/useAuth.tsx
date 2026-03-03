@@ -87,11 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrate]);
 
   const login = useCallback(async (credential: string) => {
+    setStatus("loading");
     setLoginError(null);
 
     try {
       const decoded = jwtDecode<{ exp: number }>(credential);
-      const maxAge = decoded.exp - Math.floor(Date.now() / 1000);
+      const maxAge = Math.max(decoded.exp - Math.floor(Date.now() / 1000), 3600);
       setAuthToken(credential, maxAge);
     } catch {
       setAuthToken(credential, 3600);

@@ -466,7 +466,9 @@
     "accessDenied": "Access Denied",
     "notRegistered": "Your account is not registered in the system.",
     "signOut": "Sign out",
-    "signedInAs": "Signed in as"
+    "signedInAs": "Signed in as",
+    "authenticating": "Authenticating...",
+    "loginSuccess": "Logged in successfully!"
   },
   "userManagement": {
     "title": "User Management",

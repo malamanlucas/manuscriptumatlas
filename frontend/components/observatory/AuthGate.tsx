@@ -3,7 +3,8 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
 import { GoogleLogin } from "@react-oauth/google";
-import { ShieldAlert, LogOut, Loader2, AlertCircle } from "lucide-react";
+import { ShieldAlert, LogOut, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -13,11 +14,25 @@ interface AuthGateProps {
 export function AuthGate({ children, requiredRole = "ADMIN" }: AuthGateProps) {
   const { user, status, isAuthenticated, loginError, login, logout } = useAuth();
   const t = useTranslations("auth");
+  const prevStatus = useRef(status);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (prevStatus.current === "loading" && status === "authenticated") {
+      setShowSuccess(true);
+      const timer = setTimeout(() => setShowSuccess(false), 1200);
+      return () => clearTimeout(timer);
+    }
+    prevStatus.current = status;
+  }, [status]);
 
   if (status === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground animate-pulse">{t("authenticating")}</p>
+        </div>
       </div>
     );
   }
@@ -76,5 +91,15 @@ export function AuthGate({ children, requiredRole = "ADMIN" }: AuthGateProps) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className={showSuccess ? "animate-fade-in" : ""}>
+      {showSuccess && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>{t("loginSuccess")}</span>
+        </div>
+      )}
+      {children}
+    </div>
+  );
 }

@@ -466,7 +466,9 @@
     "accessDenied": "Acesso Negado",
     "notRegistered": "Sua conta não está registrada no sistema.",
     "signOut": "Sair",
-    "signedInAs": "Logado como"
+    "signedInAs": "Logado como",
+    "authenticating": "Autenticando...",
+    "loginSuccess": "Login realizado com sucesso!"
   },
   "userManagement": {
     "title": "Gestão de Usuários",

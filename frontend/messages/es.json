@@ -466,7 +466,9 @@
     "accessDenied": "Acceso Denegado",
     "notRegistered": "Tu cuenta no está registrada en el sistema.",
     "signOut": "Cerrar sesión",
-    "signedInAs": "Conectado como"
+    "signedInAs": "Conectado como",
+    "authenticating": "Autenticando...",
+    "loginSuccess": "¡Sesión iniciada con éxito!"
   },
   "userManagement": {
     "title": "Gestión de Usuarios",
