@@ -23,18 +23,18 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 
 | Pacote | Responsabilidade |
 |--------|------------------|
-| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 4 arquivos |
-| `model` | Tables (12 tabelas Exposed) e DTOs (38 `@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` (9 repositórios) |
-| `service` | Lógica de negócio e orquestração (11 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (7 arquivos de rotas, 24 endpoints) |
+| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 5 arquivos |
+| `model` | Tables (15 tabelas Exposed) e DTOs (62 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (10 repositórios) |
+| `service` | Lógica de negócio e orquestração (13 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (8 arquivos de rotas, 43 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
 | `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 6 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
 
 ## Tabelas do banco
 
-`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`
+`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `visitor_sessions`, `page_views`, `visitor_daily_stats`
 
 ## Conceitos de domínio
 
@@ -46,10 +46,14 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 - **TextualTopic**: MANUSCRIPTS, AUTOGRAPHS, APOCRYPHA, CANON, TEXTUAL_VARIANTS, TRANSLATION, CORRUPTION, SCRIPTURE_AUTHORITY
 - **Tradição patrística**: greek, latin, syriac, etc.
 - **pg_trgm**: busca fuzzy com trigram similarity para declarações textuais
+- **Observatory**: sistema de observabilidade de visitantes com rastreamento de sessões, page views, fingerprinting e dashboard multi-tab
+- **Particionamento mensal**: tabelas `visitor_sessions` e `page_views` particionadas por RANGE em `created_at`
+- **RetentionScheduler**: job diário que cria partições futuras, dropa partições > 90 dias e agrega stats em `visitor_daily_stats`
+- **Rate Limiting**: SimpleRateLimiter in-memory para endpoints de tracking (session, heartbeat, pageview)
 
 ## Padrões importantes
 
-- Flyway não aplica migrations (naming issue); `SchemaUtils` cria tabelas + `applyExtraIndexesAndConstraints()` cria índices extras via SQL
+- **Flyway NÃO executa migrations** — toda estrutura de banco é criada pelo fallback em `FlywayConfig.kt`. As migrations `.sql` servem apenas como documentação. Tabelas normais vão no `SchemaUtils`; tabelas particionadas e funções SQL precisam de `exec(SQL)` raw no fallback. **Se algo só existir no `.sql`, não será criado e dará erro em runtime.**
 - Seed de pais/declarações é idempotente (chave lógica: fatherId + sourceWork + sourceReference)
 - Rotas literais (`/fathers/statements`) devem ser declaradas antes de rotas dinâmicas (`/fathers/{id}`) no Ktor
 - Queries paginadas usam ORDER BY determinístico (`approximate_year ASC NULLS LAST, id ASC`)

@@ -44,12 +44,109 @@ object FlywayConfig {
             SchemaUtils.createMissingTablesAndColumns(
                 Books, Verses, Manuscripts, ManuscriptVerses, ManuscriptSources,
                 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
-                FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations
+                FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
+                VisitorDailyStats
             )
             log.info("Tables created/verified via Exposed SchemaUtils.")
         }
+        createVisitorPartitionedTables()
         applyExtraIndexesAndConstraints()
         ensureIngestionMetadataRow()
+    }
+
+    private fun createVisitorPartitionedTables() {
+        transaction {
+            val vsExists = exec("SELECT 1 FROM pg_class WHERE relname = 'visitor_sessions' AND relkind = 'p'") { it.next() } ?: false
+            if (!vsExists) {
+                exec("""
+                    CREATE TABLE visitor_sessions (
+                        id BIGSERIAL, visitor_id VARCHAR(36) NOT NULL, session_id VARCHAR(36) NOT NULL,
+                        ip_address VARCHAR(100) NOT NULL, user_agent TEXT NOT NULL,
+                        browser_name VARCHAR(50), browser_version VARCHAR(30),
+                        os_name VARCHAR(50), os_version VARCHAR(30), device_type VARCHAR(10),
+                        screen_width SMALLINT, screen_height SMALLINT,
+                        viewport_width SMALLINT, viewport_height SMALLINT,
+                        language VARCHAR(10), languages TEXT, timezone VARCHAR(50), platform VARCHAR(50),
+                        network_info JSONB, device_memory SMALLINT, hardware_concurrency SMALLINT,
+                        color_depth SMALLINT, pixel_ratio NUMERIC(4,2), touch_points SMALLINT,
+                        cookie_enabled BOOLEAN, do_not_track BOOLEAN,
+                        webgl_renderer VARCHAR(200), webgl_vendor VARCHAR(200),
+                        canvas_fingerprint VARCHAR(64), referrer TEXT, page_load_time_ms INTEGER,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        PRIMARY KEY (id, created_at)
+                    ) PARTITION BY RANGE (created_at)
+                """.trimIndent())
+                log.info("Created partitioned table visitor_sessions.")
+            }
+
+            val pvExists = exec("SELECT 1 FROM pg_class WHERE relname = 'page_views' AND relkind = 'p'") { it.next() } ?: false
+            if (!pvExists) {
+                exec("""
+                    CREATE TABLE page_views (
+                        id BIGSERIAL, session_id VARCHAR(36) NOT NULL, visitor_id VARCHAR(36) NOT NULL,
+                        path VARCHAR(500) NOT NULL, referrer_path VARCHAR(500),
+                        duration_ms INTEGER,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        PRIMARY KEY (id, created_at)
+                    ) PARTITION BY RANGE (created_at)
+                """.trimIndent())
+                log.info("Created partitioned table page_views.")
+            }
+
+            exec("ALTER TABLE visitor_sessions ALTER COLUMN ip_address TYPE VARCHAR(100)")
+
+            exec("""
+                CREATE OR REPLACE FUNCTION create_monthly_partitions(months_ahead INT DEFAULT 2)
+                RETURNS void AS ${'$'}fn${'$'}
+                DECLARE
+                    start_date DATE; end_date DATE; part_name TEXT; i INT;
+                BEGIN
+                    FOR i IN 0..months_ahead LOOP
+                        start_date := date_trunc('month', CURRENT_DATE + (i || ' months')::INTERVAL);
+                        end_date := start_date + INTERVAL '1 month';
+                        part_name := 'visitor_sessions_' || to_char(start_date, 'YYYY_MM');
+                        IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = part_name) THEN
+                            EXECUTE format('CREATE TABLE %I PARTITION OF visitor_sessions FOR VALUES FROM (%L) TO (%L)', part_name, start_date, end_date);
+                        END IF;
+                        part_name := 'page_views_' || to_char(start_date, 'YYYY_MM');
+                        IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = part_name) THEN
+                            EXECUTE format('CREATE TABLE %I PARTITION OF page_views FOR VALUES FROM (%L) TO (%L)', part_name, start_date, end_date);
+                        END IF;
+                    END LOOP;
+                END;
+                ${'$'}fn${'$'} LANGUAGE plpgsql
+            """.trimIndent())
+
+            exec("SELECT create_monthly_partitions(2)")
+
+            applyVisitorIndexes()
+            log.info("Visitor partitioned tables, partitions and indexes ready.")
+        }
+    }
+
+    private fun applyVisitorIndexes() {
+        transaction {
+            val indexes = listOf(
+                "CREATE INDEX IF NOT EXISTS idx_vs_created_at ON visitor_sessions (created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_last_activity ON visitor_sessions (last_activity_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_session_id ON visitor_sessions (session_id)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_visitor_id ON visitor_sessions (visitor_id, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_ip ON visitor_sessions (ip_address, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_created_device ON visitor_sessions (created_at DESC, device_type)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_created_browser ON visitor_sessions (created_at DESC, browser_name)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_created_os ON visitor_sessions (created_at DESC, os_name)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_language ON visitor_sessions (language, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_vs_timezone ON visitor_sessions (timezone, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_pv_created_at ON page_views (created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_pv_session_id ON page_views (session_id, created_at ASC)",
+                "CREATE INDEX IF NOT EXISTS idx_pv_visitor_id ON page_views (visitor_id, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_pv_path_created ON page_views (path, created_at DESC)",
+            )
+            for (sql in indexes) {
+                exec(sql)
+            }
+        }
     }
 
     private fun applyExtraIndexesAndConstraints() {

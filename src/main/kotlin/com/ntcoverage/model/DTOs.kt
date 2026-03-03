@@ -324,3 +324,261 @@ data class TopicSummaryDTO(
 data class TopicsSummaryResponse(
     val topics: List<TopicSummaryDTO>
 )
+
+// ── Visitor Tracking DTOs ──────────────────────────────────────
+
+@Serializable
+data class VisitorSessionRequest(
+    val visitorId: String,
+    val sessionId: String,
+    val userAgent: String,
+    val screenWidth: Int? = null,
+    val screenHeight: Int? = null,
+    val viewportWidth: Int? = null,
+    val viewportHeight: Int? = null,
+    val language: String? = null,
+    val languages: List<String>? = null,
+    val timezone: String? = null,
+    val platform: String? = null,
+    val networkInfo: NetworkInfoDTO? = null,
+    val deviceMemory: Int? = null,
+    val hardwareConcurrency: Int? = null,
+    val colorDepth: Int? = null,
+    val pixelRatio: Double? = null,
+    val touchPoints: Int? = null,
+    val cookieEnabled: Boolean? = null,
+    val doNotTrack: Boolean? = null,
+    val webglRenderer: String? = null,
+    val webglVendor: String? = null,
+    val canvasFingerprint: String? = null,
+    val referrer: String? = null,
+    val pageLoadTimeMs: Int? = null
+)
+
+@Serializable
+data class NetworkInfoDTO(
+    val effectiveType: String? = null,
+    val downlink: Double? = null,
+    val rtt: Int? = null
+)
+
+@Serializable
+data class PageViewRequest(
+    val sessionId: String,
+    val visitorId: String,
+    val path: String,
+    val referrerPath: String? = null,
+    val durationMs: Int? = null
+)
+
+@Serializable
+data class HeartbeatRequest(
+    val sessionId: String
+)
+
+@Serializable
+data class VisitorSessionCompact(
+    val id: Long,
+    val visitorId: String,
+    val sessionId: String,
+    val ipAddress: String,
+    val browserName: String? = null,
+    val browserVersion: String? = null,
+    val osName: String? = null,
+    val deviceType: String? = null,
+    val language: String? = null,
+    val timezone: String? = null,
+    val referrer: String? = null,
+    val pageLoadTimeMs: Int? = null,
+    val createdAt: String,
+    val lastActivityAt: String
+)
+
+@Serializable
+data class VisitorSessionComplete(
+    val id: Long,
+    val visitorId: String,
+    val sessionId: String,
+    val ipAddress: String,
+    val userAgent: String,
+    val browserName: String? = null,
+    val browserVersion: String? = null,
+    val osName: String? = null,
+    val osVersion: String? = null,
+    val deviceType: String? = null,
+    val screenWidth: Int? = null,
+    val screenHeight: Int? = null,
+    val viewportWidth: Int? = null,
+    val viewportHeight: Int? = null,
+    val language: String? = null,
+    val languages: String? = null,
+    val timezone: String? = null,
+    val platform: String? = null,
+    val networkInfo: String? = null,
+    val deviceMemory: Int? = null,
+    val hardwareConcurrency: Int? = null,
+    val colorDepth: Int? = null,
+    val pixelRatio: Double? = null,
+    val touchPoints: Int? = null,
+    val cookieEnabled: Boolean? = null,
+    val doNotTrack: Boolean? = null,
+    val webglRenderer: String? = null,
+    val webglVendor: String? = null,
+    val canvasFingerprint: String? = null,
+    val referrer: String? = null,
+    val pageLoadTimeMs: Int? = null,
+    val createdAt: String,
+    val lastActivityAt: String
+)
+
+@Serializable
+data class PageViewDTO(
+    val id: Long,
+    val sessionId: String,
+    val visitorId: String,
+    val path: String,
+    val referrerPath: String? = null,
+    val durationMs: Int? = null,
+    val createdAt: String
+)
+
+@Serializable
+data class AnalyticsOverview(
+    val activeNow: Int,
+    val sessionsInRange: Int,
+    val uniqueVisitorsInRange: Int,
+    val pageviewsInRange: Int,
+    val avgLoadTimeMs: Int?
+)
+
+@Serializable
+data class SessionsPageResponse(
+    val total: Long,
+    val page: Int,
+    val limit: Int,
+    val sessions: List<VisitorSessionCompact>
+)
+
+@Serializable
+data class SessionsPageCompleteResponse(
+    val total: Long,
+    val page: Int,
+    val limit: Int,
+    val sessions: List<VisitorSessionComplete>
+)
+
+@Serializable
+data class LiveVisitorDTO(
+    val sessionId: String,
+    val visitorId: String,
+    val ipAddress: String,
+    val browserName: String? = null,
+    val osName: String? = null,
+    val deviceType: String? = null,
+    val currentPage: String? = null,
+    val sessionStarted: String,
+    val lastActivity: String
+)
+
+@Serializable
+data class FilterValuesResponse(
+    val browsers: List<String>,
+    val operatingSystems: List<String>,
+    val deviceTypes: List<String>,
+    val languages: List<String>,
+    val timezones: List<String>,
+    val connectionTypes: List<String>,
+    val paths: List<String>
+)
+
+@Serializable
+data class TimelineBucket(
+    val bucket: String,
+    val count: Int,
+    val series: Map<String, Int>? = null
+)
+
+@Serializable
+data class TimelineResponse2(
+    val granularity: String,
+    val breakdown: String,
+    val buckets: List<TimelineBucket>
+)
+
+@Serializable
+data class HeatmapCell(
+    val dayOfWeek: Int,
+    val hourOfDay: Int,
+    val count: Int
+)
+
+@Serializable
+data class HeatmapResponse(
+    val cells: List<HeatmapCell>
+)
+
+@Serializable
+data class VisitorSummaryDTO(
+    val visitorId: String,
+    val sessionCount: Int,
+    val totalPageviews: Int,
+    val firstSeenAt: String,
+    val lastSeenAt: String,
+    val lastBrowser: String? = null,
+    val lastOs: String? = null,
+    val lastDeviceType: String? = null,
+    val lastIp: String? = null
+)
+
+@Serializable
+data class VisitorsListResponse(
+    val total: Long,
+    val page: Int,
+    val limit: Int,
+    val visitors: List<VisitorSummaryDTO>
+)
+
+@Serializable
+data class DistributionItem(
+    val value: String,
+    val count: Int,
+    val percent: Double
+)
+
+@Serializable
+data class DistributionResponse(
+    val field: String,
+    val total: Int,
+    val items: List<DistributionItem>
+)
+
+@Serializable
+data class TopPageDTO(
+    val path: String,
+    val count: Int,
+    val avgDurationMs: Int? = null
+)
+
+@Serializable
+data class TopReferrerDTO(
+    val referrer: String,
+    val count: Int
+)
+
+@Serializable
+data class DailyStatDTO(
+    val date: String,
+    val totalSessions: Int,
+    val totalPageviews: Int,
+    val uniqueVisitors: Int,
+    val avgSessionDurationMs: Int? = null,
+    val topBrowsers: String? = null,
+    val topOs: String? = null,
+    val topDevices: String? = null,
+    val topPages: String? = null
+)
+
+@Serializable
+data class TrendsResponse(
+    val days: List<DailyStatDTO>
+)

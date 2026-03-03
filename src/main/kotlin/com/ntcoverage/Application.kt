@@ -11,6 +11,7 @@ import com.ntcoverage.repository.StatsRepository
 import com.ntcoverage.repository.VerseRepository
 import com.ntcoverage.repository.ChurchFatherRepository
 import com.ntcoverage.repository.FatherTextualStatementRepository
+import com.ntcoverage.repository.VisitorRepository
 import com.ntcoverage.routes.adminRoutes
 import com.ntcoverage.routes.churchFatherRoutes
 import com.ntcoverage.routes.coverageRoutes
@@ -18,6 +19,8 @@ import com.ntcoverage.routes.manuscriptRoutes
 import com.ntcoverage.routes.metricsRoutes
 import com.ntcoverage.routes.statsRoutes
 import com.ntcoverage.routes.verseRoutes
+import com.ntcoverage.routes.visitorRoutes
+import com.ntcoverage.config.SimpleRateLimiter
 import com.ntcoverage.scraper.NtvmrListClient
 import com.ntcoverage.service.BiographySummarizationService
 import com.ntcoverage.service.ChurchFatherService
@@ -27,8 +30,10 @@ import com.ntcoverage.service.IngestionService
 import com.ntcoverage.service.ManuscriptService
 import com.ntcoverage.service.MetricsService
 import com.ntcoverage.service.PatristicIngestionService
+import com.ntcoverage.service.RetentionScheduler
 import com.ntcoverage.service.StatsService
 import com.ntcoverage.service.VerseExpander
+import com.ntcoverage.service.VisitorService
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -116,6 +121,13 @@ fun Application.module() {
     val churchFatherService = ChurchFatherService(churchFatherRepository, statementRepository)
     val orchestrator = IngestionOrchestrator(ingestionService, patristicIngestionService, ingestionMetadataRepository, statsRepository)
 
+    val visitorRepository = VisitorRepository()
+    val visitorService = VisitorService(visitorRepository)
+    val retentionScheduler = RetentionScheduler(DatabaseConfig.getDataSource())
+    val sessionRateLimiter = SimpleRateLimiter(windowMs = 5_000, maxRequests = 1)
+    val heartbeatRateLimiter = SimpleRateLimiter(windowMs = 15_000, maxRequests = 1)
+    val pageviewRateLimiter = SimpleRateLimiter(windowMs = 10_000, maxRequests = 10)
+
     ingestionService.seedBooksAndVerses()
     log.info("Canonical seed complete. API is ready.")
 
@@ -165,12 +177,14 @@ fun Application.module() {
         verseRoutes(verseRepository)
         churchFatherRoutes(churchFatherService)
         adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
+        visitorRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
     }
 
     monitor.subscribe(ApplicationStarted) {
         ingestionScope.launch {
             orchestrator.launchIfEnabled()
         }
+        retentionScheduler.start(ingestionScope)
     }
 
     monitor.subscribe(ApplicationStopped) {

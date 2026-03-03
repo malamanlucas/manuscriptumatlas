@@ -26,6 +26,7 @@ alwaysApply: false
 - `V8__create_church_father_translations.sql` — Traduções i18n: church_father_translations + father_statement_translations + índices de lookup + GIN trigram
 - `V9__extend_church_fathers_biography.sql` — Colunas de biografia em church_fathers (manner_of_death, biography_original, biography_summary, biography_summary_reviewed) e traduções correspondentes em church_father_translations
 - `V10__add_translation_source.sql` — Coluna translation_source em church_father_translations (seed vs. outra origem)
+- `V11__create_visitor_tracking.sql` — Tabelas particionadas visitor_sessions e page_views (RANGE by month), visitor_daily_stats, 15 índices estratégicos, função create_monthly_partitions()
 
 ## Regras
 
@@ -33,22 +34,66 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V11**
+- Próxima migração: **V12**
 
-## Nota sobre Flyway
+## IMPORTANTE — Flyway não executa migrations
 
-O Flyway atualmente não executa as migrações (incompatibilidade de naming convention). O fallback é `Exposed SchemaUtils.createMissingTablesAndColumns()` no `FlywayConfig.kt`. Índices extras (GIN trigram, compostos) e extensão `pg_trgm` são aplicados via SQL direto em `applyExtraIndexesAndConstraints()`.
+O Flyway **não aplica** as migrações em runtime (incompatibilidade de naming convention). O sistema depende inteiramente do **fallback em `FlywayConfig.kt`** para criar o schema. Isso significa que:
 
-Ao adicionar novas tabelas:
-1. Criar a migração SQL normalmente em `V{N}__...sql`
-2. Adicionar o objeto Table em `Tables.kt`
-3. Registrar o Table na lista do `SchemaUtils.createMissingTablesAndColumns` em `FlywayConfig.kt`
-4. Se necessário, adicionar índices extras em `applyExtraIndexesAndConstraints()`
+- A migration `.sql` serve como **documentação e referência**, mas **nunca roda automaticamente**.
+- Toda estrutura de banco precisa ter um caminho de criação no fallback Kotlin.
+- Se algo só existir no `.sql` e não no fallback, **não será criado** e haverá erro em runtime.
 
-## Tabelas registradas no SchemaUtils
+## Checklist obrigatório para toda nova tabela/estrutura
+
+### Tabelas normais (sem particionamento)
+1. Criar a migração SQL em `V{N}__...sql` (referência)
+2. Criar objeto `Table` em `Tables.kt`
+3. Registrar na lista do `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`
+4. Se necessário, adicionar índices em `applyExtraIndexesAndConstraints()`
+
+### Tabelas particionadas (PARTITION BY RANGE/LIST/HASH)
+**SchemaUtils NÃO suporta tabelas particionadas.** Elas precisam ser criadas via SQL raw no fallback.
+
+1. Criar a migração SQL em `V{N}__...sql` (referência)
+2. Criar objeto `Table` em `Tables.kt` (apontando para a tabela pai — Exposed faz queries normalmente)
+3. **NÃO registrar** no `SchemaUtils.createMissingTablesAndColumns()`
+4. Adicionar criação via `exec(SQL)` dentro de `createVisitorPartitionedTables()` (ou método equivalente) em `FlywayConfig.kt`
+5. Verificar se a tabela já existe antes de criar (`SELECT 1 FROM pg_class WHERE relname = '...' AND relkind = 'p'`)
+6. Criar as partições iniciais (mínimo: mês atual + 2 meses à frente)
+7. Criar a função SQL de auto-particionamento se aplicável
+8. Criar os índices via `exec()` em método próprio (ex: `applyVisitorIndexes()`)
+
+### Funções SQL (PL/pgSQL)
+Se a migration define funções SQL (`CREATE OR REPLACE FUNCTION`), elas também precisam ser criadas no fallback Kotlin, pois o Flyway não as executa.
+
+## Padrão de verificação de existência
+
+```kotlin
+// Tabela particionada (relkind = 'p')
+val exists = exec("SELECT 1 FROM pg_class WHERE relname = 'nome_tabela' AND relkind = 'p'") { it.next() } ?: false
+
+// Tabela normal (relkind = 'r')
+val exists = exec("SELECT 1 FROM pg_class WHERE relname = 'nome_tabela' AND relkind = 'r'") { it.next() } ?: false
+
+// Índice
+exec("CREATE INDEX IF NOT EXISTS idx_nome ON tabela (coluna)")
+```
+
+## Tabelas no SchemaUtils (apenas tabelas normais)
 
 ```
 Books, Verses, Manuscripts, ManuscriptSources, ManuscriptVerses,
 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
-FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations
+FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
+VisitorDailyStats
+```
+
+## Tabelas criadas via SQL raw no fallback (particionadas)
+
+```
+visitor_sessions  — createVisitorPartitionedTables()
+page_views        — createVisitorPartitionedTables()
++ função create_monthly_partitions()
++ 14 índices via applyVisitorIndexes()
 ```

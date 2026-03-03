@@ -2,6 +2,7 @@ package com.ntcoverage.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 
 object Books : IntIdTable("books") {
@@ -143,4 +144,68 @@ object FatherStatementTranslations : IntIdTable("father_statement_translations")
     val statementText = text("statement_text")
 
     init { uniqueIndex(statementId, locale) }
+}
+
+object VisitorSessions : Table("visitor_sessions") {
+    val id = long("id").autoIncrement()
+    val visitorId = varchar("visitor_id", 36)
+    val sessionId = varchar("session_id", 36)
+    val ipAddress = varchar("ip_address", 100)
+    val userAgent = text("user_agent")
+    val browserName = varchar("browser_name", 50).nullable()
+    val browserVersion = varchar("browser_version", 30).nullable()
+    val osName = varchar("os_name", 50).nullable()
+    val osVersion = varchar("os_version", 30).nullable()
+    val deviceType = varchar("device_type", 10).nullable()
+    val screenWidth = short("screen_width").nullable()
+    val screenHeight = short("screen_height").nullable()
+    val viewportWidth = short("viewport_width").nullable()
+    val viewportHeight = short("viewport_height").nullable()
+    val language = varchar("language", 10).nullable()
+    val languages = text("languages").nullable()
+    val timezone = varchar("timezone", 50).nullable()
+    val platform = varchar("platform", 50).nullable()
+    val networkInfo = text("network_info").nullable()
+    val deviceMemory = short("device_memory").nullable()
+    val hardwareConcurrency = short("hardware_concurrency").nullable()
+    val colorDepth = short("color_depth").nullable()
+    val pixelRatio = decimal("pixel_ratio", 4, 2).nullable()
+    val touchPoints = short("touch_points").nullable()
+    val cookieEnabled = bool("cookie_enabled").nullable()
+    val doNotTrack = bool("do_not_track").nullable()
+    val webglRenderer = varchar("webgl_renderer", 200).nullable()
+    val webglVendor = varchar("webgl_vendor", 200).nullable()
+    val canvasFingerprint = varchar("canvas_fingerprint", 64).nullable()
+    val referrer = text("referrer").nullable()
+    val pageLoadTimeMs = integer("page_load_time_ms").nullable()
+    val createdAt = timestampWithTimeZone("created_at")
+    val lastActivityAt = timestampWithTimeZone("last_activity_at")
+
+    override val primaryKey = PrimaryKey(id, createdAt)
+}
+
+object PageViews : Table("page_views") {
+    val id = long("id").autoIncrement()
+    val sessionId = varchar("session_id", 36)
+    val visitorId = varchar("visitor_id", 36)
+    val path = varchar("path", 500)
+    val referrerPath = varchar("referrer_path", 500).nullable()
+    val durationMs = integer("duration_ms").nullable()
+    val createdAt = timestampWithTimeZone("created_at")
+
+    override val primaryKey = PrimaryKey(id, createdAt)
+}
+
+object VisitorDailyStats : IntIdTable("visitor_daily_stats") {
+    val statDate = date("stat_date").uniqueIndex()
+    val totalSessions = integer("total_sessions").default(0)
+    val totalPageviews = integer("total_pageviews").default(0)
+    val uniqueVisitors = integer("unique_visitors").default(0)
+    val avgSessionDurationMs = integer("avg_session_duration_ms").nullable()
+    val topBrowsers = text("top_browsers").nullable()
+    val topOs = text("top_os").nullable()
+    val topDevices = text("top_devices").nullable()
+    val topPages = text("top_pages").nullable()
+    val topCountries = text("top_countries").nullable()
+    val createdAt = timestampWithTimeZone("created_at")
 }

@@ -3,6 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Providers } from "@/components/providers";
+import { VisitorTracker } from "@/components/tracking/VisitorTracker";
 
 type Props = {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className="antialiased">
         <NextIntlClientProvider>
           <Providers>
+            <VisitorTracker />
             {children}
           </Providers>
         </NextIntlClientProvider>

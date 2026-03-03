@@ -18,6 +18,7 @@ import {
   Search,
   Users,
   Quote,
+  Telescope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSelector } from "./LanguageSelector";
@@ -46,6 +47,7 @@ export function Sidebar() {
     { href: "/sources", label: t("sources"), icon: Database },
     { href: "/faq", label: t("faq"), icon: HelpCircle },
     { href: "/ingestion-status", label: t("ingestion"), icon: Activity },
+    { href: "/observatory", label: t("observatory"), icon: Telescope },
   ];
 
   return (

@@ -40,6 +40,7 @@
     "sources": "Sources",
     "faq": "FAQ",
     "ingestion": "Ingestion",
+    "observatory": "Observatory",
     "books": "Books",
     "allBooks": "All 27 Books",
     "version": "v2.0 · Centuries I–X"
@@ -453,5 +454,84 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "observatory": {
+    "title": "Observatory",
+    "subtitle": "Visitor Observability System",
+    "tabs": {
+      "overview": "Overview",
+      "explorer": "Explorer",
+      "timeline": "Timeline",
+      "visitors": "Visitors"
+    },
+    "kpi": {
+      "activeNow": "Active Now",
+      "sessions": "Sessions",
+      "uniqueVisitors": "Unique Visitors",
+      "avgLoadTime": "Avg Load Time"
+    },
+    "liveVisitors": "Live Visitors",
+    "autoRefresh": "auto 10s",
+    "sessionsPerHour": "Sessions per Hour",
+    "topPages": "Top Pages",
+    "topReferrers": "Top Referrers",
+    "noActiveVisitors": "No active visitors",
+    "noData": "No data available",
+    "loading": "Loading...",
+    "dist": {
+      "browsers": "Browsers",
+      "os": "Operating Systems",
+      "devices": "Devices"
+    },
+    "table": {
+      "visitor": "Visitor",
+      "browser": "Browser",
+      "device": "Device",
+      "language": "Language",
+      "timezone": "Timezone",
+      "loadTime": "Load Time",
+      "created": "Created",
+      "page": "Page"
+    },
+    "explorer": {
+      "searchPlaceholder": "Search by IP, Visitor ID or Fingerprint...",
+      "compact": "Compact",
+      "complete": "Complete",
+      "showing": "Showing",
+      "of": "of"
+    },
+    "timeline": {
+      "sessions": "Sessions",
+      "pageviews": "Page Views",
+      "sessionsChart": "Sessions Over Time",
+      "pageviewsChart": "Page Views Over Time",
+      "heatmap": "Activity Heatmap",
+      "noBreakdown": "No Breakdown"
+    },
+    "visitors": {
+      "all": "All",
+      "new": "New",
+      "returning": "Returning",
+      "sortLastSeen": "Last Seen",
+      "sortSessions": "Sessions",
+      "sortPageviews": "Page Views",
+      "sessions": "Sessions",
+      "pages": "Pages",
+      "firstSeen": "First Seen",
+      "lastSeen": "Last Seen",
+      "profile": "Visitor Profile"
+    },
+    "drawer": {
+      "title": "Session Detail",
+      "identity": "Identity",
+      "browserOs": "Browser & OS",
+      "display": "Display",
+      "hardware": "Hardware",
+      "network": "Network",
+      "privacy": "Privacy",
+      "journey": "Journey",
+      "firstSeen": "First Seen",
+      "lastActivity": "Last Activity"
+    }
   }
 }

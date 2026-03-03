@@ -40,6 +40,7 @@
     "sources": "Fuentes",
     "faq": "FAQ",
     "ingestion": "Ingestión",
+    "observatory": "Observatorio",
     "books": "Libros",
     "allBooks": "Los 27 Libros",
     "version": "v2.0 · Siglos I–X"
@@ -453,5 +454,84 @@
     "light": "Claro",
     "dark": "Oscuro",
     "system": "Sistema"
+  },
+  "observatory": {
+    "title": "Observatorio",
+    "subtitle": "Sistema de Observabilidad de Visitantes",
+    "tabs": {
+      "overview": "Vista General",
+      "explorer": "Explorador",
+      "timeline": "Línea de Tiempo",
+      "visitors": "Visitantes"
+    },
+    "kpi": {
+      "activeNow": "Activos Ahora",
+      "sessions": "Sesiones",
+      "uniqueVisitors": "Visitantes Únicos",
+      "avgLoadTime": "Tiempo Promedio"
+    },
+    "liveVisitors": "Visitantes Activos",
+    "autoRefresh": "auto 10s",
+    "sessionsPerHour": "Sesiones por Hora",
+    "topPages": "Páginas Más Visitadas",
+    "topReferrers": "Principales Referencias",
+    "noActiveVisitors": "No hay visitantes activos",
+    "noData": "No hay datos disponibles",
+    "loading": "Cargando...",
+    "dist": {
+      "browsers": "Navegadores",
+      "os": "Sistemas Operativos",
+      "devices": "Dispositivos"
+    },
+    "table": {
+      "visitor": "Visitante",
+      "browser": "Navegador",
+      "device": "Dispositivo",
+      "language": "Idioma",
+      "timezone": "Zona Horaria",
+      "loadTime": "Tiempo de Carga",
+      "created": "Creado",
+      "page": "Página"
+    },
+    "explorer": {
+      "searchPlaceholder": "Buscar por IP, ID de visitante o fingerprint...",
+      "compact": "Compacto",
+      "complete": "Completo",
+      "showing": "Mostrando",
+      "of": "de"
+    },
+    "timeline": {
+      "sessions": "Sesiones",
+      "pageviews": "Vistas de Página",
+      "sessionsChart": "Sesiones a lo Largo del Tiempo",
+      "pageviewsChart": "Vistas de Página a lo Largo del Tiempo",
+      "heatmap": "Mapa de Actividad",
+      "noBreakdown": "Sin División"
+    },
+    "visitors": {
+      "all": "Todos",
+      "new": "Nuevos",
+      "returning": "Recurrentes",
+      "sortLastSeen": "Último Acceso",
+      "sortSessions": "Sesiones",
+      "sortPageviews": "Vistas de Página",
+      "sessions": "Sesiones",
+      "pages": "Páginas",
+      "firstSeen": "Primer Acceso",
+      "lastSeen": "Último Acceso",
+      "profile": "Perfil del Visitante"
+    },
+    "drawer": {
+      "title": "Detalles de la Sesión",
+      "identity": "Identidad",
+      "browserOs": "Navegador y SO",
+      "display": "Pantalla",
+      "hardware": "Hardware",
+      "network": "Red",
+      "privacy": "Privacidad",
+      "journey": "Recorrido",
+      "firstSeen": "Primer Acceso",
+      "lastActivity": "Última Actividad"
+    }
   }
 }
