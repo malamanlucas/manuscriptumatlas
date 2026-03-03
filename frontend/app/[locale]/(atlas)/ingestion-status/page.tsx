@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Header } from "@/components/layout/Header";
+import { AuthGate } from "@/components/observatory/AuthGate";
 import {
   useIngestionStatus,
   useTriggerIngestion,
@@ -21,6 +22,14 @@ import {
 } from "lucide-react";
 
 export default function IngestionStatusPage() {
+  return (
+    <AuthGate requiredRole="ADMIN">
+      <IngestionContent />
+    </AuthGate>
+  );
+}
+
+function IngestionContent() {
   const t = useTranslations("ingestion");
   const tc = useTranslations("common");
   const { data, isLoading, error } = useIngestionStatus();

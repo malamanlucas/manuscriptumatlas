@@ -427,6 +427,16 @@ export interface PageViewDTO {
   createdAt: string;
 }
 
+// ── Auth / User Management ──
+
+export interface UserDTO {
+  id: number;
+  email: string;
+  displayName: string;
+  pictureUrl: string | null;
+  role: "ADMIN" | "MEMBER";
+}
+
 export interface SessionFilters {
   from?: string;
   to?: string;

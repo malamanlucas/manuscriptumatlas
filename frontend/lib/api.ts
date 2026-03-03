@@ -21,6 +21,8 @@ import type {
   TopicsSummaryResponse,
 } from "@/types";
 
+import type { UserDTO } from "@/types";
+
 const BASE = "/api";
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -30,6 +32,94 @@ async function fetchJson<T>(url: string): Promise<T> {
     throw new Error(`API error ${res.status}: ${body}`);
   }
   return res.json();
+}
+
+// ── Cookie helpers ──
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; max-age=0; path=/; SameSite=Strict`;
+}
+
+export function getAuthToken(): string | null {
+  return getCookie("observatory_token");
+}
+
+export function setAuthToken(token: string, maxAge: number) {
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `observatory_token=${encodeURIComponent(token)}; max-age=${maxAge}; path=/; SameSite=Strict${secure}`;
+}
+
+export function clearAuthToken() {
+  deleteCookie("observatory_token");
+}
+
+// ── Auth error class ──
+
+export class AuthError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
+// ── Authenticated fetch ──
+
+async function fetchJsonAuth<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(url, { ...init, headers });
+
+  if (res.status === 401) {
+    clearAuthToken();
+    throw new AuthError(401, "Authentication required");
+  }
+  if (res.status === 403) {
+    throw new AuthError(403, "Access denied");
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+// ── Auth / User Management API ──
+
+export function getAuthMe(): Promise<UserDTO> {
+  return fetchJsonAuth(`${BASE}/auth/me`);
+}
+
+export function getUsers(): Promise<UserDTO[]> {
+  return fetchJsonAuth(`${BASE}/auth/users`);
+}
+
+export function createUser(email: string, displayName: string, role: string): Promise<UserDTO> {
+  return fetchJsonAuth(`${BASE}/auth/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, displayName, role }),
+  });
+}
+
+export function updateUserRole(id: number, role: string): Promise<{ ok: boolean }> {
+  return fetchJsonAuth(`${BASE}/auth/users/${id}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+}
+
+export function deleteUser(id: number): Promise<{ ok: boolean }> {
+  return fetchJsonAuth(`${BASE}/auth/users/${id}`, { method: "DELETE" });
 }
 
 function buildParams(params: Record<string, string | undefined>): string {
@@ -296,27 +386,27 @@ function visitorParams(filters: SessionFilters): string {
 }
 
 export function getAnalyticsOverview(filters: SessionFilters = {}): Promise<AnalyticsOverview> {
-  return fetchJson(`${BASE}/visitor/analytics/overview${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/overview${visitorParams(filters)}`);
 }
 
 export function getAnalyticsLive(): Promise<LiveVisitorDTO[]> {
-  return fetchJson(`${BASE}/visitor/analytics/live`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/live`);
 }
 
 export function getAnalyticsFilterValues(): Promise<FilterValuesResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/filters/values`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/filters/values`);
 }
 
 export function getAnalyticsSessions(filters: SessionFilters = {}): Promise<SessionsPageResponse | SessionsPageCompleteResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/sessions${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/sessions${visitorParams(filters)}`);
 }
 
 export function getAnalyticsSessionDetail(sessionId: string): Promise<VisitorSessionComplete> {
-  return fetchJson(`${BASE}/visitor/analytics/sessions/${sessionId}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/sessions/${sessionId}`);
 }
 
 export function getAnalyticsSessionPageviews(sessionId: string): Promise<PageViewDTOType[]> {
-  return fetchJson(`${BASE}/visitor/analytics/sessions/${sessionId}/pageviews`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/sessions/${sessionId}/pageviews`);
 }
 
 export function getAnalyticsTimelineSessions(filters: SessionFilters & { granularity?: string; breakdown?: string } = {}): Promise<TimelineAnalyticsResponse> {
@@ -326,7 +416,7 @@ export function getAnalyticsTimelineSessions(filters: SessionFilters & { granula
   if (filters.days !== undefined) p.days = filters.days.toString();
   if (filters.granularity) p.granularity = filters.granularity;
   if (filters.breakdown) p.breakdown = filters.breakdown;
-  return fetchJson(`${BASE}/visitor/analytics/timeline/sessions${buildParams(p)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/timeline/sessions${buildParams(p)}`);
 }
 
 export function getAnalyticsTimelinePageviews(filters: SessionFilters & { granularity?: string; breakdown?: string } = {}): Promise<TimelineAnalyticsResponse> {
@@ -336,39 +426,39 @@ export function getAnalyticsTimelinePageviews(filters: SessionFilters & { granul
   if (filters.days !== undefined) p.days = filters.days.toString();
   if (filters.granularity) p.granularity = filters.granularity;
   if (filters.breakdown) p.breakdown = filters.breakdown;
-  return fetchJson(`${BASE}/visitor/analytics/timeline/pageviews${buildParams(p)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/timeline/pageviews${buildParams(p)}`);
 }
 
 export function getAnalyticsHeatmap(filters: SessionFilters = {}): Promise<HeatmapResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/timeline/heatmap${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/timeline/heatmap${visitorParams(filters)}`);
 }
 
 export function getAnalyticsVisitors(filters: SessionFilters & { returning?: boolean } = {}): Promise<VisitorsListResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/visitors${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/visitors${visitorParams(filters)}`);
 }
 
 export function getAnalyticsVisitorProfile(visitorId: string): Promise<VisitorSummaryDTO> {
-  return fetchJson(`${BASE}/visitor/analytics/visitors/${visitorId}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/visitors/${visitorId}`);
 }
 
 export function getAnalyticsVisitorSessions(visitorId: string, page = 1, limit = 50): Promise<SessionsPageResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/visitors/${visitorId}/sessions${buildParams({ page: page.toString(), limit: limit.toString() })}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/visitors/${visitorId}/sessions${buildParams({ page: page.toString(), limit: limit.toString() })}`);
 }
 
 export function getAnalyticsTopPages(filters: SessionFilters & { limit?: number } = {}): Promise<TopPageDTO[]> {
-  return fetchJson(`${BASE}/visitor/analytics/top/pages${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/top/pages${visitorParams(filters)}`);
 }
 
 export function getAnalyticsTopReferrers(filters: SessionFilters & { limit?: number } = {}): Promise<TopReferrerDTO[]> {
-  return fetchJson(`${BASE}/visitor/analytics/top/referrers${visitorParams(filters)}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/top/referrers${visitorParams(filters)}`);
 }
 
 export function getAnalyticsDistribution(field: string, filters: SessionFilters = {}): Promise<DistributionResponse> {
   const base = visitorParams(filters);
   const sep = base ? "&" : "?";
-  return fetchJson(`${BASE}/visitor/analytics/distribution${base}${sep}field=${field}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/distribution${base}${sep}field=${field}`);
 }
 
 export function getAnalyticsTrends(days = 30): Promise<TrendsResponse> {
-  return fetchJson(`${BASE}/visitor/analytics/trends?days=${days}`);
+  return fetchJsonAuth(`${BASE}/visitor/analytics/trends?days=${days}`);
 }

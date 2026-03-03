@@ -196,6 +196,15 @@ object PageViews : Table("page_views") {
     override val primaryKey = PrimaryKey(id, createdAt)
 }
 
+object Users : IntIdTable("users") {
+    val email = varchar("email", 200).uniqueIndex()
+    val displayName = varchar("display_name", 200)
+    val pictureUrl = varchar("picture_url", 500).nullable()
+    val role = enumerationByName("role", 20, UserRole::class)
+    val createdAt = timestampWithTimeZone("created_at")
+    val lastLoginAt = timestampWithTimeZone("last_login_at").nullable()
+}
+
 object VisitorDailyStats : IntIdTable("visitor_daily_stats") {
     val statDate = date("stat_date").uniqueIndex()
     val totalSessions = integer("total_sessions").default(0)

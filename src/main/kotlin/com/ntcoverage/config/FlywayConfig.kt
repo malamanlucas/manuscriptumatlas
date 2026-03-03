@@ -45,7 +45,7 @@ object FlywayConfig {
                 Books, Verses, Manuscripts, ManuscriptVerses, ManuscriptSources,
                 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
                 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
-                VisitorDailyStats
+                VisitorDailyStats, Users
             )
             log.info("Tables created/verified via Exposed SchemaUtils.")
         }

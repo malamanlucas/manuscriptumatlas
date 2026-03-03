@@ -1,47 +1,25 @@
 package com.ntcoverage
 
+import com.auth0.jwk.JwkProviderBuilder
 import com.ntcoverage.config.DatabaseConfig
 import com.ntcoverage.config.FlywayConfig
-import com.ntcoverage.repository.ChapterCoverageRepository
-import com.ntcoverage.repository.CoverageRepository
-import com.ntcoverage.repository.IngestionMetadataRepository
-import com.ntcoverage.repository.ManuscriptRepository
-import com.ntcoverage.repository.MetricsRepository
-import com.ntcoverage.repository.StatsRepository
-import com.ntcoverage.repository.VerseRepository
-import com.ntcoverage.repository.ChurchFatherRepository
-import com.ntcoverage.repository.FatherTextualStatementRepository
-import com.ntcoverage.repository.VisitorRepository
-import com.ntcoverage.routes.adminRoutes
-import com.ntcoverage.routes.churchFatherRoutes
-import com.ntcoverage.routes.coverageRoutes
-import com.ntcoverage.routes.manuscriptRoutes
-import com.ntcoverage.routes.metricsRoutes
-import com.ntcoverage.routes.statsRoutes
-import com.ntcoverage.routes.verseRoutes
-import com.ntcoverage.routes.visitorRoutes
 import com.ntcoverage.config.SimpleRateLimiter
+import com.ntcoverage.repository.*
+import com.ntcoverage.routes.*
 import com.ntcoverage.scraper.NtvmrListClient
-import com.ntcoverage.service.BiographySummarizationService
-import com.ntcoverage.service.ChurchFatherService
-import com.ntcoverage.service.CoverageService
-import com.ntcoverage.service.IngestionOrchestrator
-import com.ntcoverage.service.IngestionService
-import com.ntcoverage.service.ManuscriptService
-import com.ntcoverage.service.MetricsService
-import com.ntcoverage.service.PatristicIngestionService
-import com.ntcoverage.service.RetentionScheduler
-import com.ntcoverage.service.StatsService
-import com.ntcoverage.service.VerseExpander
-import com.ntcoverage.service.VisitorService
+import com.ntcoverage.seed.UserSeedData
+import com.ntcoverage.service.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.net.URL
+import java.util.concurrent.TimeUnit
 
 @Serializable
 data class ServiceInfo(
@@ -71,8 +51,11 @@ fun Application.module() {
     install(CORS) {
         anyHost()
         allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Delete)
     }
 
     install(ContentNegotiation) {
@@ -90,6 +73,9 @@ fun Application.module() {
         exception<NoSuchElementException> { call, cause ->
             call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
         }
+        exception<IllegalStateException> { call, cause ->
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+        }
         exception<Throwable> { call, cause ->
             log.error("Unhandled exception", cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal server error"))
@@ -98,6 +84,61 @@ fun Application.module() {
 
     DatabaseConfig.init(environment)
     FlywayConfig.migrate(DatabaseConfig.getDataSource())
+
+    val userRepository = UserRepository()
+    val userService = UserService(userRepository)
+
+    val googleClientId = System.getenv("GOOGLE_CLIENT_ID") ?: ""
+    if (googleClientId.isBlank()) {
+        log.warn("GOOGLE_CLIENT_ID is not set — JWT authentication will reject all requests.")
+    }
+
+    val jwkProvider = JwkProviderBuilder(URL("https://www.googleapis.com/oauth2/v3/certs"))
+        .cached(10, 24, TimeUnit.HOURS)
+        .rateLimited(10, 1, TimeUnit.MINUTES)
+        .build()
+
+    install(Authentication) {
+        jwt("google-jwt") {
+            verifier(jwkProvider) {
+                withClaimPresence("email")
+                withAudience(googleClientId)
+                acceptLeeway(5)
+            }
+            validate { credential ->
+                val issuer = credential.payload.issuer
+                if (issuer != "https://accounts.google.com" && issuer != "accounts.google.com") {
+                    log.warn("AUTH: rejected_invalid_issuer | issuer=$issuer")
+                    return@validate null
+                }
+
+                val emailVerified = credential.payload.getClaim("email_verified")?.asBoolean() ?: false
+                if (!emailVerified) {
+                    log.warn("AUTH: rejected_email_not_verified | email=${credential.payload.getClaim("email")?.asString()}")
+                    return@validate null
+                }
+
+                val email = credential.payload.getClaim("email").asString()
+                val user = userRepository.findByEmail(email)
+
+                if (user == null) {
+                    log.warn("AUTH: rejected_unknown_email | email=$email")
+                    return@validate null
+                }
+
+                log.info("AUTH: login_success | email=$email | role=${user.role}")
+                userRepository.updateLastLoginAndPicture(
+                    email,
+                    credential.payload.getClaim("picture")?.asString()
+                )
+
+                JWTPrincipal(credential.payload)
+            }
+            challenge { _, _ ->
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Authentication required"))
+            }
+        }
+    }
 
     val verseRepository = VerseRepository()
     val manuscriptRepository = ManuscriptRepository()
@@ -129,6 +170,7 @@ fun Application.module() {
     val pageviewRateLimiter = SimpleRateLimiter(windowMs = 10_000, maxRequests = 10)
 
     ingestionService.seedBooksAndVerses()
+    UserSeedData.seedIfEmpty()
     log.info("Canonical seed complete. API is ready.")
 
     val ingestionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -177,7 +219,12 @@ fun Application.module() {
         verseRoutes(verseRepository)
         churchFatherRoutes(churchFatherService)
         adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
-        visitorRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
+        visitorTrackingRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
+
+        authenticate("google-jwt") {
+            authRoutes(userRepository, userService)
+            visitorAnalyticsRoutes(visitorService)
+        }
     }
 
     monitor.subscribe(ApplicationStarted) {

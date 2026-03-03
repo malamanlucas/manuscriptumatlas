@@ -24,17 +24,17 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 | Pacote | Responsabilidade |
 |--------|------------------|
 | `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 5 arquivos |
-| `model` | Tables (15 tabelas Exposed) e DTOs (62 `@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` (10 repositórios) |
-| `service` | Lógica de negócio e orquestração (13 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (8 arquivos de rotas, 43 endpoints) |
+| `model` | Tables (16 tabelas Exposed) e DTOs (65 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (11 repositórios) |
+| `service` | Lógica de negócio e orquestração (14 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (9 arquivos de rotas, 46 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
-| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 6 arquivos |
+| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 7 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
 
 ## Tabelas do banco
 
-`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `visitor_sessions`, `page_views`, `visitor_daily_stats`
+`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `visitor_sessions`, `page_views`, `users`, `visitor_daily_stats`
 
 ## Conceitos de domínio
 
@@ -50,6 +50,10 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 - **Particionamento mensal**: tabelas `visitor_sessions` e `page_views` particionadas por RANGE em `created_at`
 - **RetentionScheduler**: job diário que cria partições futuras, dropa partições > 90 dias e agrega stats em `visitor_daily_stats`
 - **Rate Limiting**: SimpleRateLimiter in-memory para endpoints de tracking (session, heartbeat, pageview)
+- **Google SSO + RBAC**: autenticação via Google JWT (resource-server only), tabela `users` com role tipado (`UserRole.ADMIN`/`MEMBER`), cache in-memory 5min
+- **UserRole**: ADMIN (acesso total) ou MEMBER (páginas públicas, sem Observatory/Ingestion/User Management)
+- **AuthGate**: componente React reutilizável que protege páginas admin (login Google + verificação de role)
+- **Sidebar reorganizada**: 5 grupos (Analysis, Patristic, Reference, Books, Administration); grupo Administration visível apenas para ADMIN
 
 ## Padrões importantes
 

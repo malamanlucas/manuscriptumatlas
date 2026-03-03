@@ -582,3 +582,28 @@ data class DailyStatDTO(
 data class TrendsResponse(
     val days: List<DailyStatDTO>
 )
+
+// ── Auth / User Management ──
+
+enum class UserRole { ADMIN, MEMBER }
+
+@Serializable
+data class UserDTO(
+    val id: Int,
+    val email: String,
+    val displayName: String,
+    val pictureUrl: String?,
+    val role: String
+)
+
+@Serializable
+data class CreateUserRequest(
+    val email: String,
+    val displayName: String,
+    val role: String
+)
+
+@Serializable
+data class UpdateUserRoleRequest(
+    val role: String
+)

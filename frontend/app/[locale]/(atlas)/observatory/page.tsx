@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Header } from "@/components/layout/Header";
+import { AuthGate } from "@/components/observatory/AuthGate";
 import { Telescope, Eye, Search, Clock, Users } from "lucide-react";
 import { OverviewTab } from "@/components/observatory/OverviewTab";
 import { ExplorerTab } from "@/components/observatory/ExplorerTab";
@@ -23,6 +24,14 @@ const TIME_PRESETS = [
 type Tab = "overview" | "explorer" | "timeline" | "visitors";
 
 export default function ObservatoryPage() {
+  return (
+    <AuthGate requiredRole="ADMIN">
+      <ObservatoryContent />
+    </AuthGate>
+  );
+}
+
+function ObservatoryContent() {
   const t = useTranslations("observatory");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [timePreset, setTimePreset] = useState(TIME_PRESETS[4]);
