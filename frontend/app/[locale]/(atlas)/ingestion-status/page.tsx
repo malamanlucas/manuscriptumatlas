@@ -8,6 +8,7 @@ import {
   useIngestionStatus,
   useTriggerIngestion,
   useResetAndReIngest,
+  useDatingEnrichment,
 } from "@/hooks/useIngestion";
 import {
   Loader2,
@@ -19,6 +20,7 @@ import {
   Link2,
   Timer,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 
 export default function IngestionStatusPage() {
@@ -35,7 +37,9 @@ function IngestionContent() {
   const { data, isLoading, error } = useIngestionStatus();
   const trigger = useTriggerIngestion();
   const reset = useResetAndReIngest();
+  const enrich = useDatingEnrichment();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [enrichDomain, setEnrichDomain] = useState<"fathers" | "manuscripts" | "all">("fathers");
 
   const STATUS_CONFIG: Record<
     string,
@@ -175,6 +179,58 @@ function IngestionContent() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Dating Enrichment */}
+            <div className="rounded-xl border border-amber-500/30 bg-amber-950/10 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {t("enrichTitle")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t("enrichDescription")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={enrichDomain}
+                    onChange={(e) => setEnrichDomain(e.target.value as "fathers" | "manuscripts" | "all")}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="fathers">{t("enrichFathers")}</option>
+                    <option value="manuscripts">{t("enrichManuscripts")}</option>
+                    <option value="all">{t("enrichAll")}</option>
+                  </select>
+                  <button
+                    onClick={() => enrich.mutate({ domain: enrichDomain, limit: 50 })}
+                    disabled={enrich.isPending}
+                    className="flex shrink-0 items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {enrich.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    {t("enrichButton")}
+                  </button>
+                </div>
+              </div>
+              {enrich.isSuccess && (
+                <p className="mt-3 text-sm text-emerald-500">
+                  {(enrich.data as { message: string }).message}
+                </p>
+              )}
+              {enrich.isError && (
+                <p className="mt-3 text-sm text-red-400">
+                  {(enrich.error as Error).message}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

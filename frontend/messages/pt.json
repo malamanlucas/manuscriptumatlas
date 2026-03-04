@@ -307,7 +307,13 @@
     "resetDescription": "Apaga todos os dados e executa uma nova ingestão do zero.",
     "resetButton": "Limpar e Re-ingerir",
     "confirmReset": "Confirmar Reset",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "enrichTitle": "Enriquecimento de Datação (IA)",
+    "enrichDescription": "Preenche datação por ano faltante via OpenAI. Resultados salvos com confiança LOW.",
+    "enrichFathers": "Pais da Igreja",
+    "enrichManuscripts": "Manuscritos",
+    "enrichAll": "Todos os Domínios",
+    "enrichButton": "Enriquecer"
   },
   "bookDetail": {
     "coverageAsOf": "Cobertura até o Século {century}",

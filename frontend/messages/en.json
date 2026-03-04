@@ -307,7 +307,13 @@
     "resetDescription": "Deletes all data and runs a fresh ingestion from scratch.",
     "resetButton": "Wipe & Re-ingest",
     "confirmReset": "Confirm Reset",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "enrichTitle": "Dating Enrichment (AI)",
+    "enrichDescription": "Fill missing year-level dating via OpenAI. Results are saved with LOW confidence.",
+    "enrichFathers": "Church Fathers",
+    "enrichManuscripts": "Manuscripts",
+    "enrichAll": "All Domains",
+    "enrichButton": "Enrich"
   },
   "bookDetail": {
     "coverageAsOf": "Coverage as of Century {century}",

@@ -3,6 +3,7 @@ import {
   getIngestionStatus,
   triggerIngestion,
   resetAndReIngest,
+  triggerDatingEnrichment,
 } from "@/lib/api";
 
 export function useIngestionStatus() {
@@ -38,5 +39,12 @@ export function useResetAndReIngest() {
         queryKey: ["admin", "ingestion", "status"],
       });
     },
+  });
+}
+
+export function useDatingEnrichment() {
+  return useMutation({
+    mutationFn: ({ domain, limit }: { domain: "fathers" | "manuscripts" | "all"; limit: number }) =>
+      triggerDatingEnrichment(domain, limit),
   });
 }

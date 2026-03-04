@@ -281,6 +281,19 @@ export async function resetAndReIngest(): Promise<{ message: string }> {
   return res.json();
 }
 
+export async function triggerDatingEnrichment(
+  domain: "fathers" | "manuscripts" | "all" = "fathers",
+  limit: number = 50,
+): Promise<{ message: string }> {
+  const params = buildParams({ domain, limit: limit.toString() });
+  const res = await fetch(`${BASE}/admin/enrich-dating${params}`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
 export function getChurchFathers(params?: {
   century?: number;
   tradition?: string;
