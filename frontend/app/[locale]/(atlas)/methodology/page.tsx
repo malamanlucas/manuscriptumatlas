@@ -18,7 +18,7 @@ export default function MethodologyPage() {
     <div className="min-h-screen">
       <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="p-4 md:p-6 space-y-8 max-w-3xl">
+      <div className="mx-auto w-full max-w-3xl p-4 md:p-6 space-y-8">
         {/* Section 1 — Overview */}
         <section className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t("overviewTitle")}</h2>

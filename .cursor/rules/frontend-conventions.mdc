@@ -65,6 +65,7 @@ frontend/
 ## Responsividade
 
 - Todo componente e página deve funcionar em mobile (≥320px), tablet e desktop
+- Páginas de dashboard/admin (ex.: ingestion-status, observatory): usar `max-w-7xl` com `mx-auto w-full` para preencher o espaço disponível; evitar `max-w-3xl` que deixa espaço vazio à direita
 - Usar breakpoints do Tailwind: `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
 - Layouts com grid/flex devem adaptar colunas por breakpoint (ex.: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`)
 - Tabelas largas devem ter scroll horizontal em mobile (`overflow-x-auto`)
@@ -74,8 +75,10 @@ frontend/
 
 ## Internacionalização
 
+- **Frontend** (labels, botões, UI): `messages/{locale}.json` + `useTranslations()`
+- **Backend** (dados de domínio): API retorna textos traduzidos via `?locale=` e tabelas `*_translations`
 - Arquivos de mensagens em `messages/{locale}.json`
-- Usar `useTranslations()` do next-intl para acessar strings
+- Usar `useTranslations()` do next-intl para strings de interface
 - Todas as rotas sob `[locale]/`
 - Idiomas suportados: pt (português), en (inglês), es (espanhol)
 - **Nenhum texto visível ao usuário deve ser hardcoded** — sempre usar chaves de tradução

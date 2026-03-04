@@ -243,7 +243,13 @@
     "limitationVariants": "Este sistema mede {coverage} (se um versículo existe em pelo menos um manuscrito), não {textualVariation} (diferenças entre manuscritos). A existência de um versículo em um manuscrito não implica que seu texto é idêntico ao de outros manuscritos.",
     "limitationVariantsLabel": "Não mede variantes textuais:",
     "coverageTerm": "cobertura",
-    "textualVariationTerm": "variação textual"
+    "textualVariationTerm": "variação textual",
+    "councilSources": "Fontes de Dados dos Concílios",
+    "councilSourcesIntro": "Os dados dos concílios (ano, local, participantes, cânones) são reunidos de múltiplas fontes históricas. Cada fonte é ponderada por confiabilidade (primária, acadêmica, estruturada, agregadora). O score de confiança reflete a concordância entre essas fontes.",
+    "curatedSeedTitle": "Curated Seed Dataset",
+    "curatedSeedDescription": "Lista curada pelo projeto com base em múltiplas referências documentais e acadêmicas (Schaff, Hefele, Catholic Encyclopedia, etc.). Usada como base para os registros de concílios e para preencher lacunas quando fontes externas não estão disponíveis.",
+    "councilSourcesOutro": "Outras fontes incluem Fordham Medieval Sourcebook, Philip Schaff, Karl Hefele, Catholic Encyclopedia, Wikidata e Wikipedia. Acesse a aba Fontes na página de detalhe de cada concílio para ver a lista completa.",
+    "learnMore": "Saiba mais"
   },
   "faq": {
     "title": "FAQ Acadêmico",
@@ -342,7 +348,9 @@
         "council_extract_wikidata": "Enriquecimento Wikidata",
         "council_extract_wikipedia": "Conteúdo da Wikipedia",
         "council_consensus": "Consenso de fontes",
-        "council_summaries": "Resumos e traduções IA"
+        "council_summaries": "Resumos e traduções IA",
+        "council_translate_all": "Traduções de concílios (pt/es)",
+        "heresy_translate_all": "Traduções de heresias (pt/es)"
       }
     }
   },
@@ -539,7 +547,19 @@
       "ecumenical": "Ecumênico",
       "regional": "Regional",
       "local": "Local"
-    }
+    },
+    "confidenceExplainer": "Score de concordância entre as fontes históricas consultadas. Quanto mais fontes concordam sobre ano, local e participantes, maior a confiança.",
+    "confidenceLabel": "Confiança dos Dados",
+    "confidenceHigh": "Alta confiança — a maioria das fontes concorda sobre os fatos principais.",
+    "confidenceMedium": "Confiança moderada — alguma divergência entre as fontes.",
+    "confidenceLow": "Baixa confiança — divergência significativa ou poucas fontes disponíveis.",
+    "confidenceLevels": "Verde ≥ 85% · Amarelo ≥ 60% · Vermelho < 60%",
+    "sourcesUsed": "Fontes utilizadas",
+    "sourceCountShort": "{count, plural, one {# fonte} other {# fontes}}",
+    "conflictResolved": "Conflito resolvido",
+    "conflictDetail": "Houve divergência entre fontes — resolução aplicada:",
+    "methodology": "Como é calculado?",
+    "methodologyText": "Cada fonte é ponderada por confiabilidade (fontes primárias = 1.0, acadêmicas = 0.8, estruturadas = 0.7, agregadores = 0.5). O score reflete a concordância ponderada entre dados de ano, local e participantes."
   },
   "heresies": {
     "title": "Heresias",

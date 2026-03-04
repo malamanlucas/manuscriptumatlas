@@ -63,7 +63,7 @@ export default function FathersPage() {
     <div className="min-h-screen">
       <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         {/* Filters */}
         <div className="rounded-xl border border-border bg-card p-4 md:p-6 space-y-4">
           <div>

@@ -35,10 +35,10 @@ export default function ManuscriptsPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end md:justify-between">
+            <div className="flex shrink-0 gap-2">
               <button
                 onClick={() => setType(undefined)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -70,7 +70,7 @@ export default function ManuscriptsPage() {
                 {tc("uncials")}
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">{t("centuryFilter")}</label>
               <select
                 value={century ?? ""}
@@ -91,8 +91,8 @@ export default function ManuscriptsPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            <div className="min-w-[200px] shrink-0">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground whitespace-nowrap">
                 {t("yearFilter")}
               </label>
               <YearRangeFilter

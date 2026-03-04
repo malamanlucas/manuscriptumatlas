@@ -31,6 +31,7 @@ alwaysApply: false
 - `V13__add_year_dating_fields.sql` — Campos de datação por ano (year_min, year_max, year_best, dating_source, dating_reference, dating_confidence) em manuscripts e church_fathers + índices em year_best
 - `V14__create_councils.sql` — Domínio de concílios: councils, traduções, vínculos com pais, fontes/claims e fases de ingestão
 - `V15__create_heresies_canons.sql` — Domínio de heresias e cânones: heresies, traduções, relação conselho↔heresia e council_canons
+- `V16__add_heresy_translation_source.sql` — Coluna translation_source em heresy_translations (seed, machine, reviewed)
 
 ## Regras
 
@@ -38,7 +39,7 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V16**
+- Próxima migração: **V17**
 
 ## IMPORTANTE — Flyway não executa migrations
 

@@ -81,7 +81,7 @@ export default function TestimonyPage() {
         subtitle={t("testimony.subtitle")}
       />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Link
           href="/fathers"
           className="inline-flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"

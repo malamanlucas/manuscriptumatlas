@@ -15,7 +15,7 @@ export default function HeresiesPage() {
   return (
     <div className="min-h-screen">
       <Header title={t("title")} subtitle={t("subtitle")} />
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         {query.isLoading && <div className="text-sm text-muted-foreground">{tc("loading")}</div>}
         {query.error && <div className="text-sm text-red-500">{(query.error as Error).message}</div>}
 

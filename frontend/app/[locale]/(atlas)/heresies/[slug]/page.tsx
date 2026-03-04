@@ -39,7 +39,7 @@ export default function HeresyDetailPage() {
     <div className="min-h-screen">
       <Header title={heresy.name} subtitle={t("detailSubtitle")} />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Link href="/heresies" className="inline-flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-secondary">
           <ArrowLeft className="h-4 w-4" />
           {t("backToList")}

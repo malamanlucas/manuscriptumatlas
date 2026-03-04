@@ -152,7 +152,7 @@ export default function FaqPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-4 md:p-6 space-y-8 max-w-3xl">
+      <div className="mx-auto w-full max-w-3xl p-4 md:p-6 space-y-8">
         {faqData.map((category) => (
           <section key={category.title}>
             <h2 className="text-base font-semibold mb-3">{category.title}</h2>

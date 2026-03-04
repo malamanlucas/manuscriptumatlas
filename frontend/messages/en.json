@@ -243,7 +243,13 @@
     "limitationVariants": "This system measures {coverage} (whether a verse exists in at least one manuscript), not {textualVariation} (differences between manuscripts). The existence of a verse in a manuscript does not imply that its text is identical to that of other manuscripts.",
     "limitationVariantsLabel": "Does not measure textual variants:",
     "coverageTerm": "coverage",
-    "textualVariationTerm": "textual variation"
+    "textualVariationTerm": "textual variation",
+    "councilSources": "Council Data Sources",
+    "councilSourcesIntro": "Council data (year, location, participants, canons) is assembled from multiple historical sources. Each source is weighted by reliability (primary, academic, structured, aggregator). The confidence score reflects agreement across these sources.",
+    "curatedSeedTitle": "Curated Seed Dataset",
+    "curatedSeedDescription": "Project-curated list based on multiple documentary and academic references (Schaff, Hefele, Catholic Encyclopedia, etc.). Used as the foundation for council records and to fill gaps when external sources are unavailable.",
+    "councilSourcesOutro": "Other council sources include Fordham Medieval Sourcebook, Philip Schaff, Karl Hefele, Catholic Encyclopedia, Wikidata, and Wikipedia. See the Sources tab on each council detail page for the full list.",
+    "learnMore": "Learn more"
   },
   "faq": {
     "title": "Academic FAQ",
@@ -342,7 +348,9 @@
         "council_extract_wikidata": "Wikidata enrichment",
         "council_extract_wikipedia": "Wikipedia content",
         "council_consensus": "Source consensus",
-        "council_summaries": "AI summaries and translations"
+        "council_summaries": "AI summaries and translations",
+        "council_translate_all": "Council translations (pt/es)",
+        "heresy_translate_all": "Heresy translations (pt/es)"
       }
     }
   },
@@ -539,7 +547,19 @@
       "ecumenical": "Ecumenical",
       "regional": "Regional",
       "local": "Local"
-    }
+    },
+    "confidenceExplainer": "Agreement score across historical sources consulted. The more sources agree on year, location, and participants, the higher the confidence.",
+    "confidenceLabel": "Data Confidence",
+    "confidenceHigh": "High confidence — most sources agree on the key facts.",
+    "confidenceMedium": "Moderate confidence — some divergence between sources.",
+    "confidenceLow": "Low confidence — significant disagreement or few sources available.",
+    "confidenceLevels": "Green ≥ 85% · Yellow ≥ 60% · Red < 60%",
+    "sourcesUsed": "Sources used",
+    "sourceCountShort": "{count, plural, one {# source} other {# sources}}",
+    "conflictResolved": "Conflict resolved",
+    "conflictDetail": "Sources disagreed — resolution applied:",
+    "methodology": "How is this calculated?",
+    "methodologyText": "Each source is weighted by reliability (primary sources = 1.0, academic = 0.8, structured = 0.7, aggregators = 0.5). The score reflects weighted agreement across year, location, and participant data."
   },
   "heresies": {
     "title": "Heresies",

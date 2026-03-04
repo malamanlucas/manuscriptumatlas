@@ -11,7 +11,7 @@ import { CouncilTypeBadge } from "@/components/councils/CouncilTypeBadge";
 import { SummaryToggle } from "@/components/councils/SummaryToggle";
 import { SourceProvenancePanel } from "@/components/councils/SourceProvenancePanel";
 import { ConfidenceDot } from "@/components/ui/ConfidenceDot";
-import { ArrowLeft, BookOpen, ScrollText, Users, ShieldAlert, Database } from "lucide-react";
+import { ArrowLeft, BookOpen, ScrollText, Users, ShieldAlert, Database, ChevronDown, ChevronUp, ExternalLink, Info } from "lucide-react";
 
 const CouncilMapView = dynamic(
   () => import("@/components/councils/CouncilMapView").then((m) => m.CouncilMapView),
@@ -26,6 +26,8 @@ export default function CouncilDetailPage() {
   const t = useTranslations("councils");
   const tc = useTranslations("common");
   const [tab, setTab] = useState<Tab>("overview");
+  const [showConflict, setShowConflict] = useState(false);
+  const [showMethodology, setShowMethodology] = useState(false);
 
   const detailQuery = useCouncilDetail(slug);
   const canonsQuery = useCouncilCanons(slug, 1, 200);
@@ -68,7 +70,7 @@ export default function CouncilDetailPage() {
     <div className="min-h-screen">
       <Header title={council.displayName} subtitle={`${t("year")}: ${council.year}${council.yearEnd ? `-${council.yearEnd}` : ""}`} />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Link href="/councils" className="inline-flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-secondary">
           <ArrowLeft className="h-4 w-4" />
           {t("backToList")}
@@ -158,6 +160,18 @@ export default function CouncilDetailPage() {
               </div>
             </div>
 
+            <ConfidenceCard
+              confidence={council.consensusConfidence}
+              dataConfidence={council.dataConfidence}
+              sourceCount={council.sourceCount}
+              conflictResolution={council.conflictResolution}
+              sourceClaims={council.sourceClaims}
+              showConflict={showConflict}
+              onToggleConflict={() => setShowConflict((v) => !v)}
+              showMethodology={showMethodology}
+              onToggleMethodology={() => setShowMethodology((v) => !v)}
+            />
+
             {mapPoint.length > 0 && <CouncilMapView points={mapPoint} height={260} />}
           </aside>
         </div>
@@ -185,5 +199,136 @@ function TabButton({
       {icon}
       {label}
     </button>
+  );
+}
+
+const confidenceBarColor: Record<string, string> = {
+  HIGH: "bg-emerald-500",
+  MEDIUM: "bg-amber-500",
+  LOW: "bg-red-500",
+};
+
+const sourceLevelColors: Record<string, string> = {
+  PRIMARY: "bg-emerald-500/15 text-emerald-400",
+  ACADEMIC: "bg-blue-500/15 text-blue-400",
+  STRUCTURED: "bg-violet-500/15 text-violet-400",
+  AGGREGATOR: "bg-zinc-500/15 text-zinc-400",
+};
+
+function ConfidenceCard({
+  confidence,
+  dataConfidence,
+  sourceCount,
+  conflictResolution,
+  sourceClaims,
+  showConflict,
+  onToggleConflict,
+  showMethodology,
+  onToggleMethodology,
+}: {
+  confidence: number;
+  dataConfidence: string;
+  sourceCount: number;
+  conflictResolution?: string | null;
+  sourceClaims: { sourceDisplayName: string; sourceLevel: string; sourcePage?: string | null }[];
+  showConflict: boolean;
+  onToggleConflict: () => void;
+  showMethodology: boolean;
+  onToggleMethodology: () => void;
+}) {
+  const t = useTranslations("councils");
+  const pct = (confidence * 100).toFixed(0);
+  const level = dataConfidence.toUpperCase();
+  const barColor = confidenceBarColor[level] ?? "bg-zinc-500";
+  const levelKey = level === "HIGH" ? "confidenceHigh" : level === "MEDIUM" ? "confidenceMedium" : "confidenceLow";
+
+  const uniqueSources = sourceClaims.reduce<{ name: string; level: string; url?: string | null }[]>((acc, claim) => {
+    if (!acc.some((s) => s.name === claim.sourceDisplayName)) {
+      acc.push({ name: claim.sourceDisplayName, level: claim.sourceLevel, url: claim.sourcePage });
+    }
+    return acc;
+  }, []);
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <h3 className="text-sm font-semibold">{t("confidenceLabel")}</h3>
+
+      <div className="mt-3 space-y-3">
+        <div>
+          <div className="mb-1 flex items-center justify-between text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`inline-block h-2 w-2 rounded-full ${barColor}`} />
+              {pct}%
+            </span>
+            <span className="text-xs text-muted-foreground">{t("sourceCountShort", { count: sourceCount })}</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        <p className="text-xs leading-relaxed text-muted-foreground">{t(levelKey)}</p>
+
+        {conflictResolution && (
+          <div>
+            <button
+              onClick={onToggleConflict}
+              className="inline-flex w-full items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400"
+            >
+              {t("conflictResolved")}
+              {showConflict ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+            {showConflict && (
+              <div className="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                <p className="mb-1 font-medium">{t("conflictDetail")}</p>
+                <p>{conflictResolution}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {uniqueSources.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">{t("sourcesUsed")}</p>
+            <div className="space-y-1.5">
+              {uniqueSources.map((source) => (
+                <div key={source.name} className="flex items-start gap-2 text-xs">
+                  <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${sourceLevelColors[source.level] ?? "bg-muted text-muted-foreground"}`}>
+                    {source.level}
+                  </span>
+                  <span className="min-w-0">
+                    {source.url?.startsWith("http://") || source.url?.startsWith("https://") ? (
+                      <a href={source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-primary hover:underline">
+                        <span className="truncate">{source.name}</span>
+                        <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                      </a>
+                    ) : (
+                      <Link href="/sources#councilSources" className="inline-flex items-center gap-1 hover:text-primary hover:underline">
+                        <span className="truncate">{source.name}</span>
+                        <Info className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                      </Link>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={onToggleMethodology}
+          className="inline-flex w-full items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-muted-foreground"
+        >
+          {showMethodology ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          {t("methodology")}
+        </button>
+        {showMethodology && (
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+            <p>{t("methodologyText")}</p>
+            <p className="mt-1 font-medium">{t("confidenceLevels")}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -91,7 +91,7 @@ function UsersContent() {
     <div className="min-h-screen">
       <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">

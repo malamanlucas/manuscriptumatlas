@@ -28,7 +28,7 @@ export default function TimelinePage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="flex-1">

@@ -56,7 +56,7 @@ function ObservatoryContent() {
     <div className="min-h-screen bg-background">
       <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
         {/* Time range + Tab bar */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">

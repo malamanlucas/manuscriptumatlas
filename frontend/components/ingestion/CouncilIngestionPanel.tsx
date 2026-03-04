@@ -22,6 +22,8 @@ const PHASES_ORDER = [
   "council_extract_wikipedia",
   "council_consensus",
   "council_summaries",
+  "council_translate_all",
+  "heresy_translate_all",
 ];
 
 export function CouncilIngestionPanel() {

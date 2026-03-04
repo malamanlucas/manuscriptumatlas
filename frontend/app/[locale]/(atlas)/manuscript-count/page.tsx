@@ -43,7 +43,7 @@ export default function ManuscriptCountPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+      <div className="mx-auto w-full max-w-5xl p-4 md:p-6 space-y-6">
         {isLoading && (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
             {t("loadingData")}

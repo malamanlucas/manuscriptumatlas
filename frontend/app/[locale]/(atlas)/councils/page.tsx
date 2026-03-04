@@ -11,7 +11,7 @@ import { CouncilsTimelineChart } from "@/components/charts/CouncilsTimelineChart
 import { CouncilTypeBadge } from "@/components/councils/CouncilTypeBadge";
 import { ConfidenceDot } from "@/components/ui/ConfidenceDot";
 import { Link } from "@/i18n/navigation";
-import { Search, Map, Table2 } from "lucide-react";
+import { Search, Map, Table2, Info } from "lucide-react";
 
 const CouncilMapView = dynamic(
   () => import("@/components/councils/CouncilMapView").then((m) => m.CouncilMapView),
@@ -29,6 +29,7 @@ export default function CouncilsPage() {
   const [yearMax, setYearMax] = useState<number | undefined>();
   const [page, setPage] = useState(1);
   const [mapMode, setMapMode] = useState(false);
+  const [showConfidenceHelp, setShowConfidenceHelp] = useState(false);
 
   const listQuery = useCouncils({
     century: yearMin || yearMax ? undefined : selectedCentury,
@@ -50,7 +51,7 @@ export default function CouncilsPage() {
     <div className="min-h-screen">
       <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-6">
           <div>
             <label className="mb-2 block text-xs font-medium text-muted-foreground">{t("filterByCentury")}</label>
@@ -152,8 +153,30 @@ export default function CouncilsPage() {
                       <th className="py-2">{t("year")}</th>
                       <th className="py-2">{tc("type")}</th>
                       <th className="py-2">{t("participants")}</th>
-                      <th className="py-2">{t("confidence")}</th>
+                      <th className="py-2">
+                        <span className="inline-flex items-center gap-1">
+                          {t("confidence")}
+                          <button
+                            onClick={() => setShowConfidenceHelp((v) => !v)}
+                            className="text-muted-foreground/70 hover:text-foreground"
+                            aria-label={t("methodology")}
+                          >
+                            <Info className="h-3 w-3" />
+                          </button>
+                        </span>
+                      </th>
                     </tr>
+                    {showConfidenceHelp && (
+                      <tr>
+                        <td colSpan={5} className="pb-3 pt-1">
+                          <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                            <p>{t("confidenceExplainer")}</p>
+                            <p className="mt-1 font-medium">{t("confidenceLevels")}</p>
+                            <p className="mt-1 text-[11px] opacity-80">{t("methodologyText")}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </thead>
                   <tbody>
                     {councils.map((c) => (
@@ -176,6 +199,7 @@ export default function CouncilsPage() {
                           <span className="inline-flex items-center gap-2">
                             <ConfidenceDot confidence={c.dataConfidence} source={`score=${c.consensusConfidence.toFixed(2)}`} />
                             <span>{(c.consensusConfidence * 100).toFixed(0)}%</span>
+                            <span className="text-xs text-muted-foreground">· {t("sourceCountShort", { count: c.sourceCount })}</span>
                           </span>
                         </td>
                       </tr>

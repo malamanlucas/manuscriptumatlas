@@ -244,6 +244,7 @@ object HeresyTranslations : IntIdTable("heresy_translations") {
     val locale = varchar("locale", 5)
     val name = varchar("name", 200)
     val description = text("description").nullable()
+    val translationSource = varchar("translation_source", 20).default("seed")
 
     init { uniqueIndex(heresyId, locale) }
 }

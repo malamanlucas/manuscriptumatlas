@@ -46,7 +46,7 @@ export default function BookDetailPage() {
         subtitle={t("coverageAsOf", { century: toRoman(century) })}
       />
 
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"

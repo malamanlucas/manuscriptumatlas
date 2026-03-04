@@ -82,9 +82,9 @@ export function YearRangeFilter({
   return (
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-xs text-muted-foreground">{t("from")}</label>
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:gap-4">
+          <div className="flex shrink-0 flex-col gap-1 sm:min-w-[6rem]">
+            <label className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{t("from")}</label>
             <input
               type="number"
               min={YEAR_MIN_BOUND}
@@ -97,8 +97,8 @@ export function YearRangeFilter({
             />
           </div>
 
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-xs text-muted-foreground">{t("to")}</label>
+          <div className="flex shrink-0 flex-col gap-1 sm:min-w-[6rem]">
+            <label className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{t("to")}</label>
             <input
               type="number"
               min={YEAR_MIN_BOUND}
@@ -112,7 +112,7 @@ export function YearRangeFilter({
           </div>
         </div>
 
-        <div className="flex items-end gap-2">
+        <div className="flex shrink-0 items-end gap-2">
           {hasValue && (
             <span className="inline-flex items-center rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground">
               {localMin || "…"}–{localMax || "…"}

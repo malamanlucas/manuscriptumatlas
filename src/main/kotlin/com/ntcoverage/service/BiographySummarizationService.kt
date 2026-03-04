@@ -8,6 +8,11 @@ import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
 
 class BiographySummarizationService {
@@ -102,6 +107,105 @@ class BiographySummarizationService {
         }
 
         return result
+    }
+
+    /**
+     * Translates council fields (displayName, shortDescription, location, mainTopics, summary) to target locale.
+     * Returns a map with the same keys, or null if translation fails.
+     */
+    suspend fun translateCouncilFields(
+        displayName: String,
+        shortDescription: String?,
+        location: String?,
+        mainTopics: String?,
+        summary: String?,
+        targetLocale: String,
+        councilName: String = ""
+    ): Map<String, String>? {
+        if (!translationEnabled || apiKey == null) return null
+        val language = localeToLanguage[targetLocale] ?: return null
+
+        val fields = mutableMapOf<String, String>()
+        if (displayName.isNotBlank()) fields["displayName"] = displayName
+        if (!shortDescription.isNullOrBlank()) fields["shortDescription"] = shortDescription
+        if (!location.isNullOrBlank()) fields["location"] = location
+        if (!mainTopics.isNullOrBlank()) fields["mainTopics"] = mainTopics
+        if (!summary.isNullOrBlank()) fields["summary"] = summary
+
+        if (fields.isEmpty()) return null
+
+        val systemPrompt = "Translate the following council data fields to $language. " +
+            "Return ONLY a valid JSON object with the exact same keys. " +
+            "Preserve proper nouns (city names, historical terms), dates, and numbers. " +
+            "Maintain neutral academic tone. No extra text, only the JSON."
+
+        val userContent = buildJsonObject { fields.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }.toString()
+
+        val startMs = System.currentTimeMillis()
+        val result = callWithRetry(systemPrompt, userContent, null, "COUNCIL_TRANSLATION")
+        val durationMs = System.currentTimeMillis() - startMs
+
+        if (result == null) {
+            log.error("COUNCIL_TRANSLATION: council=$councilName locale=$targetLocale durationMs=$durationMs status=failed")
+            return null
+        }
+
+        return try {
+            val clean = result.trim().removeSurrounding("```json", "```").removeSurrounding("```", "```").trim()
+            val obj = json.parseToJsonElement(clean).jsonObject
+            val parsed = obj.mapValues { (_, v) -> v.jsonPrimitive.content }
+            log.info("COUNCIL_TRANSLATION: council=$councilName locale=$targetLocale durationMs=$durationMs status=success")
+            parsed
+        } catch (e: Exception) {
+            log.error("COUNCIL_TRANSLATION: failed to parse JSON for council=$councilName: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Translates heresy fields (name, description) to target locale.
+     * Returns a map with keys "name" and optionally "description", or null if translation fails.
+     */
+    suspend fun translateHeresyFields(
+        name: String,
+        description: String?,
+        targetLocale: String,
+        heresyName: String = ""
+    ): Map<String, String>? {
+        if (!translationEnabled || apiKey == null) return null
+        val language = localeToLanguage[targetLocale] ?: return null
+
+        val fields = mutableMapOf<String, String>()
+        if (name.isNotBlank()) fields["name"] = name
+        if (!description.isNullOrBlank()) fields["description"] = description
+
+        if (fields.isEmpty()) return null
+
+        val systemPrompt = "Translate the following heresy data fields to $language. " +
+            "Return ONLY a valid JSON object with the exact same keys. " +
+            "Preserve proper nouns and historical terms. Maintain neutral academic tone. No extra text, only the JSON."
+
+        val userContent = buildJsonObject { fields.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }.toString()
+
+        val startMs = System.currentTimeMillis()
+        val result = callWithRetry(systemPrompt, userContent, null, "HERESY_TRANSLATION")
+        val durationMs = System.currentTimeMillis() - startMs
+
+        if (result == null) {
+            log.error("HERESY_TRANSLATION: heresy=$heresyName locale=$targetLocale durationMs=$durationMs status=failed")
+            return null
+        }
+
+        return try {
+            val clean = result.trim().removeSurrounding("```json", "```").removeSurrounding("```", "```").trim()
+            val obj = json.parseToJsonElement(clean).jsonObject
+            val parsed = obj.mapValues { (_, v) -> v.jsonPrimitive.content }
+            log.info("HERESY_TRANSLATION: heresy=$heresyName locale=$targetLocale durationMs=$durationMs status=success")
+            parsed
+        } catch (e: Exception) {
+            log.error("HERESY_TRANSLATION: failed to parse JSON for heresy=$heresyName: ${e.message}")
+            null
+        }
     }
 
     private suspend fun callWithRetry(systemPrompt: String, userContent: String, fallback: String?, logPrefix: String): String? {

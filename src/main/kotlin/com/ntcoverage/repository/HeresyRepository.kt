@@ -75,23 +75,49 @@ class HeresyRepository {
         }.value
     }
 
+    data class TranslationMeta(val translationSource: String?, val hasName: Boolean, val hasDescription: Boolean)
+
+    fun findTranslationMeta(heresyId: Int, locale: String): TranslationMeta? = transaction {
+        HeresyTranslations.selectAll().where {
+            (HeresyTranslations.heresyId eq heresyId) and (HeresyTranslations.locale eq locale)
+        }.singleOrNull()?.let { row ->
+            TranslationMeta(
+                translationSource = row.getOrNull(HeresyTranslations.translationSource),
+                hasName = !row[HeresyTranslations.name].isNullOrBlank(),
+                hasDescription = !row[HeresyTranslations.description].isNullOrBlank()
+            )
+        }
+    }
+
     fun insertOrUpdateTranslation(entry: HeresyTranslationSeedEntry): Boolean = transaction {
         val heresyId = findByNormalizedName(entry.normalizedName) ?: return@transaction false
+        insertOrUpdateTranslation(heresyId, entry.locale, entry.name, entry.description, "seed")
+    }
+
+    fun insertOrUpdateTranslation(
+        heresyId: Int,
+        locale: String,
+        name: String,
+        description: String? = null,
+        translationSource: String = "seed"
+    ): Boolean = transaction {
         val existing = HeresyTranslations.selectAll().where {
-            (HeresyTranslations.heresyId eq heresyId) and (HeresyTranslations.locale eq entry.locale)
+            (HeresyTranslations.heresyId eq heresyId) and (HeresyTranslations.locale eq locale)
         }.singleOrNull()
 
         if (existing == null) {
             HeresyTranslations.insert {
                 it[HeresyTranslations.heresyId] = heresyId
-                it[locale] = entry.locale
-                it[name] = entry.name
-                it[description] = entry.description
+                it[HeresyTranslations.locale] = locale
+                it[HeresyTranslations.name] = name
+                it[HeresyTranslations.description] = description
+                it[HeresyTranslations.translationSource] = translationSource
             }
         } else {
             HeresyTranslations.update({ HeresyTranslations.id eq existing[HeresyTranslations.id].value }) {
-                it[name] = entry.name
-                it[description] = entry.description
+                it[HeresyTranslations.name] = name
+                it[HeresyTranslations.description] = description
+                it[HeresyTranslations.translationSource] = translationSource
             }
         }
         true

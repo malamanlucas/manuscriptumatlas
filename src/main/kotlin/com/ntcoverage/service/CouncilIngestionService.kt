@@ -3,10 +3,12 @@ package com.ntcoverage.service
 import com.ntcoverage.config.SourceFileCache
 import com.ntcoverage.model.CouncilFathers
 import com.ntcoverage.model.Councils
+import com.ntcoverage.model.Heresies
 import com.ntcoverage.repository.*
 import com.ntcoverage.scraper.CouncilSourceExtractor
 import com.ntcoverage.seed.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -191,6 +193,123 @@ class CouncilIngestionService(
         log.info("COUNCIL_SUMMARIES: finished {} councils", rows.size)
     }
 
+    suspend fun phase7TranslateAll(limit: Int = 100) = runPhaseTracked("council_translate_all", runBy = "manual") {
+        val councilRows = transaction {
+            Councils.selectAll()
+                .orderBy(Councils.year to SortOrder.ASC, Councils.id to SortOrder.ASC)
+                .limit(limit)
+                .map { row ->
+                    CouncilTranslateTarget(
+                        id = row[Councils.id].value,
+                        displayName = row[Councils.displayName],
+                        shortDescription = row[Councils.shortDescription],
+                        location = row[Councils.location],
+                        mainTopics = row[Councils.mainTopics],
+                        summary = row[Councils.summary]
+                    )
+                }
+        }
+        log.info("COUNCIL_TRANSLATE_ALL: translating {} councils to pt/es (limit={})", councilRows.size, limit)
+
+        var translated = 0
+        councilRows.forEachIndexed { idx, target ->
+            listOf("pt", "es").forEach { locale ->
+                val meta = councilRepository.findTranslationMeta(target.id, locale)
+                if (meta?.translationSource == "reviewed") {
+                    log.debug("COUNCIL_TRANSLATE_ALL: skipping councilId={} locale={} (reviewed)", target.id, locale)
+                    return@forEach
+                }
+                if (meta != null && meta.hasDisplayName && meta.hasSummary) {
+                    log.debug("COUNCIL_TRANSLATE_ALL: skipping councilId={} locale={} (complete)", target.id, locale)
+                    return@forEach
+                }
+
+                val displayName = target.displayName
+                if (displayName.isBlank()) return@forEach
+
+                log.info("COUNCIL_TRANSLATE_ALL: translating '{}' to {}", displayName, locale)
+                val result = summarizationService.translateCouncilFields(
+                    displayName = displayName,
+                    shortDescription = target.shortDescription,
+                    location = target.location,
+                    mainTopics = target.mainTopics,
+                    summary = target.summary,
+                    targetLocale = locale,
+                    councilName = displayName
+                )
+                if (result != null && result.isNotEmpty()) {
+                    councilRepository.insertOrUpdateTranslation(
+                        councilId = target.id,
+                        locale = locale,
+                        displayName = result["displayName"] ?: displayName,
+                        shortDescription = result["shortDescription"],
+                        location = result["location"],
+                        mainTopics = result["mainTopics"],
+                        summary = result["summary"],
+                        translationSource = "machine"
+                    )
+                    translated++
+                }
+            }
+            phaseTracker.markProgress("council_translate_all", idx + 1, councilRows.size)
+        }
+        log.info("COUNCIL_TRANSLATE_ALL: finished {} councils, {} translations applied", councilRows.size, translated)
+    }
+
+    suspend fun phase8TranslateHeresies(limit: Int = 50) = runPhaseTracked("heresy_translate_all", runBy = "manual") {
+        val heresyRows = transaction {
+            Heresies.selectAll()
+                .orderBy(Heresies.centuryOrigin to SortOrder.ASC_NULLS_LAST, Heresies.name to SortOrder.ASC)
+                .limit(limit)
+                .map { row ->
+                    HeresyTranslateTarget(
+                        id = row[Heresies.id].value,
+                        name = row[Heresies.name],
+                        description = row[Heresies.description]
+                    )
+                }
+        }
+        log.info("HERESY_TRANSLATE_ALL: translating {} heresies to pt/es (limit={})", heresyRows.size, limit)
+
+        var translated = 0
+        heresyRows.forEachIndexed { idx, target ->
+            listOf("pt", "es").forEach { locale ->
+                val meta = heresyRepository.findTranslationMeta(target.id, locale)
+                if (meta?.translationSource == "reviewed") {
+                    log.debug("HERESY_TRANSLATE_ALL: skipping heresyId={} locale={} (reviewed)", target.id, locale)
+                    return@forEach
+                }
+                if (meta != null && meta.hasName && (target.description.isNullOrBlank() || meta.hasDescription)) {
+                    log.debug("HERESY_TRANSLATE_ALL: skipping heresyId={} locale={} (complete)", target.id, locale)
+                    return@forEach
+                }
+
+                val name = target.name
+                if (name.isBlank()) return@forEach
+
+                log.info("HERESY_TRANSLATE_ALL: translating '{}' to {}", name, locale)
+                val result = summarizationService.translateHeresyFields(
+                    name = name,
+                    description = target.description,
+                    targetLocale = locale,
+                    heresyName = name
+                )
+                if (result != null && result.isNotEmpty()) {
+                    heresyRepository.insertOrUpdateTranslation(
+                        heresyId = target.id,
+                        locale = locale,
+                        name = result["name"] ?: name,
+                        description = result["description"],
+                        translationSource = "machine"
+                    )
+                    translated++
+                }
+            }
+            phaseTracker.markProgress("heresy_translate_all", idx + 1, heresyRows.size)
+        }
+        log.info("HERESY_TRANSLATE_ALL: finished {} heresies, {} translations applied", heresyRows.size, translated)
+    }
+
     suspend fun runPhases(phases: List<String>) {
         val runStartedAt = System.currentTimeMillis()
         log.info("COUNCIL_INGESTION: starting {} phases: {}", phases.size, phases)
@@ -207,6 +326,8 @@ class CouncilIngestionService(
                 "council_extract_wikipedia" -> phase4Wikipedia()
                 "council_consensus" -> phase5Consensus()
                 "council_summaries" -> phase6Summaries()
+                "council_translate_all" -> phase7TranslateAll()
+                "heresy_translate_all" -> phase8TranslateHeresies()
             }
             val phaseElapsed = System.currentTimeMillis() - phaseStartedAt
             val pct = ((idx + 1) * 100) / phases.size
@@ -356,6 +477,21 @@ class CouncilIngestionService(
         val originalText: String?
     )
 
+    private data class CouncilTranslateTarget(
+        val id: Int,
+        val displayName: String,
+        val shortDescription: String?,
+        val location: String?,
+        val mainTopics: String?,
+        val summary: String?
+    )
+
+    private data class HeresyTranslateTarget(
+        val id: Int,
+        val name: String,
+        val description: String?
+    )
+
     companion object {
         val ALL_PHASES = listOf(
             "council_seed",
@@ -366,7 +502,9 @@ class CouncilIngestionService(
             "council_extract_wikidata",
             "council_extract_wikipedia",
             "council_consensus",
-            "council_summaries"
+            "council_summaries",
+            "council_translate_all",
+            "heresy_translate_all"
         )
     }
 }

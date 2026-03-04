@@ -253,6 +253,20 @@ class CouncilRepository {
         } > 0
     }
 
+    data class TranslationMeta(val translationSource: String?, val hasDisplayName: Boolean, val hasSummary: Boolean)
+
+    fun findTranslationMeta(councilId: Int, locale: String): TranslationMeta? = transaction {
+        CouncilTranslations.selectAll().where {
+            (CouncilTranslations.councilId eq councilId) and (CouncilTranslations.locale eq locale)
+        }.singleOrNull()?.let { row ->
+            TranslationMeta(
+                translationSource = row[CouncilTranslations.translationSource],
+                hasDisplayName = !row[CouncilTranslations.displayName].isNullOrBlank(),
+                hasSummary = !row[CouncilTranslations.summary].isNullOrBlank()
+            )
+        }
+    }
+
     fun insertOrUpdateTranslation(
         councilId: Int,
         locale: String,
