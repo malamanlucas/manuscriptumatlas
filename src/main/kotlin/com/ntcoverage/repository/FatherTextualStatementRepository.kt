@@ -43,12 +43,14 @@ class FatherTextualStatementRepository {
         topic: String? = null,
         century: Int? = null,
         tradition: String? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null,
         page: Int = 1,
         limit: Int = 20,
         locale: String = "en"
     ): List<TextualStatementDTO> = transaction {
         val query = sourceFor(locale).selectAll()
-        applyFilters(query, topic, century, tradition)
+        applyFilters(query, topic, century, tradition, yearMin, yearMax)
 
         query
             .orderBy(
@@ -63,10 +65,12 @@ class FatherTextualStatementRepository {
     fun countAll(
         topic: String? = null,
         century: Int? = null,
-        tradition: String? = null
+        tradition: String? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null
     ): Int = transaction {
         val query = baseJoin.selectAll()
-        applyFilters(query, topic, century, tradition)
+        applyFilters(query, topic, century, tradition, yearMin, yearMax)
         query.count().toInt()
     }
 
@@ -196,12 +200,22 @@ class FatherTextualStatementRepository {
         query: Query,
         topic: String?,
         century: Int?,
-        tradition: String?
+        tradition: String?,
+        yearMin: Int? = null,
+        yearMax: Int? = null
     ) {
         if (topic != null) {
             query.andWhere { FatherTextualStatements.topic eq topic }
         }
-        if (century != null) {
+        if (yearMin != null || yearMax != null) {
+            query.andWhere { ChurchFathers.yearMin.isNotNull() }
+            if (yearMin != null) {
+                query.andWhere { ChurchFathers.yearMax greaterEq yearMin }
+            }
+            if (yearMax != null) {
+                query.andWhere { ChurchFathers.yearMin lessEq yearMax }
+            }
+        } else if (century != null) {
             query.andWhere {
                 (ChurchFathers.centuryMin lessEq century) and
                 (ChurchFathers.centuryMax greaterEq century)

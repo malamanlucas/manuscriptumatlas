@@ -34,6 +34,12 @@ object Manuscripts : IntIdTable("manuscripts") {
     val geographicOrigin = varchar("geographic_origin", 200).nullable()
     val discoveryLocation = varchar("discovery_location", 200).nullable()
     val ntvmrUrl = varchar("ntvmr_url", 500).nullable()
+    val yearMin = integer("year_min").nullable()
+    val yearMax = integer("year_max").nullable()
+    val yearBest = integer("year_best").nullable()
+    val datingSource = varchar("dating_source", 100).nullable()
+    val datingReference = text("dating_reference").nullable()
+    val datingConfidence = varchar("dating_confidence", 10).nullable()
 }
 
 object ManuscriptSources : IntIdTable("manuscript_sources") {
@@ -110,6 +116,12 @@ object ChurchFathers : IntIdTable("church_fathers") {
     val biographyOriginal = text("biography_original").nullable()
     val biographySummary = text("biography_summary").nullable()
     val biographySummaryReviewed = bool("biography_summary_reviewed").default(false)
+    val yearMin = integer("year_min").nullable()
+    val yearMax = integer("year_max").nullable()
+    val yearBest = integer("year_best").nullable()
+    val datingSource = varchar("dating_source", 100).nullable()
+    val datingReference = text("dating_reference").nullable()
+    val datingConfidence = varchar("dating_confidence", 10).nullable()
 }
 
 object FatherTextualStatements : IntIdTable("father_textual_statements") {

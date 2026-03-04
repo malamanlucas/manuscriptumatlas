@@ -13,7 +13,7 @@ export default function SourcesPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-8 max-w-3xl">
+      <div className="p-4 md:p-6 space-y-8 max-w-3xl">
         <section className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("primarySource")}

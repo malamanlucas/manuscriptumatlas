@@ -15,6 +15,8 @@ export function useTextualStatements(params?: {
   tradition?: string;
   page?: number;
   limit?: number;
+  yearMin?: number;
+  yearMax?: number;
 }) {
   const locale = useLocale();
   return useQuery({
@@ -26,6 +28,8 @@ export function useTextualStatements(params?: {
       params?.tradition,
       params?.page,
       params?.limit,
+      params?.yearMin,
+      params?.yearMax,
     ],
     queryFn: () => getFatherStatements({ ...params, locale }),
     staleTime: 5 * 60 * 1000,

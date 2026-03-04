@@ -12,10 +12,12 @@ class ManuscriptService(private val manuscriptRepository: ManuscriptRepository) 
     fun listManuscripts(
         type: String? = null,
         century: Int? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null,
         page: Int = 1,
         limit: Int = 50
     ): List<ManuscriptSummary> {
-        val rows = manuscriptRepository.findAll(type, century, page, limit)
+        val rows = manuscriptRepository.findAll(type, century, yearMin, yearMax, page, limit)
         return rows.map { row ->
             val verses = manuscriptRepository.getBooksAndVersesForManuscript(row.id)
             val bookCount = verses.map { it.bookName }.distinct().size
@@ -26,7 +28,12 @@ class ManuscriptService(private val manuscriptRepository: ManuscriptRepository) 
                 centuryMax = row.centuryMax,
                 manuscriptType = row.manuscriptType,
                 bookCount = bookCount,
-                verseCount = verses.size
+                verseCount = verses.size,
+                yearMin = row.yearMin,
+                yearMax = row.yearMax,
+                yearBest = row.yearBest,
+                datingConfidence = row.datingConfidence,
+                datingSource = row.datingSource
             )
         }
     }
@@ -72,7 +79,13 @@ class ManuscriptService(private val manuscriptRepository: ManuscriptRepository) 
             intervals = intervals,
             dataSource = dataSource,
             ntvmrUrl = ntvmrUrl,
-            historicalNotes = historicalNotes
+            historicalNotes = historicalNotes,
+            yearMin = row.yearMin,
+            yearMax = row.yearMax,
+            yearBest = row.yearBest,
+            datingSource = row.datingSource,
+            datingReference = row.datingReference,
+            datingConfidence = row.datingConfidence
         )
     }
 }

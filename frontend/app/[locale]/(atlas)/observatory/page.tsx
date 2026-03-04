@@ -65,7 +65,7 @@ function ObservatoryContent() {
           </div>
 
           {/* Time presets */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-card p-1">
             {TIME_PRESETS.map((preset) => (
               <button
                 key={preset.label}

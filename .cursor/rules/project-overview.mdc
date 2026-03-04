@@ -26,8 +26,8 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 | `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 5 arquivos |
 | `model` | Tables (16 tabelas Exposed) e DTOs (65 `@Serializable`) |
 | `repository` | Acesso a dados via `transaction {}` (11 repositórios) |
-| `service` | Lógica de negócio e orquestração (14 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (9 arquivos de rotas, 46 endpoints) |
+| `service` | Lógica de negócio e orquestração (15 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (9 arquivos de rotas, 47 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
 | `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 7 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
@@ -54,6 +54,9 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 - **UserRole**: ADMIN (acesso total) ou MEMBER (páginas públicas, sem Observatory/Ingestion/User Management)
 - **AuthGate**: componente React reutilizável que protege páginas admin (login Google + verificação de role)
 - **Sidebar reorganizada**: 5 grupos (Analysis, Patristic, Reference, Books, Administration); grupo Administration visível apenas para ADMIN
+- **Dating enrichment**: datação por ano (year_min, year_max, year_best) para manuscritos e pais da igreja; fontes: NTVMR (confidence=HIGH), seed (MEDIUM), OpenAI (LOW)
+- **DatingConfidence**: HIGH (NTVMR/fonte acadêmica primária), MEDIUM (seed curado), LOW (OpenAI, até validação manual)
+- **DatingEnrichmentService**: enriquecimento sob demanda via OpenAI para obter anos de datação; disparado manualmente via `POST /admin/enrich-dating`
 
 ## Padrões importantes
 

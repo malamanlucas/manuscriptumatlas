@@ -40,7 +40,9 @@ data class ManuscriptSeed(
     val centuryMin: Int,
     val centuryMax: Int,
     val type: String,
-    val content: List<BookContent>
+    val content: List<BookContent>,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null
 )
 
 @Serializable
@@ -139,7 +141,12 @@ data class ManuscriptSummary(
     val centuryMax: Int,
     val manuscriptType: String?,
     val bookCount: Int,
-    val verseCount: Int
+    val verseCount: Int,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null,
+    val datingConfidence: String? = null,
+    val datingSource: String? = null
 )
 
 @Serializable
@@ -153,7 +160,13 @@ data class ManuscriptDetailResponse(
     val intervals: List<BookInterval>,
     val dataSource: String,
     val ntvmrUrl: String,
-    val historicalNotes: String? = null
+    val historicalNotes: String? = null,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null,
+    val datingSource: String? = null,
+    val datingReference: String? = null,
+    val datingConfidence: String? = null
 )
 
 @Serializable
@@ -262,7 +275,13 @@ data class ChurchFatherSummary(
     val centuryMin: Int,
     val centuryMax: Int,
     val tradition: String,
-    val primaryLocation: String? = null
+    val primaryLocation: String? = null,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null,
+    val datingConfidence: String? = null,
+    val datingSource: String? = null,
+    val datingReference: String? = null
 )
 
 @Serializable
@@ -279,7 +298,13 @@ data class ChurchFatherDetail(
     val mannerOfDeath: String? = null,
     val biographySummary: String? = null,
     val biographyOriginal: String? = null,
-    val biographyIsLong: Boolean = false
+    val biographyIsLong: Boolean = false,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null,
+    val datingSource: String? = null,
+    val datingReference: String? = null,
+    val datingConfidence: String? = null
 )
 
 @Serializable

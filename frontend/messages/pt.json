@@ -48,7 +48,8 @@
     "users": "Usuários",
     "books": "Livros",
     "allBooks": "Todos os 27 Livros",
-    "version": "v2.0 · Séculos I–X"
+    "version": "v2.0 · Séculos I–X",
+    "methodology": "Metodologia"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -90,6 +91,7 @@
     "title": "Explorador de Manuscritos",
     "subtitle": "Navegue por papiros e manuscritos unciais",
     "centuryFilter": "Século:",
+    "yearFilter": "Faixa de anos",
     "loadingManuscripts": "Carregando manuscritos...",
     "gaId": "GA ID",
     "name": "Nome",
@@ -112,7 +114,8 @@
     "booksPreserved": "Livros Preservados",
     "intervalsSummary": "Resumo de Intervalos",
     "chapters": "Capítulos",
-    "verses": "Versículos"
+    "verses": "Versículos",
+    "dating": "Datação"
   },
   "timeline": {
     "title": "Timeline",
@@ -390,6 +393,14 @@
     "allCenturies": "Todos os Séculos",
     "filterByCentury": "Filtro por Século",
     "filterByTradition": "Tradição",
+    "filterByYear": "Filtrar por Ano",
+    "dating": "Datação",
+    "compactView": "Compacta",
+    "completeView": "Completa",
+    "confidenceColumn": "Confiança da datação",
+    "sourceColumn": "Fonte",
+    "datingColumn": "Datação",
+    "referenceColumn": "Referência",
     "searchPlaceholder": "Buscar por nome...",
     "traditions": {
       "all": "Todas",
@@ -568,5 +579,67 @@
       "firstSeen": "Primeiro Acesso",
       "lastActivity": "Última Atividade"
     }
+  },
+  "dating": {
+    "high": "Alta",
+    "medium": "Média",
+    "low": "Baixa",
+    "aiGenerated": "Gerado por IA",
+    "source": "Fonte",
+    "dating": "Datação",
+    "confidenceTooltip": "{source} (confiança {level} da datação)"
+  },
+  "yearFilter": {
+    "from": "De",
+    "to": "Até",
+    "clear": "Limpar",
+    "placeholderFrom": "ex. 100",
+    "placeholderTo": "ex. 300",
+    "filterByYear": "Filtrar por Ano"
+  },
+  "methodology": {
+    "title": "Metodologia de Datação",
+    "subtitle": "Como o sistema determina e classifica a datação de manuscritos e padres da igreja",
+    "overviewTitle": "Visão Geral do Sistema de Datação",
+    "overviewText1": "O sistema armazena datação em dois níveis de precisão: **séculos** (century_min / century_max) e **anos** (year_min / year_max / year_best).",
+    "overviewText2": "Séculos são usados para cálculos de cobertura cumulativa — determinam quais manuscritos contribuem para as estatísticas de cobertura de cada século. Anos permitem análise temporal precisa e visualização em timeline.",
+    "overviewText3": "Nem todos os registros possuem datação por ano. Quando indisponível, o sistema utiliza dados de século, que estão sempre presentes para manuscritos catalogados.",
+    "manuscriptSourcesTitle": "Fontes de Datação para Manuscritos",
+    "manuscriptSourcesText1": "A fonte primária para datação de manuscritos é o **NTVMR** (New Testament Virtual Manuscript Room), mantido pelo Institut für Neutestamentliche Textforschung na Universidade de Münster.",
+    "manuscriptSourcesText2": "A API do NTVMR fornece os campos {origEarly} e {origLate} para cada manuscrito — estes representam anos reais de catalogação acadêmica baseados em análise paleográfica e consenso acadêmico.",
+    "manuscriptSourcesText3": "Esses valores são preservados como {yearMin} / {yearMax} com {confidenceHigh}. O NTVMR é a base de dados acadêmica primária mundial para catalogação de manuscritos gregos do Novo Testamento.",
+    "manuscriptSourcesText4": "Dados do NTVMR nunca são sobrescritos por estimativas geradas por IA.",
+    "patristicSourcesTitle": "Fontes de Datação para Pais da Igreja",
+    "patristicSourcesText1": "Diferentemente dos manuscritos, não existe uma API pública com datação padronizada para todos os Pais da Igreja. Bancos de dados acadêmicos existem, mas carecem de campos de data uniformes e legíveis por máquina.",
+    "patristicSourcesText2": "Para preencher essa lacuna, o sistema utiliza a **API da OpenAI** (modelo gpt-4o-mini) para obter estimativas de datação. Um prompt estruturado solicita: ano de nascimento, ano de morte, período de floruit e referência acadêmica para a datação.",
+    "patristicSourcesText3": "Toda datação gerada por IA recebe {confidenceLow} até ser revisada e validada manualmente por um administrador.",
+    "patristicSourcesText4": "Este processo é **disparado manualmente por administradores** — nunca é automático ou agendado.",
+    "confidenceTitle": "Níveis de Confiança",
+    "confidenceIntro": "Cada registro de datação por ano carrega um indicador de confiança que reflete a confiabilidade de sua fonte:",
+    "confidenceLevel": "Nível",
+    "confidenceSource": "Fonte",
+    "confidenceDescription": "Descrição",
+    "confidenceHighLabel": "HIGH",
+    "confidenceHighSource": "NTVMR / fonte acadêmica primária",
+    "confidenceHighDesc": "Análise paleográfica e consenso acadêmico de instituições estabelecidas",
+    "confidenceMediumLabel": "MEDIUM",
+    "confidenceMediumSource": "Dados seed curados",
+    "confidenceMediumDesc": "Dados curados manualmente a partir de referências secundárias confiáveis, revisados antes da inserção",
+    "confidenceLowLabel": "LOW",
+    "confidenceLowSource": "OpenAI (gerado por IA)",
+    "confidenceLowDesc": "Estimativas geradas por LLM aguardando validação manual por administradores",
+    "confidenceRule": "Níveis de confiança **nunca são promovidos automaticamente**. Dados LOW não podem se tornar MEDIUM ou HIGH por nenhum processo automatizado — apenas revisão manual de um administrador pode elevar a confiança de um registro.",
+    "yearBestTitle": "O Campo yearBest",
+    "yearBestText1": "O campo {yearBest} representa o ano de consenso acadêmico para um determinado registro. Por exemplo, Ireneu tem {example} (floruit circa 180 d.C.).",
+    "yearBestText2": "Este campo só é preenchido quando a fonte **fornece explicitamente um ano específico aceito**. Ele **nunca é calculado como média matemática** de yearMin e yearMax.",
+    "yearBestText3": "Quando não há consenso acadêmico para um ano específico, o campo permanece vazio (null). Isso evita apresentar precisão enganosa para registros onde apenas um intervalo de datas é conhecido.",
+    "enrichmentTitle": "Processo de Enriquecimento",
+    "enrichmentIntro": "O processo de enriquecimento de datação é uma operação manual, disparada pelo administrador, que preenche a datação por ano faltante para Pais da Igreja:",
+    "enrichmentStep1": "Administrador dispara {endpoint}",
+    "enrichmentStep2": "Sistema identifica registros sem {yearMin}",
+    "enrichmentStep3": "Para cada registro, envia um prompt estruturado à OpenAI solicitando ano de nascimento, ano de morte, floruit e referência acadêmica",
+    "enrichmentStep4": "Valida a resposta (yearMin > 0, yearMax ≥ yearMin)",
+    "enrichmentStep5": "Salva com {source} e {confidence}",
+    "enrichmentStep6": "Cada resultado é registrado em log para auditoria, incluindo enriquecimentos bem-sucedidos e falhas"
   }
 }

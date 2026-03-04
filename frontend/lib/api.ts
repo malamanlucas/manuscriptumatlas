@@ -214,12 +214,16 @@ export function getManuscripts(params?: {
   century?: number;
   page?: number;
   limit?: number;
+  yearMin?: number;
+  yearMax?: number;
 }): Promise<ManuscriptSummary[]> {
   const q = buildParams({
     type: params?.type,
     century: params?.century?.toString(),
     page: params?.page?.toString(),
     limit: params?.limit?.toString(),
+    yearMin: params?.yearMin?.toString(),
+    yearMax: params?.yearMax?.toString(),
   });
   return fetchJson(`${BASE}/manuscripts${q}`);
 }
@@ -283,6 +287,8 @@ export function getChurchFathers(params?: {
   page?: number;
   limit?: number;
   locale?: string;
+  yearMin?: number;
+  yearMax?: number;
 }): Promise<ChurchFathersListResponse> {
   const q = buildParams({
     century: params?.century?.toString(),
@@ -290,6 +296,8 @@ export function getChurchFathers(params?: {
     page: params?.page?.toString(),
     limit: params?.limit?.toString(),
     locale: params?.locale,
+    yearMin: params?.yearMin?.toString(),
+    yearMax: params?.yearMax?.toString(),
   });
   return fetchJson(`${BASE}/fathers${q}`);
 }
@@ -318,6 +326,8 @@ export function getFatherStatements(params?: {
   page?: number;
   limit?: number;
   locale?: string;
+  yearMin?: number;
+  yearMax?: number;
 }): Promise<TextualStatementsListResponse> {
   const q = buildParams({
     topic: params?.topic,
@@ -326,6 +336,8 @@ export function getFatherStatements(params?: {
     page: params?.page?.toString(),
     limit: params?.limit?.toString(),
     locale: params?.locale,
+    yearMin: params?.yearMin?.toString(),
+    yearMax: params?.yearMax?.toString(),
   });
   return fetchJson(`${BASE}/fathers/statements${q}`);
 }

@@ -8,7 +8,10 @@ data class ChurchFatherSeedEntry(
     val primaryLocation: String,
     val tradition: String,
     val mannerOfDeath: String? = null,
-    val biographyOriginal: String? = null
+    val biographyOriginal: String? = null,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null
 )
 
 object ChurchFathersSeedData {

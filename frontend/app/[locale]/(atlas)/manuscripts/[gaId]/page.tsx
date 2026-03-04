@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { useManuscriptDetail } from "@/hooks/useManuscripts";
 import { toRoman } from "@/lib/utils";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { DatingBadge } from "@/components/ui/DatingBadge";
 
 export default function ManuscriptDetailPage() {
   const t = useTranslations("manuscriptDetail");
@@ -25,7 +26,7 @@ export default function ManuscriptDetailPage() {
         subtitle={data?.name ?? t("subtitle")}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <Link
           href="/manuscripts"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -61,6 +62,19 @@ export default function ManuscriptDetailPage() {
                       : `${toRoman(data.centuryMin)}–${toRoman(data.centuryMax)}`}
                   </p>
                 </div>
+                {(data.yearMin || data.yearMax || data.yearBest) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("dating")}</p>
+                    <DatingBadge
+                      yearMin={data.yearMin}
+                      yearMax={data.yearMax}
+                      yearBest={data.yearBest}
+                      datingSource={data.datingSource}
+                      datingConfidence={data.datingConfidence}
+                      datingReference={data.datingReference}
+                    />
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">{t("type")}</p>
                   <p className="capitalize">{data.manuscriptType ?? "—"}</p>

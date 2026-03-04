@@ -43,7 +43,7 @@ export default function ManuscriptCountPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6 max-w-5xl">
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
         {isLoading && (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
             {t("loadingData")}
@@ -62,7 +62,7 @@ export default function ManuscriptCountPage() {
               <p className="text-sm text-muted-foreground mb-2">
                 {t("totalCatalogued")}
               </p>
-              <p className="text-5xl font-bold">{data.total.toLocaleString()}</p>
+              <p className="text-3xl font-bold md:text-5xl">{data.total.toLocaleString()}</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

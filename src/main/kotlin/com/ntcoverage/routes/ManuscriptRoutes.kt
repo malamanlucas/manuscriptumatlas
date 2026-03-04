@@ -10,10 +10,12 @@ fun Route.manuscriptRoutes(manuscriptService: ManuscriptService) {
     get("/manuscripts") {
         val type = call.request.queryParameters["type"]?.takeIf { it in listOf("papyrus", "uncial") }
         val century = call.request.queryParameters["century"]?.toIntOrNull()?.takeIf { it in 1..10 }
+        val yearMin = call.request.queryParameters["yearMin"]?.toIntOrNull()?.takeIf { it in 1..2000 }
+        val yearMax = call.request.queryParameters["yearMax"]?.toIntOrNull()?.takeIf { it in 1..2000 }
         val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
         val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 100) ?: 50
 
-        val result = manuscriptService.listManuscripts(type, century, page, limit)
+        val result = manuscriptService.listManuscripts(type, century, yearMin, yearMax, page, limit)
         call.respond(result)
     }
 

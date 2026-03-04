@@ -21,7 +21,7 @@ services:
       ENABLE_INGESTION: "true"
       ENABLE_MANUSCRIPT_INGESTION: "true"
       ENABLE_PATRISTIC_INGESTION: "true"
-      INGESTION_SKIP_IF_POPULATED: "false"
+      INGESTION_SKIP_IF_POPULATED: "true"
       INGESTION_TIMEOUT_MINUTES: "30"
       LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
@@ -29,6 +29,7 @@ services:
       OPENAI_TIMEOUT_MS: "12000"
       ENABLE_BIO_SUMMARIZATION: "true"
       ENABLE_BIO_TRANSLATION: "true"
+      ENABLE_DATING_ENRICHMENT: "true"
       NEW_RELIC_ENVIRONMENT: "prod"
     deploy:
       resources:

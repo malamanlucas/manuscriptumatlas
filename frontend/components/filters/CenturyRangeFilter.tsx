@@ -79,6 +79,8 @@ export function CenturyRangeFilter({
                 key={c}
                 onClick={() => handleTickClick(c)}
                 className={`text-[10px] font-mono transition-colors px-0.5 ${
+                  c !== min && c !== max && c !== Math.ceil((min + max) / 2) ? "hidden sm:inline" : ""
+                } ${
                   !isAllActive && sliderPosition === c
                     ? "text-primary font-bold"
                     : "text-muted-foreground hover:text-foreground"

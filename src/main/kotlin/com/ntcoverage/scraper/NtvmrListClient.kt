@@ -68,7 +68,9 @@ class NtvmrListClient : AutoCloseable {
                     centuryMin = centuryMin,
                     centuryMax = centuryMax,
                     type = type,
-                    content = emptyList()
+                    content = emptyList(),
+                    yearMin = doc.origEarly.takeIf { it > 0 },
+                    yearMax = doc.origLate.takeIf { it > 0 }
                 )
             }
             allResults.addAll(page)

@@ -32,7 +32,7 @@ export function Heatmap({ chapters, bookName }: HeatmapProps) {
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <div
             className="h-3 w-3 rounded"

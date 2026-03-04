@@ -21,17 +21,18 @@ alwaysApply: false
 
 ```
 frontend/
-├── app/[locale]/          Páginas (21 rotas) — App Router com i18n
+├── app/[locale]/          Páginas (22 rotas) — App Router com i18n
 ├── components/
 │   ├── charts/             ComparisonChart, FathersTimelineChart, Heatmap, TimelineChart
 │   ├── coverage/           BookCard, CenturySlider, GospelPanel, VerseGrid
-│   ├── filters/            CenturyRangeFilter
+│   ├── filters/            CenturyRangeFilter, YearRangeFilter
 │   ├── layout/             Header, LanguageSelector, Sidebar, SidebarContext, ThemeToggle
 │   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorsTab
 │   ├── stats/              StatsOverview
 │   ├── tracking/           VisitorTracker
+│   ├── ui/                 ConfidenceDot, DatingBadge
 │   └── providers.tsx       React Query + Theme providers
-├── hooks/                 11 hooks customizados
+├── hooks/                 10 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
 ├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
 ├── types/                 index.ts (54 interfaces/tipos)
@@ -87,6 +88,6 @@ Antes de considerar uma feature pronta:
 4. **Tipos**: TypeScript sem `any`, interfaces em `types/index.ts`?
 5. **Loading/Error**: estados de carregamento e erro tratados?
 
-## Páginas (21 rotas)
+## Páginas (22 rotas)
 
-Admin / Users, Book / Name, Compare, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, History, Home, Ingestion Status, Manuscript Count, Manuscripts, Manuscripts / Gaid, Metrics, Metrics / Book, Observatory, Sources, Timeline, Verse Lookup
+Admin / Users, Book / Name, Compare, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, History, Home, Ingestion Status, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Sources, Timeline, Verse Lookup

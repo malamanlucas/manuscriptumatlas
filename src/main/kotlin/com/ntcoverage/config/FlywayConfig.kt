@@ -152,6 +152,7 @@ object FlywayConfig {
     private fun applyExtraIndexesAndConstraints() {
         transaction {
             exec("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+            exec("CREATE EXTENSION IF NOT EXISTS unaccent")
             exec("""
                 DO ${'$'}${'$'}
                 BEGIN
@@ -178,6 +179,18 @@ object FlywayConfig {
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_stmt_translations_text_trgm') THEN
                         CREATE INDEX idx_stmt_translations_text_trgm ON father_statement_translations USING gin (statement_text gin_trgm_ops);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_manuscripts_year_best') THEN
+                        CREATE INDEX idx_manuscripts_year_best ON manuscripts(year_best);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_church_fathers_year_best') THEN
+                        CREATE INDEX idx_church_fathers_year_best ON church_fathers(year_best);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_manuscripts_year_range') THEN
+                        CREATE INDEX idx_manuscripts_year_range ON manuscripts(year_min, year_max);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_church_fathers_year_range') THEN
+                        CREATE INDEX idx_church_fathers_year_range ON church_fathers(year_min, year_max);
                     END IF;
                 END
                 ${'$'}${'$'};

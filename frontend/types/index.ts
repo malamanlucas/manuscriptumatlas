@@ -95,6 +95,11 @@ export interface ManuscriptSummary {
   manuscriptType: string | null;
   bookCount: number;
   verseCount: number;
+  yearMin?: number | null;
+  yearMax?: number | null;
+  yearBest?: number | null;
+  datingConfidence?: string | null;
+  datingSource?: string | null;
 }
 
 export interface BookRanges {
@@ -120,6 +125,12 @@ export interface ManuscriptDetailResponse {
   dataSource: string;
   ntvmrUrl: string;
   historicalNotes?: string | null;
+  yearMin?: number | null;
+  yearMax?: number | null;
+  yearBest?: number | null;
+  datingSource?: string | null;
+  datingReference?: string | null;
+  datingConfidence?: string | null;
 }
 
 export interface CenturyGrowthRate {
@@ -192,6 +203,12 @@ export interface ChurchFatherSummary {
   centuryMax: number;
   tradition: string;
   primaryLocation: string | null;
+  yearMin?: number | null;
+  yearMax?: number | null;
+  yearBest?: number | null;
+  datingConfidence?: string | null;
+  datingSource?: string | null;
+  datingReference?: string | null;
 }
 
 export interface ChurchFatherDetail {
@@ -208,6 +225,12 @@ export interface ChurchFatherDetail {
   biographySummary: string | null;
   biographyOriginal: string | null;
   biographyIsLong: boolean;
+  yearMin?: number | null;
+  yearMax?: number | null;
+  yearBest?: number | null;
+  datingSource?: string | null;
+  datingReference?: string | null;
+  datingConfidence?: string | null;
 }
 
 export interface ChurchFathersListResponse {

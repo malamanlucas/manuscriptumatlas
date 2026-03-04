@@ -48,7 +48,8 @@
     "users": "Users",
     "books": "Books",
     "allBooks": "All 27 Books",
-    "version": "v2.0 · Centuries I–X"
+    "version": "v2.0 · Centuries I–X",
+    "methodology": "Methodology"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -90,6 +91,7 @@
     "title": "Manuscript Explorer",
     "subtitle": "Browse papyri and uncial manuscripts",
     "centuryFilter": "Century:",
+    "yearFilter": "Year range",
     "loadingManuscripts": "Loading manuscripts...",
     "gaId": "GA ID",
     "name": "Name",
@@ -112,7 +114,8 @@
     "booksPreserved": "Books Preserved",
     "intervalsSummary": "Intervals Summary",
     "chapters": "Chapters",
-    "verses": "Verses"
+    "verses": "Verses",
+    "dating": "Dating"
   },
   "timeline": {
     "title": "Timeline",
@@ -390,6 +393,14 @@
     "allCenturies": "All Centuries",
     "filterByCentury": "Filter by Century",
     "filterByTradition": "Tradition",
+    "filterByYear": "Filter by Year",
+    "dating": "Dating",
+    "compactView": "Compact",
+    "completeView": "Complete",
+    "confidenceColumn": "Dating confidence",
+    "sourceColumn": "Source",
+    "datingColumn": "Dating",
+    "referenceColumn": "Reference",
     "searchPlaceholder": "Search by name...",
     "traditions": {
       "all": "All",
@@ -568,5 +579,67 @@
       "firstSeen": "First Seen",
       "lastActivity": "Last Activity"
     }
+  },
+  "dating": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "aiGenerated": "AI-generated",
+    "source": "Source",
+    "dating": "Dating",
+    "confidenceTooltip": "{source} ({level} dating confidence)"
+  },
+  "yearFilter": {
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "placeholderFrom": "e.g. 100",
+    "placeholderTo": "e.g. 300",
+    "filterByYear": "Filter by Year"
+  },
+  "methodology": {
+    "title": "Dating Methodology",
+    "subtitle": "How the system determines and classifies manuscript and patristic dating",
+    "overviewTitle": "Dating System Overview",
+    "overviewText1": "The system stores dating at two precision levels: **centuries** (century_min / century_max) and **years** (year_min / year_max / year_best).",
+    "overviewText2": "Centuries are used for cumulative coverage calculations — they determine which manuscripts contribute to each century's coverage statistics. Years enable precise temporal analysis and timeline visualization.",
+    "overviewText3": "Not all records have year-level dating. When unavailable, the system falls back to century-level data, which is always present for cataloged manuscripts.",
+    "manuscriptSourcesTitle": "Manuscript Dating Sources",
+    "manuscriptSourcesText1": "The primary source for manuscript dating is the **NTVMR** (New Testament Virtual Manuscript Room), maintained by the Institut für Neutestamentliche Textforschung at the University of Münster.",
+    "manuscriptSourcesText2": "The NTVMR API provides {origEarly} and {origLate} fields for each manuscript — these represent real academic cataloging years based on paleographic analysis and scholarly consensus.",
+    "manuscriptSourcesText3": "These values are preserved as {yearMin} / {yearMax} with {confidenceHigh}. NTVMR is the world's primary academic database for Greek New Testament manuscript cataloging.",
+    "manuscriptSourcesText4": "NTVMR data is never overwritten by AI-generated estimates.",
+    "patristicSourcesTitle": "Church Father Dating Sources",
+    "patristicSourcesText1": "Unlike manuscripts, there is no single public API with standardized dating for all Church Fathers. Academic databases exist but lack uniform machine-readable date fields.",
+    "patristicSourcesText2": "To fill this gap, the system uses the **OpenAI API** (gpt-4o-mini model) to obtain dating estimates. A structured prompt requests: birth year, death year, floruit period, and academic reference for the dating.",
+    "patristicSourcesText3": "All AI-generated dating receives {confidenceLow} until manually reviewed and validated by an administrator.",
+    "patristicSourcesText4": "This process is **triggered manually by administrators** — it is never automatic or scheduled.",
+    "confidenceTitle": "Confidence Levels",
+    "confidenceIntro": "Every year-level dating record carries a confidence indicator that reflects the reliability of its source:",
+    "confidenceLevel": "Level",
+    "confidenceSource": "Source",
+    "confidenceDescription": "Description",
+    "confidenceHighLabel": "HIGH",
+    "confidenceHighSource": "NTVMR / primary academic source",
+    "confidenceHighDesc": "Paleographic analysis and scholarly consensus from established institutions",
+    "confidenceMediumLabel": "MEDIUM",
+    "confidenceMediumSource": "Curated seed data",
+    "confidenceMediumDesc": "Hand-curated data from reliable secondary references, reviewed before insertion",
+    "confidenceLowLabel": "LOW",
+    "confidenceLowSource": "OpenAI (AI-generated)",
+    "confidenceLowDesc": "LLM-generated estimates awaiting manual validation by administrators",
+    "confidenceRule": "Confidence levels are **never auto-promoted**. LOW data cannot become MEDIUM or HIGH through any automated process — only manual administrator review can elevate a record's confidence.",
+    "yearBestTitle": "The yearBest Field",
+    "yearBestText1": "The {yearBest} field represents the scholarly consensus year for a given record. For example, Irenaeus has {example} (floruit circa 180 AD).",
+    "yearBestText2": "This field is only filled when the source **explicitly provides a specific accepted year**. It is **never calculated as a mathematical average** of yearMin and yearMax.",
+    "yearBestText3": "When no scholarly consensus exists for a specific year, the field remains empty (null). This avoids presenting misleading precision for records where only a date range is known.",
+    "enrichmentTitle": "Enrichment Process",
+    "enrichmentIntro": "The dating enrichment process is a manual, administrator-triggered operation that fills in missing year-level dating for Church Fathers:",
+    "enrichmentStep1": "Administrator triggers {endpoint}",
+    "enrichmentStep2": "System identifies records without {yearMin}",
+    "enrichmentStep3": "For each record, sends a structured prompt to OpenAI requesting birth year, death year, floruit, and academic reference",
+    "enrichmentStep4": "Validates the response (yearMin > 0, yearMax ≥ yearMin)",
+    "enrichmentStep5": "Saves with {source} and {confidence}",
+    "enrichmentStep6": "Every result is logged for audit, including both successful enrichments and failures"
   }
 }

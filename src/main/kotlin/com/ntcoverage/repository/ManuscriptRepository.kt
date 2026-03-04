@@ -4,13 +4,10 @@ import com.ntcoverage.model.Books
 import com.ntcoverage.model.Manuscripts
 import com.ntcoverage.model.ManuscriptVerses
 import com.ntcoverage.model.Verses
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
 data class ManuscriptRow(
@@ -21,7 +18,13 @@ data class ManuscriptRow(
     val centuryMax: Int,
     val manuscriptType: String?,
     val historicalNotes: String?,
-    val ntvmrUrl: String?
+    val ntvmrUrl: String?,
+    val yearMin: Int? = null,
+    val yearMax: Int? = null,
+    val yearBest: Int? = null,
+    val datingSource: String? = null,
+    val datingReference: String? = null,
+    val datingConfidence: String? = null
 )
 
 data class ManuscriptVerseInfo(val bookName: String, val chapter: Int, val verse: Int)
@@ -32,49 +35,57 @@ class ManuscriptRepository {
         Manuscripts.selectAll()
             .where { Manuscripts.gaId eq gaId }
             .singleOrNull()
-            ?.let { row ->
-                ManuscriptRow(
-                    id = row[Manuscripts.id].value,
-                    gaId = row[Manuscripts.gaId],
-                    name = row[Manuscripts.name],
-                    centuryMin = row[Manuscripts.centuryMin],
-                    centuryMax = row[Manuscripts.centuryMax],
-                    manuscriptType = row[Manuscripts.manuscriptType],
-                    historicalNotes = row[Manuscripts.historicalNotes],
-                    ntvmrUrl = row[Manuscripts.ntvmrUrl]
-                )
-            }
+            ?.toRow()
     }
+
+    private fun org.jetbrains.exposed.sql.ResultRow.toRow() = ManuscriptRow(
+        id = this[Manuscripts.id].value,
+        gaId = this[Manuscripts.gaId],
+        name = this[Manuscripts.name],
+        centuryMin = this[Manuscripts.centuryMin],
+        centuryMax = this[Manuscripts.centuryMax],
+        manuscriptType = this[Manuscripts.manuscriptType],
+        historicalNotes = this[Manuscripts.historicalNotes],
+        ntvmrUrl = this[Manuscripts.ntvmrUrl],
+        yearMin = this[Manuscripts.yearMin],
+        yearMax = this[Manuscripts.yearMax],
+        yearBest = this[Manuscripts.yearBest],
+        datingSource = this[Manuscripts.datingSource],
+        datingReference = this[Manuscripts.datingReference],
+        datingConfidence = this[Manuscripts.datingConfidence]
+    )
 
     fun findAll(
         type: String? = null,
         century: Int? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null,
         page: Int = 1,
         limit: Int = 50
     ): List<ManuscriptRow> = transaction {
-        val query = when {
-            type != null && century != null -> Manuscripts.selectAll()
-                .where { (Manuscripts.manuscriptType eq type) and (Manuscripts.effectiveCentury lessEq century) }
-            type != null -> Manuscripts.selectAll().where { Manuscripts.manuscriptType eq type }
-            century != null -> Manuscripts.selectAll().where { Manuscripts.effectiveCentury lessEq century }
-            else -> Manuscripts.selectAll()
+        val query = Manuscripts.selectAll()
+
+        if (type != null) {
+            query.andWhere { Manuscripts.manuscriptType eq type }
         }
+
+        if (yearMin != null || yearMax != null) {
+            query.andWhere { Manuscripts.yearMin.isNotNull() }
+            if (yearMin != null) {
+                query.andWhere { Manuscripts.yearMax.isNotNull() and (Manuscripts.yearMax greaterEq yearMin) }
+            }
+            if (yearMax != null) {
+                query.andWhere { Manuscripts.yearMin lessEq yearMax }
+            }
+        } else if (century != null) {
+            query.andWhere { Manuscripts.effectiveCentury lessEq century }
+        }
+
         query
             .orderBy(Manuscripts.gaId to SortOrder.ASC)
             .limit(limit)
             .offset(((page - 1) * limit).toLong())
-            .map { row ->
-                ManuscriptRow(
-                    id = row[Manuscripts.id].value,
-                    gaId = row[Manuscripts.gaId],
-                    name = row[Manuscripts.name],
-                    centuryMin = row[Manuscripts.centuryMin],
-                    centuryMax = row[Manuscripts.centuryMax],
-                    manuscriptType = row[Manuscripts.manuscriptType],
-                    historicalNotes = row[Manuscripts.historicalNotes],
-                    ntvmrUrl = row[Manuscripts.ntvmrUrl]
-                )
-            }
+            .map { it.toRow() }
     }
 
     fun getBooksAndVersesForManuscript(manuscriptId: Int): List<ManuscriptVerseInfo> = transaction {
@@ -106,7 +117,9 @@ class ManuscriptRepository {
         name: String?,
         centuryMin: Int,
         centuryMax: Int,
-        manuscriptType: String?
+        manuscriptType: String?,
+        yearMin: Int? = null,
+        yearMax: Int? = null
     ): Int = transaction {
         val existing = Manuscripts.selectAll()
             .where { Manuscripts.gaId eq gaId }
@@ -123,10 +136,40 @@ class ManuscriptRepository {
             it[Manuscripts.centuryMax] = centuryMax
             it[Manuscripts.effectiveCentury] = centuryMin
             it[Manuscripts.manuscriptType] = manuscriptType
+            if (yearMin != null) it[Manuscripts.yearMin] = yearMin
+            if (yearMax != null) it[Manuscripts.yearMax] = yearMax
         }
 
         Manuscripts.selectAll()
             .where { Manuscripts.gaId eq gaId }
             .single()[Manuscripts.id].value
+    }
+
+    fun updateDating(
+        gaId: String,
+        yearMin: Int,
+        yearMax: Int,
+        yearBest: Int?,
+        datingSource: String,
+        datingReference: String?,
+        datingConfidence: String
+    ): Boolean = transaction {
+        val updated = Manuscripts.update({ Manuscripts.gaId eq gaId }) {
+            it[Manuscripts.yearMin] = yearMin
+            it[Manuscripts.yearMax] = yearMax
+            it[Manuscripts.yearBest] = yearBest
+            it[Manuscripts.datingSource] = datingSource
+            it[Manuscripts.datingReference] = datingReference
+            it[Manuscripts.datingConfidence] = datingConfidence
+        }
+        updated > 0
+    }
+
+    fun findAllWithoutDating(limit: Int = 50): List<ManuscriptRow> = transaction {
+        Manuscripts.selectAll()
+            .where { Manuscripts.yearMin.isNull() }
+            .orderBy(Manuscripts.gaId to SortOrder.ASC)
+            .limit(limit)
+            .map { it.toRow() }
     }
 }

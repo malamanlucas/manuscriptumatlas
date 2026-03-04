@@ -139,8 +139,12 @@ class IngestionService(
                     name = ms.name,
                     centuryMin = ms.centuryMin,
                     centuryMax = ms.centuryMax,
-                    manuscriptType = ms.type
+                    manuscriptType = ms.type,
+                    yearMin = ms.yearMin,
+                    yearMax = ms.yearMax
                 )
+
+                persistNtvmrDating(ms)
 
                 if (!ntvmrAvailable) {
                     val linked = linkFromSeed(manuscriptId, effectiveMs)
@@ -291,6 +295,22 @@ class IngestionService(
         return verseIds.size
     }
 
+    private fun persistNtvmrDating(ms: ManuscriptSeed) {
+        val yearMin = ms.yearMin
+        val yearMax = ms.yearMax
+        if (yearMin != null && yearMax != null && yearMin > 0 && yearMax > 0) {
+            manuscriptRepository.updateDating(
+                gaId = ms.gaId,
+                yearMin = yearMin,
+                yearMax = yearMax,
+                yearBest = null,
+                datingSource = "ntvmr",
+                datingReference = "INTF Münster, NTVMR metadata catalog",
+                datingConfidence = "HIGH"
+            )
+        }
+    }
+
     private fun linkFromSeed(manuscriptId: Int, ms: ManuscriptSeed): Int {
         var totalLinked = 0
         for (bookContent in ms.content) {
@@ -316,8 +336,12 @@ class IngestionService(
                 name = ms.name,
                 centuryMin = ms.centuryMin,
                 centuryMax = ms.centuryMax,
-                manuscriptType = ms.type
+                manuscriptType = ms.type,
+                yearMin = ms.yearMin,
+                yearMax = ms.yearMax
             )
+
+            persistNtvmrDating(ms)
 
             val totalLinked = linkFromSeed(manuscriptId, ms)
             totalVersesLinked += totalLinked

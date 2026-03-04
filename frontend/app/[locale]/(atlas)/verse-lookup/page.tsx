@@ -72,7 +72,7 @@ function VerseLookupContent() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
           <p className="text-sm text-muted-foreground mb-4">
             {t("instruction")}
@@ -213,7 +213,7 @@ export default function VerseLookupPage() {
             title={t("title")}
             subtitle={t("subtitle")}
           />
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
               {t("loading")}
             </div>

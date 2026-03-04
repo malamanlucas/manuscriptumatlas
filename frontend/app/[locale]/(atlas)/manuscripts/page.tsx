@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { useManuscripts } from "@/hooks/useManuscripts";
 import { toRoman } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import { YearRangeFilter } from "@/components/filters/YearRangeFilter";
 
 export default function ManuscriptsPage() {
   const t = useTranslations("manuscripts");
@@ -14,11 +15,15 @@ export default function ManuscriptsPage() {
 
   const [type, setType] = useState<string | undefined>("papyrus");
   const [century, setCentury] = useState<number | undefined>(undefined);
+  const [filterYearMin, setFilterYearMin] = useState<number | undefined>(undefined);
+  const [filterYearMax, setFilterYearMax] = useState<number | undefined>(undefined);
   const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = useManuscripts({
     type,
-    century,
+    century: (filterYearMin || filterYearMax) ? undefined : century,
+    yearMin: filterYearMin,
+    yearMax: filterYearMax,
     page,
     limit: 50,
   });
@@ -30,7 +35,7 @@ export default function ManuscriptsPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex gap-2">
@@ -66,12 +71,14 @@ export default function ManuscriptsPage() {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t("centuryFilter")}</span>
+              <label className="text-sm text-muted-foreground whitespace-nowrap">{t("centuryFilter")}</label>
               <select
                 value={century ?? ""}
                 onChange={(e) => {
                   const v = e.target.value;
                   setCentury(v ? parseInt(v, 10) : undefined);
+                  setFilterYearMin(undefined);
+                  setFilterYearMax(undefined);
                   setPage(1);
                 }}
                 className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm"
@@ -83,6 +90,22 @@ export default function ManuscriptsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                {t("yearFilter")}
+              </label>
+              <YearRangeFilter
+                yearMin={filterYearMin}
+                yearMax={filterYearMax}
+                onChange={(min, max) => {
+                  setFilterYearMin(min);
+                  setFilterYearMax(max);
+                  if (min !== undefined || max !== undefined) setCentury(undefined);
+                  setPage(1);
+                }}
+                disabled={century !== undefined}
+              />
             </div>
           </div>
         </div>
@@ -106,9 +129,9 @@ export default function ManuscriptsPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left text-sm font-medium">{t("gaId")}</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">{t("name")}</th>
+                    <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">{t("name")}</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">{t("century")}</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">{t("type")}</th>
+                    <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">{t("type")}</th>
                     <th className="px-4 py-3 text-right text-sm font-medium">{t("books")}</th>
                     <th className="px-4 py-3 text-right text-sm font-medium">{t("verses")}</th>
                     <th className="px-4 py-3"></th>
@@ -121,13 +144,18 @@ export default function ManuscriptsPage() {
                       className="border-b border-border last:border-0 hover:bg-muted/30"
                     >
                       <td className="px-4 py-3 font-mono font-medium">{m.gaId}</td>
-                      <td className="px-4 py-3 text-sm">{m.name ?? "—"}</td>
+                      <td className="hidden px-4 py-3 text-sm md:table-cell">{m.name ?? "—"}</td>
                       <td className="px-4 py-3 text-sm">
                         {m.centuryMin === m.centuryMax
                           ? toRoman(m.centuryMin)
                           : `${toRoman(m.centuryMin)}/${toRoman(m.centuryMax)}`}
+                        {m.yearBest
+                          ? ` (c. ${m.yearBest})`
+                          : m.yearMin
+                            ? ` (${m.yearMin}–${m.yearMax})`
+                            : ""}
                       </td>
-                      <td className="px-4 py-3 text-sm capitalize">{m.manuscriptType ?? "—"}</td>
+                      <td className="hidden px-4 py-3 text-sm capitalize md:table-cell">{m.manuscriptType ?? "—"}</td>
                       <td className="px-4 py-3 text-right">{m.bookCount}</td>
                       <td className="px-4 py-3 text-right">{m.verseCount.toLocaleString()}</td>
                       <td className="px-4 py-3">

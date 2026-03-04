@@ -77,7 +77,7 @@ function IngestionContent() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6 max-w-3xl">
+      <div className="p-4 md:p-6 space-y-6 max-w-3xl">
         {isLoading && (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
             {t("loadingStatus")}
@@ -93,7 +93,7 @@ function IngestionContent() {
         {data && (
           <>
             <div className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`rounded-lg p-2 ${config.bg} ${config.color}`}>
                     {config.icon}
@@ -131,7 +131,7 @@ function IngestionContent() {
 
             {/* Reset + Re-ingest */}
             <div className="rounded-xl border border-red-300/30 bg-red-950/20 p-5">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-red-400">
                     {t("resetTitle")}

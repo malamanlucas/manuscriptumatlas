@@ -6,6 +6,8 @@ export function useManuscripts(params?: {
   century?: number;
   page?: number;
   limit?: number;
+  yearMin?: number;
+  yearMax?: number;
 }) {
   return useQuery({
     queryKey: ["manuscripts", params],

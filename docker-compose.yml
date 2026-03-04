@@ -69,6 +69,7 @@ services:
       OPENAI_TIMEOUT_MS: "12000"
       ENABLE_BIO_SUMMARIZATION: "true"
       ENABLE_BIO_TRANSLATION: "true"
+      ENABLE_DATING_ENRICHMENT: "false"
       GOOGLE_CLIENT_ID: "789788292255-7skrv2ufj7ev7o4jbsicp3kdopo6ah2s.apps.googleusercontent.com"
       NEW_RELIC_ENVIRONMENT: "dev"
     depends_on:

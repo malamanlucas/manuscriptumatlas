@@ -28,9 +28,9 @@ export default function TimelinePage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
                 {t("bookFilter")}

@@ -9,6 +9,7 @@ import { useFatherStatements } from "@/hooks/useTextualStatements";
 import { Link } from "@/i18n/navigation";
 import { toRoman } from "@/lib/utils";
 import { ArrowLeft, BookOpen, ChevronDown, Quote, Skull } from "lucide-react";
+import { DatingBadge } from "@/components/ui/DatingBadge";
 import type { TextualTopic } from "@/types";
 
 const TRADITION_BADGE_COLORS: Record<string, string> = {
@@ -161,6 +162,19 @@ export default function FatherDetailPage() {
                   </p>
                   <p className="mt-1 text-lg font-semibold">{centuryLabel}</p>
                 </div>
+                {father && (father.yearMin || father.yearMax || father.yearBest) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("dating")}</p>
+                    <DatingBadge
+                      yearMin={father.yearMin}
+                      yearMax={father.yearMax}
+                      yearBest={father.yearBest}
+                      datingSource={father.datingSource}
+                      datingConfidence={father.datingConfidence}
+                      datingReference={father.datingReference}
+                    />
+                  </div>
+                )}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">
                     {t("tradition")}

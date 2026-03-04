@@ -39,7 +39,7 @@ export default function DashboardPage() {
         subtitle={t("subtitle")}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
@@ -81,7 +81,7 @@ export default function DashboardPage() {
         </div>
 
         {isLoading && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
         {data && (
           <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">

@@ -20,6 +20,7 @@ import {
   Quote,
   Telescope,
   Shield,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSelector } from "./LanguageSelector";
@@ -51,6 +52,7 @@ export function Sidebar() {
     { href: "/manuscript-count", label: t("manuscriptCount"), icon: Hash },
     { href: "/history", label: t("history"), icon: BookMarked },
     { href: "/sources", label: t("sources"), icon: Database },
+    { href: "/methodology", label: t("methodology"), icon: FlaskConical },
     { href: "/faq", label: t("faq"), icon: HelpCircle },
   ];
 

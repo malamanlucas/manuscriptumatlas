@@ -160,6 +160,7 @@ fun Application.module() {
     val biographySummarizationService = BiographySummarizationService()
     val patristicIngestionService = PatristicIngestionService(churchFatherRepository, statementRepository, biographySummarizationService)
     val churchFatherService = ChurchFatherService(churchFatherRepository, statementRepository)
+    val datingEnrichmentService = DatingEnrichmentService(manuscriptRepository, churchFatherRepository)
     val orchestrator = IngestionOrchestrator(ingestionService, patristicIngestionService, ingestionMetadataRepository, statsRepository)
 
     val visitorRepository = VisitorRepository()
@@ -208,6 +209,7 @@ fun Application.module() {
                     "GET /fathers/statements/search?q= - Search statements by keyword",
                     "GET /fathers/statements/topics/summary - Statement count by topic",
                     "GET /fathers/{id}/statements - Statements by a specific father",
+                    "POST /admin/enrich-dating?domain=&limit= - Manual dating enrichment via OpenAI",
                     "GET /swagger - Swagger UI documentation"
                 )
             ))
@@ -218,7 +220,7 @@ fun Application.module() {
         metricsRoutes(metricsService)
         verseRoutes(verseRepository)
         churchFatherRoutes(churchFatherService)
-        adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope)
+        adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope, datingEnrichmentService)
         visitorTrackingRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
 
         authenticate("google-jwt") {

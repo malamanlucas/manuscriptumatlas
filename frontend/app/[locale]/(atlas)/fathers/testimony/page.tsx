@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useTextualStatements";
 import { Link } from "@/i18n/navigation";
 import { toRoman } from "@/lib/utils";
+import { YearRangeFilter } from "@/components/filters/YearRangeFilter";
 import { Search, ArrowLeft } from "lucide-react";
 import type { TextualTopic } from "@/types";
 
@@ -45,6 +46,8 @@ export default function TestimonyPage() {
   const [selectedCentury, setSelectedCentury] = useState<number | undefined>(
     undefined
   );
+  const [filterYearMin, setFilterYearMin] = useState<number | undefined>(undefined);
+  const [filterYearMax, setFilterYearMax] = useState<number | undefined>(undefined);
   const [selectedTradition, setSelectedTradition] = useState<
     string | undefined
   >(undefined);
@@ -53,8 +56,10 @@ export default function TestimonyPage() {
 
   const { data, isLoading } = useTextualStatements({
     topic: selectedTopic,
-    century: selectedCentury,
+    century: (filterYearMin || filterYearMax) ? undefined : selectedCentury,
     tradition: selectedTradition,
+    yearMin: filterYearMin,
+    yearMax: filterYearMax,
     page,
     limit: 20,
   });
@@ -125,6 +130,8 @@ export default function TestimonyPage() {
                   setSelectedCentury(
                     e.target.value === "" ? undefined : Number(e.target.value)
                   );
+                  setFilterYearMin(undefined);
+                  setFilterYearMax(undefined);
                   setPage(1);
                 }}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -136,6 +143,24 @@ export default function TestimonyPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Year Range */}
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                {t("filterByYear")}
+              </label>
+              <YearRangeFilter
+                yearMin={filterYearMin}
+                yearMax={filterYearMax}
+                onChange={(min, max) => {
+                  setFilterYearMin(min);
+                  setFilterYearMax(max);
+                  if (min !== undefined || max !== undefined) setSelectedCentury(undefined);
+                  setPage(1);
+                }}
+                disabled={selectedCentury !== undefined}
+              />
             </div>
 
             {/* Tradition */}

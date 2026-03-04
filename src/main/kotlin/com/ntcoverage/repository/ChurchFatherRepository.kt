@@ -17,18 +17,15 @@ class ChurchFatherRepository {
     fun findAll(
         century: Int? = null,
         tradition: String? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null,
         page: Int = 1,
         limit: Int = 50,
         locale: String = "en"
     ): List<ChurchFatherSummary> = transaction {
         val query = baseSelect(locale)
 
-        if (century != null) {
-            query.andWhere { (ChurchFathers.centuryMin lessEq century) and (ChurchFathers.centuryMax greaterEq century) }
-        }
-        if (tradition != null) {
-            query.andWhere { ChurchFathers.tradition eq tradition }
-        }
+        applyDateFilters(query, century, tradition, yearMin, yearMax)
 
         query
             .orderBy(ChurchFathers.centuryMin to SortOrder.ASC, ChurchFathers.displayName to SortOrder.ASC)
@@ -37,17 +34,30 @@ class ChurchFatherRepository {
             .map { it.toSummary(locale) }
     }
 
-    fun countAll(century: Int? = null, tradition: String? = null): Int = transaction {
+    fun countAll(century: Int? = null, tradition: String? = null, yearMin: Int? = null, yearMax: Int? = null): Int = transaction {
         val query = ChurchFathers.selectAll()
 
-        if (century != null) {
+        applyDateFilters(query, century, tradition, yearMin, yearMax)
+
+        query.count().toInt()
+    }
+
+    private fun applyDateFilters(query: Query, century: Int?, tradition: String?, yearMin: Int?, yearMax: Int?) {
+        if (yearMin != null || yearMax != null) {
+            query.andWhere { ChurchFathers.yearMin.isNotNull() }
+            if (yearMin != null) {
+                query.andWhere { ChurchFathers.yearMax greaterEq yearMin }
+            }
+            if (yearMax != null) {
+                query.andWhere { ChurchFathers.yearMin lessEq yearMax }
+            }
+        } else if (century != null) {
             query.andWhere { (ChurchFathers.centuryMin lessEq century) and (ChurchFathers.centuryMax greaterEq century) }
         }
+
         if (tradition != null) {
             query.andWhere { ChurchFathers.tradition eq tradition }
         }
-
-        query.count().toInt()
     }
 
     fun findById(id: Int, locale: String = "en"): ChurchFatherDetail? = transaction {
@@ -67,11 +77,21 @@ class ChurchFatherRepository {
     fun search(query: String, limit: Int = 20, locale: String = "en"): List<ChurchFatherSummary> = transaction {
         val pattern = "%${query.lowercase()}%"
 
+        fun unaccentLike(col: Column<String>) = object : Op<Boolean>() {
+            override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+                queryBuilder.append("unaccent(lower(")
+                queryBuilder.append(col)
+                queryBuilder.append(")) LIKE unaccent(")
+                queryBuilder.registerArgument(VarCharColumnType(200), pattern)
+                queryBuilder.append(")")
+            }
+        }
+
         if (locale == "en") {
             ChurchFathers.selectAll()
                 .where {
-                    (ChurchFathers.displayName.lowerCase() like pattern) or
-                    (ChurchFathers.normalizedName like pattern)
+                    unaccentLike(ChurchFathers.displayName) or
+                    unaccentLike(ChurchFathers.normalizedName)
                 }
                 .orderBy(ChurchFathers.displayName to SortOrder.ASC)
                 .limit(limit)
@@ -79,9 +99,9 @@ class ChurchFatherRepository {
         } else {
             translatedJoin(locale).selectAll()
                 .where {
-                    (ChurchFathers.displayName.lowerCase() like pattern) or
-                    (ChurchFathers.normalizedName like pattern) or
-                    (ChurchFatherTranslations.displayName.lowerCase() like pattern)
+                    unaccentLike(ChurchFathers.displayName) or
+                    unaccentLike(ChurchFathers.normalizedName) or
+                    unaccentLike(ChurchFatherTranslations.displayName)
                 }
                 .orderBy(ChurchFathers.displayName to SortOrder.ASC)
                 .limit(limit)
@@ -248,7 +268,13 @@ class ChurchFatherRepository {
         centuryMax = this[ChurchFathers.centuryMax],
         tradition = this[ChurchFathers.tradition],
         primaryLocation = if (locale == "en") this[ChurchFathers.primaryLocation]
-            else this.getOrNull(ChurchFatherTranslations.primaryLocation) ?: this[ChurchFathers.primaryLocation]
+            else this.getOrNull(ChurchFatherTranslations.primaryLocation) ?: this[ChurchFathers.primaryLocation],
+        yearMin = this[ChurchFathers.yearMin],
+        yearMax = this[ChurchFathers.yearMax],
+        yearBest = this[ChurchFathers.yearBest],
+        datingConfidence = this[ChurchFathers.datingConfidence],
+        datingSource = this[ChurchFathers.datingSource],
+        datingReference = this[ChurchFathers.datingReference]
     )
 
     private fun ResultRow.toDetail(locale: String): ChurchFatherDetail {
@@ -273,7 +299,42 @@ class ChurchFatherRepository {
             biographySummary = if (locale == "en") this[ChurchFathers.biographySummary]
                 else this.getOrNull(ChurchFatherTranslations.biographySummary) ?: this[ChurchFathers.biographySummary],
             biographyOriginal = bioOriginal,
-            biographyIsLong = BiographySummarizationService.isLongBiography(bioOriginal)
+            biographyIsLong = BiographySummarizationService.isLongBiography(bioOriginal),
+            yearMin = this[ChurchFathers.yearMin],
+            yearMax = this[ChurchFathers.yearMax],
+            yearBest = this[ChurchFathers.yearBest],
+            datingSource = this[ChurchFathers.datingSource],
+            datingReference = this[ChurchFathers.datingReference],
+            datingConfidence = this[ChurchFathers.datingConfidence]
         )
+    }
+
+    fun updateDating(
+        id: Int,
+        yearMin: Int,
+        yearMax: Int,
+        yearBest: Int?,
+        datingSource: String,
+        datingReference: String?,
+        datingConfidence: String
+    ): Boolean = transaction {
+        val updated = ChurchFathers.update({ ChurchFathers.id eq id }) {
+            it[ChurchFathers.yearMin] = yearMin
+            it[ChurchFathers.yearMax] = yearMax
+            it[ChurchFathers.yearBest] = yearBest
+            it[ChurchFathers.datingSource] = datingSource
+            it[ChurchFathers.datingReference] = datingReference
+            it[ChurchFathers.datingConfidence] = datingConfidence
+            it[updatedAt] = OffsetDateTime.now()
+        }
+        updated > 0
+    }
+
+    fun findAllWithoutDating(limit: Int = 50): List<ChurchFatherDetail> = transaction {
+        ChurchFathers.selectAll()
+            .where { ChurchFathers.yearMin.isNull() }
+            .orderBy(ChurchFathers.centuryMin to SortOrder.ASC, ChurchFathers.displayName to SortOrder.ASC)
+            .limit(limit)
+            .map { it.toDetail("en") }
     }
 }
