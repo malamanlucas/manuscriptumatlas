@@ -35,6 +35,8 @@
     "history": "História",
     "fathers": "Pais da Igreja",
     "testimony": "Testemunho Patrístico",
+    "councils": "Concílios",
+    "heresies": "Heresias",
     "analysis": "Análise",
     "patristic": "Patrística",
     "reference": "Referência",
@@ -313,7 +315,36 @@
     "enrichFathers": "Pais da Igreja",
     "enrichManuscripts": "Manuscritos",
     "enrichAll": "Todos os Domínios",
-    "enrichButton": "Enriquecer"
+    "enrichButton": "Enriquecer",
+    "councilIngestion": {
+      "title": "Ingestão de Concílios",
+      "subtitle": "Controle manual das fases de extração e enriquecimento",
+      "runAll": "Executar todas",
+      "runSelected": "Executar selecionadas",
+      "runPhase": "Executar fase",
+      "errorDetails": "Detalhes do erro",
+      "cache": "Cache de fontes",
+      "cacheFiles": "{count} arquivos, {size}",
+      "never": "Nunca",
+      "confirmRunAll": "Deseja executar as 9 fases em sequência?",
+      "status": {
+        "idle": "Aguardando",
+        "running": "Em execução",
+        "success": "Concluída",
+        "failed": "Falhou"
+      },
+      "phases": {
+        "council_seed": "Seed de concílios",
+        "council_extract_schaff": "Extração Schaff",
+        "council_extract_hefele": "Extração Hefele",
+        "council_extract_catholic_enc": "Catholic Encyclopedia",
+        "council_extract_fordham": "Fordham Sourcebook",
+        "council_extract_wikidata": "Enriquecimento Wikidata",
+        "council_extract_wikipedia": "Conteúdo da Wikipedia",
+        "council_consensus": "Consenso de fontes",
+        "council_summaries": "Resumos e traduções IA"
+      }
+    }
   },
   "bookDetail": {
     "coverageAsOf": "Cobertura até o Século {century}",
@@ -430,9 +461,13 @@
     "backToList": "Voltar para lista",
     "noResults": "Nenhum resultado encontrado",
     "scrollHint": "Deslize para ver mais",
+    "councilsTitle": "Concílios relacionados",
+    "councilsDescription": "Concílios em que este padre possui participação registrada",
+    "noCouncils": "Nenhum concílio relacionado encontrado.",
     "tabs": {
       "info": "Informações",
-      "statements": "Declarações Textuais"
+      "statements": "Declarações Textuais",
+      "councils": "Concílios"
     },
     "topics": {
       "MANUSCRIPTS": "Manuscritos",
@@ -460,6 +495,68 @@
       "searchPlaceholder": "Buscar nas declarações...",
       "topicsSummary": "Tópicos"
     }
+  },
+  "councils": {
+    "title": "Concílios Eclesiásticos",
+    "subtitle": "Panorama histórico dos concílios até o ano 1000",
+    "filterByCentury": "Filtrar por século",
+    "filterByYear": "Filtrar por ano",
+    "searchPlaceholder": "Buscar por nome, local ou tema...",
+    "tableView": "Tabela",
+    "mapView": "Mapa",
+    "timelineTitle": "Timeline dos Concílios",
+    "noResults": "Nenhum concílio encontrado para os filtros aplicados.",
+    "year": "Ano",
+    "century": "Século",
+    "participants": "Participantes",
+    "confidence": "Confiança",
+    "detailTitle": "Detalhe do Concílio",
+    "notFound": "Concílio não encontrado.",
+    "backToList": "Voltar para concílios",
+    "summary": "Resumo IA",
+    "original": "Texto original",
+    "noTextAvailable": "Sem conteúdo disponível para este concílio.",
+    "noSources": "Nenhuma fonte registrada para este concílio.",
+    "source": "Fonte",
+    "sourceLevel": "Nível",
+    "claimedYear": "Ano alegado",
+    "claimedLocation": "Local alegado",
+    "canon": "Cânon",
+    "noCanons": "Nenhum cânon disponível para este concílio.",
+    "noParticipants": "Nenhum participante vinculado.",
+    "noHeresies": "Nenhuma heresia vinculada.",
+    "quickInfo": "Informações rápidas",
+    "sources": "Fontes",
+    "viewDetails": "Ver detalhes",
+    "tabs": {
+      "overview": "Visão geral",
+      "canons": "Cânones",
+      "participants": "Participantes",
+      "heresies": "Heresias",
+      "sources": "Fontes"
+    },
+    "types": {
+      "ecumenical": "Ecumênico",
+      "regional": "Regional",
+      "local": "Local"
+    }
+  },
+  "heresies": {
+    "title": "Heresias",
+    "subtitle": "Correntes doutrinárias e seus concílios de condenação",
+    "century": "Século",
+    "detailTitle": "Detalhe da Heresia",
+    "detailSubtitle": "Contexto histórico e concílios relacionados",
+    "notFound": "Heresia não encontrada.",
+    "backToList": "Voltar para heresias",
+    "yearOrigin": "Ano de origem",
+    "centuryOrigin": "Século de origem",
+    "noDescription": "Descrição não disponível.",
+    "openWikipedia": "Abrir artigo na Wikipedia",
+    "quickInfo": "Informações rápidas",
+    "councilsCount": "Concílios relacionados",
+    "condemningCouncils": "Concílios que condenaram",
+    "noCouncils": "Nenhum concílio relacionado encontrado."
   },
   "home": {
     "pageTitle": "Você merece o Inferno!",

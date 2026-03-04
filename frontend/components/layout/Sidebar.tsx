@@ -21,6 +21,8 @@ import {
   Telescope,
   Shield,
   FlaskConical,
+  Landmark,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSelector } from "./LanguageSelector";
@@ -46,6 +48,8 @@ export function Sidebar() {
   const patristicItems = [
     { href: "/fathers", label: t("fathers"), icon: Users },
     { href: "/fathers/testimony", label: t("testimony"), icon: Quote },
+    { href: "/councils", label: t("councils"), icon: Landmark },
+    { href: "/heresies", label: t("heresies"), icon: ShieldAlert },
   ];
 
   const referenceItems = [

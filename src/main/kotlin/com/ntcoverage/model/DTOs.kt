@@ -350,6 +350,199 @@ data class TopicsSummaryResponse(
     val topics: List<TopicSummaryDTO>
 )
 
+@Serializable
+enum class CouncilType {
+    ECUMENICAL, REGIONAL, LOCAL
+}
+
+@Serializable
+enum class SourceLevel {
+    PRIMARY, ACADEMIC, STRUCTURED, AGGREGATOR
+}
+
+@Serializable
+enum class DataConfidence {
+    HIGH, MEDIUM, LOW
+}
+
+@Serializable
+data class CouncilSummaryDTO(
+    val id: Int,
+    val displayName: String,
+    val slug: String,
+    val year: Int,
+    val yearEnd: Int? = null,
+    val century: Int,
+    val councilType: String,
+    val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val numberOfParticipants: Int? = null,
+    val consensusConfidence: Double = 0.0,
+    val dataConfidence: String = DataConfidence.MEDIUM.name,
+    val sourceCount: Int = 1
+)
+
+@Serializable
+data class CouncilFatherDTO(
+    val fatherId: Int,
+    val fatherName: String,
+    val role: String? = null
+)
+
+@Serializable
+data class CouncilMapPointDTO(
+    val id: Int,
+    val slug: String,
+    val displayName: String,
+    val year: Int,
+    val councilType: String,
+    val latitude: Double,
+    val longitude: Double
+)
+
+@Serializable
+data class HeresySummaryDTO(
+    val id: Int,
+    val name: String,
+    val slug: String,
+    val centuryOrigin: Int? = null,
+    val yearOrigin: Int? = null,
+    val keyFigure: String? = null
+)
+
+@Serializable
+data class SourceClaimDTO(
+    val sourceDisplayName: String,
+    val sourceLevel: String,
+    val claimedYear: Int? = null,
+    val claimedYearEnd: Int? = null,
+    val claimedLocation: String? = null,
+    val claimedParticipants: Int? = null,
+    val sourcePage: String? = null,
+    val rawText: String? = null
+)
+
+@Serializable
+data class SourceDTO(
+    val id: Int,
+    val name: String,
+    val displayName: String,
+    val sourceLevel: String,
+    val baseWeight: Double,
+    val reliabilityScore: Double? = null,
+    val url: String? = null,
+    val description: String? = null
+)
+
+@Serializable
+data class CouncilDetailDTO(
+    val id: Int,
+    val displayName: String,
+    val slug: String,
+    val year: Int,
+    val yearEnd: Int? = null,
+    val century: Int,
+    val councilType: String,
+    val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val shortDescription: String? = null,
+    val mainTopics: String? = null,
+    val keyParticipants: String? = null,
+    val numberOfParticipants: Int? = null,
+    val originalText: String? = null,
+    val summary: String? = null,
+    val summaryReviewed: Boolean = false,
+    val wikipediaUrl: String? = null,
+    val consensusConfidence: Double = 0.0,
+    val dataConfidence: String = DataConfidence.MEDIUM.name,
+    val sourceCount: Int = 1,
+    val conflictResolution: String? = null,
+    val relatedFathers: List<CouncilFatherDTO> = emptyList(),
+    val heresies: List<HeresySummaryDTO> = emptyList(),
+    val canonCount: Int = 0,
+    val sourceClaims: List<SourceClaimDTO> = emptyList()
+)
+
+@Serializable
+data class CouncilsListResponse(
+    val total: Int,
+    val councils: List<CouncilSummaryDTO>
+)
+
+@Serializable
+data class HeresyDetailDTO(
+    val id: Int,
+    val name: String,
+    val slug: String,
+    val description: String? = null,
+    val centuryOrigin: Int? = null,
+    val yearOrigin: Int? = null,
+    val keyFigure: String? = null,
+    val wikipediaUrl: String? = null,
+    val councils: List<CouncilSummaryDTO> = emptyList()
+)
+
+@Serializable
+data class HeresiesListResponse(
+    val total: Int,
+    val heresies: List<HeresySummaryDTO>
+)
+
+@Serializable
+data class CouncilCanonDTO(
+    val id: Int,
+    val canonNumber: Int,
+    val title: String? = null,
+    val canonText: String,
+    val topic: String? = null
+)
+
+@Serializable
+data class CouncilTypeSummaryDTO(
+    val councilType: String,
+    val count: Int
+)
+
+@Serializable
+data class SourceClaimFieldConfidenceDTO(
+    val field: String,
+    val value: String? = null,
+    val confidenceScore: Double = 0.0
+)
+
+@Serializable
+data class PhaseStatusDTO(
+    val phaseName: String,
+    val status: String,
+    val startedAt: String? = null,
+    val completedAt: String? = null,
+    val itemsProcessed: Int = 0,
+    val itemsTotal: Int = 0,
+    val errorMessage: String? = null,
+    val lastRunBy: String? = null
+)
+
+@Serializable
+data class RunPhasesRequest(
+    val phases: List<String>
+)
+
+@Serializable
+data class CacheEntryDTO(
+    val key: String,
+    val sizeBytes: Long
+)
+
+@Serializable
+data class CacheStatsDTO(
+    val totalFiles: Int,
+    val totalSizeBytes: Long,
+    val totalSizeMb: Double,
+    val entries: List<CacheEntryDTO> = emptyList()
+)
+
 // ── Visitor Tracking DTOs ──────────────────────────────────────
 
 @Serializable

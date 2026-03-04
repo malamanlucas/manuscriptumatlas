@@ -45,6 +45,8 @@ object FlywayConfig {
                 Books, Verses, Manuscripts, ManuscriptVerses, ManuscriptSources,
                 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
                 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
+                Councils, CouncilTranslations, CouncilFathers, Heresies, HeresyTranslations,
+                CouncilHeresies, CouncilCanons, Sources, CouncilSourceClaims, CouncilIngestionPhases,
                 VisitorDailyStats, Users
             )
             log.info("Tables created/verified via Exposed SchemaUtils.")
@@ -153,6 +155,7 @@ object FlywayConfig {
         transaction {
             exec("CREATE EXTENSION IF NOT EXISTS pg_trgm")
             exec("CREATE EXTENSION IF NOT EXISTS unaccent")
+            exec("ALTER TABLE IF EXISTS councils DROP CONSTRAINT IF EXISTS councils_normalized_name_unique")
             exec("""
                 DO ${'$'}${'$'}
                 BEGIN
@@ -191,6 +194,51 @@ object FlywayConfig {
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_church_fathers_year_range') THEN
                         CREATE INDEX idx_church_fathers_year_range ON church_fathers(year_min, year_max);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_century') THEN
+                        CREATE INDEX idx_councils_century ON councils(century);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_year') THEN
+                        CREATE INDEX idx_councils_year ON councils(year);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_type') THEN
+                        CREATE INDEX idx_councils_type ON councils(council_type);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_slug') THEN
+                        CREATE INDEX idx_councils_slug ON councils(slug);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_confidence') THEN
+                        CREATE INDEX idx_councils_confidence ON councils(consensus_confidence);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_name_trgm') THEN
+                        CREATE INDEX idx_councils_name_trgm ON councils USING gin (display_name gin_trgm_ops);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_councils_fts') THEN
+                        CREATE INDEX idx_councils_fts ON councils USING gin (
+                            to_tsvector('english',
+                                coalesce(display_name,'') || ' ' ||
+                                coalesce(summary,'') || ' ' ||
+                                coalesce(main_topics,'')
+                            )
+                        );
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_council_translations_lookup') THEN
+                        CREATE INDEX idx_council_translations_lookup ON council_translations(locale, council_id);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_heresies_slug') THEN
+                        CREATE INDEX idx_heresies_slug ON heresies(slug);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_heresies_name_trgm') THEN
+                        CREATE INDEX idx_heresies_name_trgm ON heresies USING gin (name gin_trgm_ops);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_source_claims_council') THEN
+                        CREATE INDEX idx_source_claims_council ON council_source_claims(council_id);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_source_claims_source') THEN
+                        CREATE INDEX idx_source_claims_source ON council_source_claims(source_id);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_council_phases_status') THEN
+                        CREATE INDEX idx_council_phases_status ON council_ingestion_phases(status);
                     END IF;
                 END
                 ${'$'}${'$'};

@@ -4,12 +4,13 @@ import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Header } from "@/components/layout/Header";
-import { useChurchFatherDetail, useChurchFathers } from "@/hooks/useChurchFathers";
+import { useChurchFatherDetail, useChurchFathers, useFatherCouncils } from "@/hooks/useChurchFathers";
 import { useFatherStatements } from "@/hooks/useTextualStatements";
 import { Link } from "@/i18n/navigation";
 import { toRoman } from "@/lib/utils";
-import { ArrowLeft, BookOpen, ChevronDown, Quote, Skull } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, Landmark, Quote, Skull } from "lucide-react";
 import { DatingBadge } from "@/components/ui/DatingBadge";
+import { CouncilTypeBadge } from "@/components/councils/CouncilTypeBadge";
 import type { TextualTopic } from "@/types";
 
 const TRADITION_BADGE_COLORS: Record<string, string> = {
@@ -43,7 +44,7 @@ export default function FatherDetailPage() {
   const t = useTranslations("fathers");
   const tc = useTranslations("common");
 
-  const [activeTab, setActiveTab] = useState<"info" | "statements">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "statements" | "councils">("info");
   const [topicFilter, setTopicFilter] = useState<TextualTopic | "all">("all");
   const [bioExpanded, setBioExpanded] = useState(false);
 
@@ -52,6 +53,9 @@ export default function FatherDetailPage() {
   );
   const { data: allFathers } = useChurchFathers({ limit: 100 });
   const { data: statements, isLoading: statementsLoading } = useFatherStatements(
+    isNaN(id) ? null : id
+  );
+  const { data: fatherCouncils, isLoading: councilsLoading } = useFatherCouncils(
     isNaN(id) ? null : id
   );
 
@@ -146,6 +150,22 @@ export default function FatherDetailPage() {
             {statements && statements.length > 0 && (
               <span className="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
                 {statements.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("councils")}
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "councils"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Landmark className="h-4 w-4" />
+            {t("tabs.councils")}
+            {fatherCouncils && fatherCouncils.length > 0 && (
+              <span className="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
+                {fatherCouncils.length}
               </span>
             )}
           </button>
@@ -388,6 +408,53 @@ export default function FatherDetailPage() {
               </div>
             ))}
           </>
+        )}
+
+        {activeTab === "councils" && (
+          <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+            <h2 className="mb-1 text-base font-semibold">{t("councilsTitle")}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">{t("councilsDescription")}</p>
+
+            {councilsLoading && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse rounded-lg border border-border p-4">
+                    <div className="h-4 w-52 rounded bg-secondary" />
+                    <div className="mt-2 h-3 w-36 rounded bg-secondary" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!councilsLoading && (!fatherCouncils || fatherCouncils.length === 0) && (
+              <p className="text-sm text-muted-foreground">{t("noCouncils")}</p>
+            )}
+
+            {!councilsLoading && !!fatherCouncils?.length && (
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {fatherCouncils.map((council) => (
+                  <Link
+                    key={council.id}
+                    href={`/councils/${council.slug}`}
+                    className="rounded-lg border border-border p-4 transition-colors hover:bg-secondary/30"
+                  >
+                    <p className="font-medium">{council.displayName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {council.year}
+                      {council.yearEnd ? `-${council.yearEnd}` : ""}
+                      {council.location ? ` · ${council.location}` : ""}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <CouncilTypeBadge type={council.councilType} />
+                      <span className="text-xs text-muted-foreground">
+                        {(council.consensusConfidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

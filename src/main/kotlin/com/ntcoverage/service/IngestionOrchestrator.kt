@@ -17,6 +17,7 @@ import kotlin.time.Duration.Companion.minutes
 class IngestionOrchestrator(
     private val ingestionService: IngestionService,
     private val patristicIngestionService: PatristicIngestionService,
+    private val councilIngestionService: CouncilIngestionService,
     private val metadataRepository: IngestionMetadataRepository,
     private val statsRepository: StatsRepository
 ) {
@@ -63,6 +64,16 @@ class IngestionOrchestrator(
             try {
                 log.warn("DATABASE_RESET requested — wiping all data")
                 transaction {
+                    CouncilSourceClaims.deleteAll()
+                    CouncilCanons.deleteAll()
+                    CouncilHeresies.deleteAll()
+                    CouncilFathers.deleteAll()
+                    CouncilTranslations.deleteAll()
+                    HeresyTranslations.deleteAll()
+                    Heresies.deleteAll()
+                    CouncilIngestionPhases.deleteAll()
+                    Councils.deleteAll()
+                    Sources.deleteAll()
                     FatherStatementTranslations.deleteAll()
                     ChurchFatherTranslations.deleteAll()
                     FatherTextualStatements.deleteAll()
@@ -150,6 +161,15 @@ class IngestionOrchestrator(
                 log.info("PATRISTIC_INGESTION: $patristicCount new fathers ingested from seed, durationMs=$patristicDuration")
             } else {
                 log.info("PATRISTIC_INGESTION_SKIPPED — ENABLE_PATRISTIC_INGESTION=false")
+            }
+
+            if (IngestionConfig.enableCouncilIngestion) {
+                val councilsStart = System.currentTimeMillis()
+                councilIngestionService.fullIngestion()
+                val councilsDuration = System.currentTimeMillis() - councilsStart
+                log.info("COUNCIL_INGESTION: completed in durationMs=$councilsDuration")
+            } else {
+                log.info("COUNCIL_INGESTION_SKIPPED — ENABLE_COUNCIL_INGESTION=false")
             }
 
             val durationMs = System.currentTimeMillis() - startTime

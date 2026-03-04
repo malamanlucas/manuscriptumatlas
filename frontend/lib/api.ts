@@ -19,6 +19,20 @@ import type {
   TextualStatementsListResponse,
   TextualStatementDTO,
   TopicsSummaryResponse,
+  CouncilsListResponse,
+  CouncilDetailDTO,
+  CouncilSummaryDTO,
+  CouncilFatherDTO,
+  CouncilCanonDTO,
+  HeresiesListResponse,
+  HeresyDetailDTO,
+  HeresySummaryDTO,
+  CouncilMapPointDTO,
+  CouncilTypeSummaryDTO,
+  SourceDTO,
+  SourceClaimDTO,
+  PhaseStatusDTO,
+  CacheStatsDTO,
 } from "@/types";
 
 import type { UserDTO } from "@/types";
@@ -323,6 +337,11 @@ export function getChurchFatherDetail(
   return fetchJson(`${BASE}/fathers/${id}${q}`);
 }
 
+export function getFatherCouncils(id: number, locale?: string): Promise<CouncilSummaryDTO[]> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/fathers/${id}/councils${q}`);
+}
+
 export function searchChurchFathers(
   q: string,
   limit?: number,
@@ -374,6 +393,115 @@ export function searchStatements(
 
 export function getTopicsSummary(): Promise<TopicsSummaryResponse> {
   return fetchJson(`${BASE}/fathers/statements/topics/summary`);
+}
+
+// ── Councils / Heresies API ──
+
+export function getCouncils(params?: {
+  century?: number;
+  type?: string;
+  yearMin?: number;
+  yearMax?: number;
+  page?: number;
+  limit?: number;
+  locale?: string;
+}): Promise<CouncilsListResponse> {
+  const q = buildParams({
+    century: params?.century?.toString(),
+    type: params?.type,
+    yearMin: params?.yearMin?.toString(),
+    yearMax: params?.yearMax?.toString(),
+    page: params?.page?.toString(),
+    limit: params?.limit?.toString(),
+    locale: params?.locale,
+  });
+  return fetchJson(`${BASE}/councils${q}`);
+}
+
+export function searchCouncils(q: string, limit = 20, locale?: string): Promise<CouncilSummaryDTO[]> {
+  const params = buildParams({ q, limit: limit.toString(), locale });
+  return fetchJson(`${BASE}/councils/search${params}`);
+}
+
+export function getCouncilTypeSummary(): Promise<CouncilTypeSummaryDTO[]> {
+  return fetchJson(`${BASE}/councils/types/summary`);
+}
+
+export function getCouncilMapPoints(): Promise<CouncilMapPointDTO[]> {
+  return fetchJson(`${BASE}/councils/map`);
+}
+
+export function getCouncilDetail(slug: string, locale?: string): Promise<CouncilDetailDTO> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/councils/${encodeURIComponent(slug)}${q}`);
+}
+
+export function getCouncilFathers(slug: string, locale?: string): Promise<CouncilFatherDTO[]> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/councils/${encodeURIComponent(slug)}/fathers${q}`);
+}
+
+export function getCouncilCanons(slug: string, page = 1, limit = 50): Promise<CouncilCanonDTO[]> {
+  const q = buildParams({ page: page.toString(), limit: limit.toString() });
+  return fetchJson(`${BASE}/councils/${encodeURIComponent(slug)}/canons${q}`);
+}
+
+export function getCouncilHeresies(slug: string, locale?: string): Promise<HeresySummaryDTO[]> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/councils/${encodeURIComponent(slug)}/heresies${q}`);
+}
+
+export function getCouncilSources(slug: string): Promise<SourceClaimDTO[]> {
+  return fetchJson(`${BASE}/councils/${encodeURIComponent(slug)}/sources`);
+}
+
+export function getHeresies(params?: { page?: number; limit?: number; locale?: string }): Promise<HeresiesListResponse> {
+  const q = buildParams({
+    page: params?.page?.toString(),
+    limit: params?.limit?.toString(),
+    locale: params?.locale,
+  });
+  return fetchJson(`${BASE}/heresies${q}`);
+}
+
+export function getHeresyDetail(slug: string, locale?: string): Promise<HeresyDetailDTO> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/heresies/${encodeURIComponent(slug)}${q}`);
+}
+
+export function getHeresyCouncils(slug: string, locale?: string): Promise<CouncilSummaryDTO[]> {
+  const q = buildParams({ locale });
+  return fetchJson(`${BASE}/heresies/${encodeURIComponent(slug)}/councils${q}`);
+}
+
+export function getSources(): Promise<SourceDTO[]> {
+  return fetchJson(`${BASE}/sources`);
+}
+
+// ── Council ingestion admin API ──
+
+export function getCouncilIngestionPhases(): Promise<PhaseStatusDTO[]> {
+  return fetchJsonAuth(`${BASE}/admin/councils/ingestion/phases`);
+}
+
+export function runCouncilPhase(phase: string): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/councils/ingestion/run/${encodeURIComponent(phase)}`, { method: "POST" });
+}
+
+export function runCouncilPhases(phases: string[]): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/councils/ingestion/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phases }),
+  });
+}
+
+export function runAllCouncilPhases(): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/councils/ingestion/run-all`, { method: "POST" });
+}
+
+export function getCouncilIngestionCache(): Promise<CacheStatsDTO> {
+  return fetchJsonAuth(`${BASE}/admin/councils/ingestion/cache`);
 }
 
 // ── Visitor Analytics API ──

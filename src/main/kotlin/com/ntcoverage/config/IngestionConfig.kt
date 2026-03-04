@@ -19,4 +19,7 @@ object IngestionConfig {
 
     val enablePatristicIngestion: Boolean
         get() = System.getenv("ENABLE_PATRISTIC_INGESTION")?.lowercase() != "false"
+
+    val enableCouncilIngestion: Boolean
+        get() = System.getenv("ENABLE_COUNCIL_INGESTION")?.lowercase() != "false"
 }

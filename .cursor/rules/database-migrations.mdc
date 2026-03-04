@@ -29,6 +29,8 @@ alwaysApply: false
 - `V11__create_visitor_tracking.sql` — Tabelas particionadas visitor_sessions e page_views (RANGE by month), visitor_daily_stats, 15 índices estratégicos, função create_monthly_partitions()
 - `V12__create_users.sql` — Tabela users para autenticação Google SSO com RBAC (email unique, role CHECK ADMIN/MEMBER, timestamps)
 - `V13__add_year_dating_fields.sql` — Campos de datação por ano (year_min, year_max, year_best, dating_source, dating_reference, dating_confidence) em manuscripts e church_fathers + índices em year_best
+- `V14__create_councils.sql` — Domínio de concílios: councils, traduções, vínculos com pais, fontes/claims e fases de ingestão
+- `V15__create_heresies_canons.sql` — Domínio de heresias e cânones: heresies, traduções, relação conselho↔heresia e council_canons
 
 ## Regras
 
@@ -36,7 +38,7 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V14**
+- Próxima migração: **V16**
 
 ## IMPORTANTE — Flyway não executa migrations
 
@@ -88,6 +90,8 @@ exec("CREATE INDEX IF NOT EXISTS idx_nome ON tabela (coluna)")
 Books, Verses, Manuscripts, ManuscriptSources, ManuscriptVerses,
 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
+Councils, CouncilTranslations, CouncilFathers, Heresies, HeresyTranslations,
+CouncilHeresies, CouncilCanons, Sources, CouncilSourceClaims, CouncilIngestionPhases,
 VisitorDailyStats, Users
 ```
 

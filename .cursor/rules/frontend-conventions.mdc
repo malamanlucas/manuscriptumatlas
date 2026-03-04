@@ -13,6 +13,7 @@ alwaysApply: false
 - Tailwind CSS 4 para estilização
 - TanStack React Query 5 para data fetching e cache
 - Recharts 3 para visualizações/gráficos
+- Leaflet + react-leaflet para mapas interativos (ex.: concílios)
 - Lucide React para ícones
 - next-themes para tema (light/dark/system)
 - next-intl para internacionalização (pt, en, es)
@@ -21,21 +22,23 @@ alwaysApply: false
 
 ```
 frontend/
-├── app/[locale]/          Páginas (22 rotas) — App Router com i18n
+├── app/[locale]/          Páginas (26 rotas) — App Router com i18n
 ├── components/
-│   ├── charts/             ComparisonChart, FathersTimelineChart, Heatmap, TimelineChart
+│   ├── charts/             ComparisonChart, CouncilsTimelineChart, FathersTimelineChart, Heatmap, TimelineChart
+│   ├── councils/           CouncilMapView, CouncilTypeBadge, SourceProvenancePanel, SummaryToggle
 │   ├── coverage/           BookCard, CenturySlider, GospelPanel, VerseGrid
 │   ├── filters/            CenturyRangeFilter, YearRangeFilter
+│   ├── ingestion/          CouncilIngestionPanel
 │   ├── layout/             Header, LanguageSelector, Sidebar, SidebarContext, ThemeToggle
 │   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorsTab
 │   ├── stats/              StatsOverview
 │   ├── tracking/           VisitorTracker
 │   ├── ui/                 ConfidenceDot, DatingBadge
 │   └── providers.tsx       React Query + Theme providers
-├── hooks/                 10 hooks customizados
+├── hooks/                 13 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
 ├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
-├── types/                 index.ts (54 interfaces/tipos)
+├── types/                 index.ts (71 interfaces/tipos)
 └── messages/              en.json, pt.json, es.json
 ```
 
@@ -88,6 +91,6 @@ Antes de considerar uma feature pronta:
 4. **Tipos**: TypeScript sem `any`, interfaces em `types/index.ts`?
 5. **Loading/Error**: estados de carregamento e erro tratados?
 
-## Páginas (22 rotas)
+## Páginas (26 rotas)
 
-Admin / Users, Book / Name, Compare, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, History, Home, Ingestion Status, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Sources, Timeline, Verse Lookup
+Admin / Users, Book / Name, Compare, Councils, Councils / Slug, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, Heresies, Heresies / Slug, History, Home, Ingestion Status, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Sources, Timeline, Verse Lookup

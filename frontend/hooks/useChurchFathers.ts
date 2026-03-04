@@ -6,6 +6,7 @@ import {
   getChurchFathers,
   getChurchFatherDetail,
   searchChurchFathers,
+  getFatherCouncils,
 } from "@/lib/api";
 
 export function useChurchFathers(params?: {
@@ -40,6 +41,16 @@ export function useSearchChurchFathers(query: string) {
     queryKey: ["fathers", "search", locale, query],
     queryFn: () => searchChurchFathers(query, undefined, locale),
     enabled: query.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useFatherCouncils(id: number | null) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: ["fathers", "councils", locale, id],
+    queryFn: () => getFatherCouncils(id!, locale),
+    enabled: id !== null,
     staleTime: 5 * 60 * 1000,
   });
 }

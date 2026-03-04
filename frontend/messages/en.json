@@ -35,6 +35,8 @@
     "history": "History",
     "fathers": "Church Fathers",
     "testimony": "Patristic Testimony",
+    "councils": "Councils",
+    "heresies": "Heresies",
     "analysis": "Analysis",
     "patristic": "Patristic",
     "reference": "Reference",
@@ -313,7 +315,36 @@
     "enrichFathers": "Church Fathers",
     "enrichManuscripts": "Manuscripts",
     "enrichAll": "All Domains",
-    "enrichButton": "Enrich"
+    "enrichButton": "Enrich",
+    "councilIngestion": {
+      "title": "Council Ingestion",
+      "subtitle": "Manual control of extraction and enrichment phases",
+      "runAll": "Run all phases",
+      "runSelected": "Run selected",
+      "runPhase": "Run phase",
+      "errorDetails": "Error details",
+      "cache": "Source cache",
+      "cacheFiles": "{count} files, {size}",
+      "never": "Never",
+      "confirmRunAll": "Run all 9 phases sequentially?",
+      "status": {
+        "idle": "Idle",
+        "running": "Running",
+        "success": "Completed",
+        "failed": "Failed"
+      },
+      "phases": {
+        "council_seed": "Council seed",
+        "council_extract_schaff": "Schaff extraction",
+        "council_extract_hefele": "Hefele extraction",
+        "council_extract_catholic_enc": "Catholic Encyclopedia",
+        "council_extract_fordham": "Fordham Sourcebook",
+        "council_extract_wikidata": "Wikidata enrichment",
+        "council_extract_wikipedia": "Wikipedia content",
+        "council_consensus": "Source consensus",
+        "council_summaries": "AI summaries and translations"
+      }
+    }
   },
   "bookDetail": {
     "coverageAsOf": "Coverage as of Century {century}",
@@ -430,9 +461,13 @@
     "backToList": "Back to list",
     "noResults": "No results found",
     "scrollHint": "Scroll to see more",
+    "councilsTitle": "Related councils",
+    "councilsDescription": "Councils where this father has recorded participation",
+    "noCouncils": "No related councils found.",
     "tabs": {
       "info": "Information",
-      "statements": "Textual Statements"
+      "statements": "Textual Statements",
+      "councils": "Councils"
     },
     "topics": {
       "MANUSCRIPTS": "Manuscripts",
@@ -460,6 +495,68 @@
       "searchPlaceholder": "Search in statements...",
       "topicsSummary": "Topics"
     }
+  },
+  "councils": {
+    "title": "Church Councils",
+    "subtitle": "Historical overview of councils up to year 1000",
+    "filterByCentury": "Filter by century",
+    "filterByYear": "Filter by year",
+    "searchPlaceholder": "Search by name, location, or topic...",
+    "tableView": "Table",
+    "mapView": "Map",
+    "timelineTitle": "Councils Timeline",
+    "noResults": "No councils found for the current filters.",
+    "year": "Year",
+    "century": "Century",
+    "participants": "Participants",
+    "confidence": "Confidence",
+    "detailTitle": "Council Detail",
+    "notFound": "Council not found.",
+    "backToList": "Back to councils",
+    "summary": "AI Summary",
+    "original": "Original text",
+    "noTextAvailable": "No content available for this council.",
+    "noSources": "No recorded sources for this council.",
+    "source": "Source",
+    "sourceLevel": "Level",
+    "claimedYear": "Claimed year",
+    "claimedLocation": "Claimed location",
+    "canon": "Canon",
+    "noCanons": "No canons available for this council.",
+    "noParticipants": "No linked participants.",
+    "noHeresies": "No linked heresies.",
+    "quickInfo": "Quick info",
+    "sources": "Sources",
+    "viewDetails": "View details",
+    "tabs": {
+      "overview": "Overview",
+      "canons": "Canons",
+      "participants": "Participants",
+      "heresies": "Heresies",
+      "sources": "Sources"
+    },
+    "types": {
+      "ecumenical": "Ecumenical",
+      "regional": "Regional",
+      "local": "Local"
+    }
+  },
+  "heresies": {
+    "title": "Heresies",
+    "subtitle": "Doctrinal movements and their condemning councils",
+    "century": "Century",
+    "detailTitle": "Heresy Detail",
+    "detailSubtitle": "Historical context and related councils",
+    "notFound": "Heresy not found.",
+    "backToList": "Back to heresies",
+    "yearOrigin": "Year of origin",
+    "centuryOrigin": "Century of origin",
+    "noDescription": "Description not available.",
+    "openWikipedia": "Open article on Wikipedia",
+    "quickInfo": "Quick info",
+    "councilsCount": "Related councils",
+    "condemningCouncils": "Councils that condemned it",
+    "noCouncils": "No related councils found."
   },
   "home": {
     "pageTitle": "You Deserve Hell!",

@@ -1,10 +1,15 @@
 package com.ntcoverage.routes
 
 import com.ntcoverage.config.IngestionConfig
+import com.ntcoverage.ErrorResponse
+import com.ntcoverage.model.RunPhasesRequest
 import com.ntcoverage.repository.IngestionMetadataRepository
+import com.ntcoverage.service.CouncilIngestionService
+import com.ntcoverage.service.CouncilPhaseTracker
 import com.ntcoverage.service.DatingEnrichmentService
 import com.ntcoverage.service.IngestionOrchestrator
 import io.ktor.http.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +23,9 @@ fun Route.adminRoutes(
     orchestrator: IngestionOrchestrator,
     metadataRepository: IngestionMetadataRepository,
     ingestionScope: CoroutineScope,
-    datingEnrichmentService: DatingEnrichmentService
+    datingEnrichmentService: DatingEnrichmentService,
+    councilIngestionService: CouncilIngestionService,
+    phaseTracker: CouncilPhaseTracker
 ) {
     get("/admin/ingestion/status") {
         val status = metadataRepository.getStatus()
@@ -80,5 +87,59 @@ fun Route.adminRoutes(
         call.respond(HttpStatusCode.Accepted, MessageResponse(
             "Dating enrichment started for domain=$domain, limit=$limit"
         ))
+    }
+
+    get("/admin/councils/ingestion/phases") {
+        call.respond(phaseTracker.getAllPhases())
+    }
+
+    post("/admin/councils/ingestion/run/{phase}") {
+        val phase = call.parameters["phase"]
+            ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing phase"))
+        if (phase !in CouncilIngestionService.ALL_PHASES) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid phase: $phase"))
+        }
+        if (phaseTracker.isAnyRunning()) {
+            return@post call.respond(HttpStatusCode.Conflict, MessageResponse("A council ingestion phase is already running"))
+        }
+
+        ingestionScope.launch {
+            councilIngestionService.runPhases(listOf(phase))
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Phase started: $phase"))
+    }
+
+    post("/admin/councils/ingestion/run") {
+        val request = call.receive<RunPhasesRequest>()
+        val phases = request.phases.distinct()
+        if (phases.isEmpty()) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one phase is required"))
+        }
+        val invalid = phases.filter { it !in CouncilIngestionService.ALL_PHASES }
+        if (invalid.isNotEmpty()) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid phases: $invalid"))
+        }
+        if (phaseTracker.isAnyRunning()) {
+            return@post call.respond(HttpStatusCode.Conflict, MessageResponse("A council ingestion phase is already running"))
+        }
+
+        ingestionScope.launch {
+            councilIngestionService.runPhases(phases)
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Phases started: ${phases.joinToString(", ")}"))
+    }
+
+    post("/admin/councils/ingestion/run-all") {
+        if (phaseTracker.isAnyRunning()) {
+            return@post call.respond(HttpStatusCode.Conflict, MessageResponse("A council ingestion phase is already running"))
+        }
+        ingestionScope.launch {
+            councilIngestionService.fullIngestion()
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Full council ingestion started"))
+    }
+
+    get("/admin/councils/ingestion/cache") {
+        call.respond(councilIngestionService.getCacheStats())
     }
 }

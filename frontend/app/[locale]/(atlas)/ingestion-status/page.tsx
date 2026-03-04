@@ -22,6 +22,7 @@ import {
   Trash2,
   Sparkles,
 } from "lucide-react";
+import { CouncilIngestionPanel } from "@/components/ingestion/CouncilIngestionPanel";
 
 export default function IngestionStatusPage() {
   return (
@@ -267,6 +268,8 @@ function IngestionContent() {
                 }
               />
             </div>
+
+            <CouncilIngestionPanel />
 
             {data.status === "failed" && data.errorMessage && (
               <div className="rounded-xl border border-red-300 bg-red-50 p-5 dark:border-red-800 dark:bg-red-950">

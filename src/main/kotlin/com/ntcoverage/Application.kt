@@ -3,9 +3,11 @@ package com.ntcoverage
 import com.auth0.jwk.JwkProviderBuilder
 import com.ntcoverage.config.DatabaseConfig
 import com.ntcoverage.config.FlywayConfig
+import com.ntcoverage.config.SourceFileCache
 import com.ntcoverage.config.SimpleRateLimiter
 import com.ntcoverage.repository.*
 import com.ntcoverage.routes.*
+import com.ntcoverage.scraper.*
 import com.ntcoverage.scraper.NtvmrListClient
 import com.ntcoverage.seed.UserSeedData
 import com.ntcoverage.service.*
@@ -161,7 +163,56 @@ fun Application.module() {
     val patristicIngestionService = PatristicIngestionService(churchFatherRepository, statementRepository, biographySummarizationService)
     val churchFatherService = ChurchFatherService(churchFatherRepository, statementRepository)
     val datingEnrichmentService = DatingEnrichmentService(manuscriptRepository, churchFatherRepository)
-    val orchestrator = IngestionOrchestrator(ingestionService, patristicIngestionService, ingestionMetadataRepository, statsRepository)
+
+    val councilRepository = CouncilRepository()
+    val sourceRepository = SourceRepository()
+    val claimRepository = CouncilSourceClaimRepository()
+    val heresyRepository = HeresyRepository()
+    val canonRepository = CouncilCanonRepository()
+    val phaseRepository = CouncilIngestionPhaseRepository()
+    val phaseTracker = CouncilPhaseTracker(phaseRepository)
+    phaseTracker.recoverStuckPhases()
+    val sourceFileCache = SourceFileCache()
+    val academicTextExtractor = AcademicTextExtractor()
+
+    val councilExtractors = listOf<CouncilSourceExtractor>(
+        SchaffExtractor(sourceFileCache, academicTextExtractor),
+        HefeleExtractor(sourceFileCache, academicTextExtractor),
+        CatholicEncyclopediaExtractor(sourceFileCache, academicTextExtractor),
+        FordhamExtractor(sourceFileCache, academicTextExtractor),
+        WikidataSparqlClient(),
+        CouncilWikipediaScraper(sourceFileCache)
+    )
+    val conflictResolutionService = ConflictResolutionService()
+    val consensusEngine = SourceConsensusEngine(sourceRepository, claimRepository, conflictResolutionService)
+    val councilService = CouncilService(
+        councilRepository = councilRepository,
+        sourceRepository = sourceRepository,
+        claimRepository = claimRepository,
+        heresyRepository = heresyRepository,
+        canonRepository = canonRepository
+    )
+    val councilIngestionService = CouncilIngestionService(
+        councilRepository = councilRepository,
+        heresyRepository = heresyRepository,
+        canonRepository = canonRepository,
+        sourceRepository = sourceRepository,
+        claimRepository = claimRepository,
+        churchFatherRepository = churchFatherRepository,
+        extractors = councilExtractors,
+        consensusEngine = consensusEngine,
+        summarizationService = biographySummarizationService,
+        phaseTracker = phaseTracker,
+        fileCache = sourceFileCache
+    )
+
+    val orchestrator = IngestionOrchestrator(
+        ingestionService,
+        patristicIngestionService,
+        councilIngestionService,
+        ingestionMetadataRepository,
+        statsRepository
+    )
 
     val visitorRepository = VisitorRepository()
     val visitorService = VisitorService(visitorRepository)
@@ -220,7 +271,15 @@ fun Application.module() {
         metricsRoutes(metricsService)
         verseRoutes(verseRepository)
         churchFatherRoutes(churchFatherService)
-        adminRoutes(orchestrator, ingestionMetadataRepository, ingestionScope, datingEnrichmentService)
+        councilRoutes(councilService)
+        adminRoutes(
+            orchestrator,
+            ingestionMetadataRepository,
+            ingestionScope,
+            datingEnrichmentService,
+            councilIngestionService,
+            phaseTracker
+        )
         visitorTrackingRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
 
         authenticate("google-jwt") {

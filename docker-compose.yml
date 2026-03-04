@@ -60,8 +60,10 @@ services:
       ENABLE_INGESTION: "true"
       ENABLE_MANUSCRIPT_INGESTION: "false"
       ENABLE_PATRISTIC_INGESTION: "false"
+      ENABLE_COUNCIL_INGESTION: "false"
       INGESTION_SKIP_IF_POPULATED: "true"
       INGESTION_TIMEOUT_MINUTES: "15"
+      SOURCE_CACHE_DIR: "/data/source-cache"
       # DEV: load full catalog from NTVMR (140+ papyri + uncials) instead of seed JSON (57)
       LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
       OPENAI_API_KEY: "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"
@@ -75,6 +77,8 @@ services:
     depends_on:
       init:
         condition: service_completed_successfully
+    volumes:
+      - source-cache:/data/source-cache
 
   frontend:
     build:
@@ -94,3 +98,4 @@ services:
 
 volumes:
   pgdata:
+  source-cache:
