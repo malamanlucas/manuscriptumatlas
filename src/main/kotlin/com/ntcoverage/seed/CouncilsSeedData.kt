@@ -76,6 +76,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/First_Council_of_Nicaea",
             wikidataId = "Q184841",
             heresyNames = listOf("Arianism"),
+            fatherNames = listOf("athanasius_of_alexandria", "eusebius_of_caesarea"),
             aliases = listOf("Council of Nicaea", "Nicaea I", "Concilium Nicaenum")
         ),
         c(
@@ -91,6 +92,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/First_Council_of_Constantinople",
             wikidataId = "Q299077",
             heresyNames = listOf("Macedonianism", "Arianism"),
+            fatherNames = listOf("gregory_of_nazianzus", "gregory_of_nyssa"),
             aliases = listOf("Constantinople I")
         ),
         c(
@@ -107,6 +109,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/Council_of_Ephesus",
             wikidataId = "Q184332",
             heresyNames = listOf("Nestorianism"),
+            fatherNames = listOf("cyril_of_alexandria", "theodoret_of_cyrrhus"),
             aliases = listOf("Ephesus I")
         ),
         c(
@@ -123,6 +126,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/Council_of_Chalcedon",
             wikidataId = "Q170553",
             heresyNames = listOf("Monophysitism"),
+            fatherNames = listOf("leo_the_great", "theodoret_of_cyrrhus"),
             aliases = listOf("Chalcedon")
         ),
         c(
@@ -138,6 +142,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/Second_Council_of_Constantinople",
             wikidataId = "Q188099",
             heresyNames = listOf("Three Chapters"),
+            fatherNames = listOf("theodoret_of_cyrrhus"),
             aliases = listOf("Constantinople II")
         ),
         c(
@@ -154,6 +159,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/Third_Council_of_Constantinople",
             wikidataId = "Q187194",
             heresyNames = listOf("Monothelitism", "Monoenergism"),
+            fatherNames = listOf("maximus_the_confessor"),
             aliases = listOf("Constantinople III")
         ),
         c(
@@ -170,6 +176,7 @@ object CouncilsSeedData {
             wikipediaUrl = "https://en.wikipedia.org/wiki/Second_Council_of_Nicaea",
             wikidataId = "Q187201",
             heresyNames = listOf("Iconoclasm"),
+            fatherNames = listOf("john_of_damascus", "theodore_the_studite"),
             aliases = listOf("Nicaea II")
         ),
         c(
@@ -185,20 +192,77 @@ object CouncilsSeedData {
             keyParticipants = "Basil I; Hadrian II legates",
             wikipediaUrl = "https://en.wikipedia.org/wiki/Fourth_Council_of_Constantinople_(Roman_Catholic)",
             wikidataId = "Q180322",
+            fatherNames = listOf("photius_of_constantinople"),
             aliases = listOf("Constantinople IV")
         ),
 
         // Pre-Nicene and early regional councils
-        c("Council of Jerusalem", 50, "LOCAL", location = "Jerusalem", wikipediaUrl = "https://en.wikipedia.org/wiki/Council_of_Jerusalem", aliases = listOf("Apostolic Council")),
-        c("Council of Rome (155)", 155, "LOCAL", location = "Rome"),
-        c("Council of Ephesus (193)", 193, "LOCAL", location = "Ephesus"),
-        c("Council of Rome (193)", 193, "LOCAL", location = "Rome"),
-        c("Council of Carthage (251)", 251, "REGIONAL", location = "Carthage", heresyNames = listOf("Novatianism")),
+        c(
+            displayName = "Council of Jerusalem",
+            year = 50,
+            councilType = "LOCAL",
+            location = "Jerusalem",
+            shortDescription = "Apostolic council described in Acts 15, convened to resolve the dispute over whether Gentile converts must be circumcised. The council affirmed that salvation is by grace and issued decrees on abstaining from idolatry, sexual immorality, and blood.",
+            mainTopics = "Circumcision; Gentile inclusion; Apostolic decree",
+            keyParticipants = "James; Peter; Paul; Barnabas",
+            wikipediaUrl = "https://en.wikipedia.org/wiki/Council_of_Jerusalem",
+            aliases = listOf("Apostolic Council")
+        ),
+        c(
+            displayName = "Council of Rome (155)",
+            year = 155,
+            councilType = "LOCAL",
+            location = "Rome",
+            shortDescription = "Synod where Polycarp of Smyrna met with Bishop Anicetus of Rome to discuss the Quartodeciman controversy over the date of Easter. They agreed to disagree, each maintaining their local custom.",
+            mainTopics = "Quartodeciman controversy; Paschal date",
+            keyParticipants = "Anicetus; Polycarp of Smyrna",
+            fatherNames = listOf("polycarp_of_smyrna"),
+            wikipediaUrl = "https://en.wikipedia.org/wiki/Quartodecimanism"
+        ),
+        c(
+            displayName = "Council of Ephesus (193)",
+            year = 193,
+            councilType = "LOCAL",
+            location = "Ephesus",
+            shortDescription = "Early local synod held in Ephesus. Historical records are sparse; it is mentioned in some chronicles as part of the ecclesiastical life of Asia Minor in the late second century.",
+            mainTopics = "Local church discipline"
+        ),
+        c(
+            displayName = "Council of Rome (193)",
+            year = 193,
+            councilType = "LOCAL",
+            location = "Rome",
+            shortDescription = "Early Roman synod under Pope Victor I. Part of the broader Quartodeciman controversy; Victor sought to impose Roman practice on Asian churches, leading to tension with Polycarp and Irenaeus.",
+            mainTopics = "Quartodeciman controversy; Papal authority"
+        ),
+        c("Council of Carthage (251)", 251, "REGIONAL", location = "Carthage", heresyNames = listOf("Novatianism"), fatherNames = listOf("cyprian_of_carthage")),
         c("Synod of Rome (251)", 251, "LOCAL", location = "Rome", heresyNames = listOf("Novatianism")),
-        c("Council of Iconium", 258, "REGIONAL", location = "Iconium"),
+        c(
+            displayName = "Council of Iconium",
+            year = 258,
+            councilType = "REGIONAL",
+            location = "Iconium",
+            shortDescription = "Regional synod in Iconium (Asia Minor) that addressed church discipline and the treatment of the lapsed during the Decian persecution."
+        ),
         c("Council of Antioch (264)", 264, "REGIONAL", location = "Antioch", heresyNames = listOf("Paul of Samosata")),
-        c("Council of Antioch (268)", 268, "REGIONAL", location = "Antioch"),
-        c("Councils of Arabia", 246, "REGIONAL", yearEnd = 247, location = "Arabia"),
+        c(
+            displayName = "Council of Antioch (268)",
+            year = 268,
+            councilType = "REGIONAL",
+            location = "Antioch",
+            shortDescription = "Synod that deposed Paul of Samosata, bishop of Antioch, for adoptionist Christology and improper conduct. Paul refused to vacate until forced by Emperor Aurelian."
+        ),
+        c(
+            displayName = "Councils of Arabia",
+            year = 246,
+            councilType = "REGIONAL",
+            yearEnd = 247,
+            location = "Arabia",
+            shortDescription = "Regional councils in Arabia (Bostra) where Origen refuted Beryllus of Bostra's teaching that the soul dies with the body (thnetopsychism). Origen's arguments persuaded Beryllus to recant.",
+            mainTopics = "Thnetopsychism; Soul mortality",
+            keyParticipants = "Origen; Beryllus of Bostra",
+            fatherNames = listOf("origen")
+        ),
         c("Synod of Elvira", 306, "REGIONAL", location = "Elvira"),
         c("Council of Carthage (311)", 311, "REGIONAL", location = "Carthage"),
         c("Synod of Ancyra", 314, "REGIONAL", location = "Ancyra", wikipediaUrl = "https://en.wikipedia.org/wiki/Synod_of_Ancyra"),
@@ -225,13 +289,13 @@ object CouncilsSeedData {
         c("Council of Carthage VI", 401, "REGIONAL", location = "Carthage"),
         c("Council of Milevis", 402, "REGIONAL", location = "Milevis"),
         c("Council of Diospolis", 415, "REGIONAL", location = "Diospolis"),
-        c("Council of Carthage XVII", 419, "REGIONAL", location = "Carthage"),
+        c("Council of Carthage XVII", 419, "REGIONAL", location = "Carthage", fatherNames = listOf("augustine_of_hippo")),
 
         // Toledo councils
         c("First Council of Toledo", 400, "REGIONAL", location = "Toledo", wikipediaUrl = "https://en.wikipedia.org/wiki/First_Council_of_Toledo"),
         c("Second Council of Toledo", 527, "REGIONAL", location = "Toledo"),
         c("Third Council of Toledo", 589, "REGIONAL", location = "Toledo"),
-        c("Fourth Council of Toledo", 633, "REGIONAL", location = "Toledo"),
+        c("Fourth Council of Toledo", 633, "REGIONAL", location = "Toledo", fatherNames = listOf("isidore_of_seville")),
         c("Fifth Council of Toledo", 636, "REGIONAL", location = "Toledo"),
         c("Sixth Council of Toledo", 638, "REGIONAL", location = "Toledo"),
         c("Seventh Council of Toledo", 646, "REGIONAL", location = "Toledo"),
@@ -300,7 +364,7 @@ object CouncilsSeedData {
         c("Council of Constantinople (360)", 360, "LOCAL", location = "Constantinople"),
         c("Council of Antioch (363)", 363, "LOCAL", location = "Antioch"),
         c("Council of Rome (382)", 382, "LOCAL", location = "Rome"),
-        c("Council of Hippo", 393, "LOCAL", location = "Hippo"),
+        c("Council of Hippo", 393, "LOCAL", location = "Hippo", fatherNames = listOf("augustine_of_hippo")),
         c("Council of Turin", 398, "LOCAL", location = "Turin"),
         c("Council of Seleucia-Ctesiphon", 410, "REGIONAL", location = "Seleucia-Ctesiphon"),
         c("Council of Orange (529 local preparatory)", 529, "LOCAL", location = "Orange"),

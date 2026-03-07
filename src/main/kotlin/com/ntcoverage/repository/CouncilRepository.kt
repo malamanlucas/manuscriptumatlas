@@ -187,6 +187,52 @@ class CouncilRepository {
             }
     }
 
+    fun auditAll(maxYear: Int? = null, onlyMissing: Boolean = false): List<CouncilAuditDTO> = transaction {
+        var query = Councils.selectAll()
+        if (maxYear != null) {
+            query = query.andWhere { Councils.year lessEq maxYear }
+        }
+        query = query.orderBy(Councils.year to SortOrder.ASC, Councils.id to SortOrder.ASC)
+
+        query.map { row ->
+            val id = row[Councils.id].value
+            val shortDesc = row[Councils.shortDescription]
+            val origText = row[Councils.originalText]
+            val summary = row[Councils.summary]
+            val wikiUrl = row[Councils.wikipediaUrl]
+
+            val hasShortDescription = !shortDesc.isNullOrBlank()
+            val hasOriginalText = !origText.isNullOrBlank()
+            val hasSummary = !summary.isNullOrBlank()
+            val hasWikipediaUrl = !wikiUrl.isNullOrBlank()
+
+            if (onlyMissing && (hasShortDescription || hasOriginalText || hasSummary)) {
+                return@map null
+            }
+
+            val canonCount = CouncilCanons.selectAll().where { CouncilCanons.councilId eq id }.count()
+            val fatherCount = CouncilFathers.selectAll().where { CouncilFathers.councilId eq id }.count()
+            val hereticCount = CouncilHereticParticipants.selectAll().where { CouncilHereticParticipants.councilId eq id }.count()
+            val sourceClaimCount = CouncilSourceClaims.selectAll().where { CouncilSourceClaims.councilId eq id }.count()
+
+            CouncilAuditDTO(
+                id = id,
+                displayName = row[Councils.displayName],
+                slug = row[Councils.slug],
+                year = row[Councils.year],
+                councilType = row[Councils.councilType],
+                hasShortDescription = hasShortDescription,
+                hasOriginalText = hasOriginalText,
+                hasSummary = hasSummary,
+                hasCanons = canonCount > 0,
+                hasFathers = fatherCount > 0,
+                hasHeretics = hereticCount > 0,
+                hasWikipediaUrl = hasWikipediaUrl,
+                sourceCount = sourceClaimCount.toInt()
+            )
+        }.filterNotNull()
+    }
+
     fun insertOrUpdate(entry: CouncilSeedEntry): Int = transaction {
         val normalized = CouncilNameNormalizer.normalize(entry.displayName)
         val slug = "${normalized}-${entry.year}"

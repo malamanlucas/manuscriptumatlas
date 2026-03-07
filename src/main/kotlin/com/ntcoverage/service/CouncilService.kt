@@ -13,7 +13,8 @@ class CouncilService(
     private val sourceRepository: SourceRepository,
     private val claimRepository: CouncilSourceClaimRepository,
     private val heresyRepository: HeresyRepository,
-    private val canonRepository: CouncilCanonRepository
+    private val canonRepository: CouncilCanonRepository,
+    private val hereticParticipantRepository: CouncilHereticParticipantRepository
 ) {
     fun listCouncils(
         century: Int? = null,
@@ -36,15 +37,20 @@ class CouncilService(
 
     fun getCouncilMapPoints(): List<CouncilMapPointDTO> = councilRepository.listMapPoints()
 
+    fun auditCouncils(maxYear: Int? = null, onlyMissing: Boolean = false): List<CouncilAuditDTO> =
+        councilRepository.auditAll(maxYear, onlyMissing)
+
     fun getCouncilDetail(slug: String, locale: String = "en"): CouncilDetailDTO? {
         val detail = councilRepository.findBySlug(slug, locale) ?: return null
         val canons = canonRepository.countByCouncilId(detail.id)
         val fathers = getCouncilFathers(slug, locale)
+        val heretics = hereticParticipantRepository.findByCouncilSlug(slug)
         val heresies = getCouncilHeresies(slug, locale)
         val sources = getCouncilSources(slug)
 
         return detail.copy(
             relatedFathers = fathers,
+            hereticParticipants = heretics,
             heresies = heresies,
             canonCount = canons,
             sourceClaims = sources

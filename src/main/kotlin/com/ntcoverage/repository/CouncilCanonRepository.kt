@@ -64,6 +64,6 @@ class CouncilCanonRepository {
                 it[CouncilCanons.topic] = topic
             }
         }
-        true
+        !exists
     }
 }

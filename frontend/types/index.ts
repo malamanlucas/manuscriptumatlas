@@ -301,6 +301,13 @@ export interface CouncilFatherDTO {
   role?: string | null;
 }
 
+export interface CouncilHereticParticipantDTO {
+  id: number;
+  displayName: string;
+  role?: string | null;
+  description?: string | null;
+}
+
 export interface CouncilCanonDTO {
   id: number;
   canonNumber: number;
@@ -350,6 +357,7 @@ export interface CouncilDetailDTO extends CouncilSummaryDTO {
   wikipediaUrl?: string | null;
   conflictResolution?: string | null;
   relatedFathers: CouncilFatherDTO[];
+  hereticParticipants: CouncilHereticParticipantDTO[];
   heresies: HeresySummaryDTO[];
   canonCount: number;
   sourceClaims: SourceClaimDTO[];

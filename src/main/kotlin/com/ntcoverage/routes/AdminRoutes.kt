@@ -6,6 +6,7 @@ import com.ntcoverage.model.RunPhasesRequest
 import com.ntcoverage.repository.IngestionMetadataRepository
 import com.ntcoverage.service.CouncilIngestionService
 import com.ntcoverage.service.CouncilPhaseTracker
+import com.ntcoverage.service.CouncilService
 import com.ntcoverage.service.DatingEnrichmentService
 import com.ntcoverage.service.IngestionOrchestrator
 import io.ktor.http.*
@@ -25,6 +26,7 @@ fun Route.adminRoutes(
     ingestionScope: CoroutineScope,
     datingEnrichmentService: DatingEnrichmentService,
     councilIngestionService: CouncilIngestionService,
+    councilService: CouncilService,
     phaseTracker: CouncilPhaseTracker
 ) {
     get("/admin/ingestion/status") {
@@ -87,6 +89,12 @@ fun Route.adminRoutes(
         call.respond(HttpStatusCode.Accepted, MessageResponse(
             "Dating enrichment started for domain=$domain, limit=$limit"
         ))
+    }
+
+    get("/admin/councils/audit") {
+        val maxYear = call.request.queryParameters["maxYear"]?.toIntOrNull()
+        val onlyMissing = call.request.queryParameters["onlyMissing"]?.toBooleanStrictOrNull() ?: false
+        call.respond(councilService.auditCouncils(maxYear = maxYear, onlyMissing = onlyMissing))
     }
 
     get("/admin/councils/ingestion/phases") {

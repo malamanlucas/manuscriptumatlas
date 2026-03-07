@@ -73,6 +73,13 @@ object SourcesSeedData {
             sourceLevel = "ACADEMIC",
             baseWeight = 0.8,
             description = "Project-curated list based on multiple documentary and academic references."
+        ),
+        SourceSeedEntry(
+            name = "ai_enrichment",
+            displayName = "AI-Generated Enrichment",
+            sourceLevel = "AGGREGATOR",
+            baseWeight = 0.3,
+            description = "Machine-generated summaries when no other source available. Lower confidence."
         )
     )
 }

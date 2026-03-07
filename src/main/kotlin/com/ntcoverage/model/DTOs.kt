@@ -391,6 +391,14 @@ data class CouncilFatherDTO(
 )
 
 @Serializable
+data class CouncilHereticParticipantDTO(
+    val id: Int,
+    val displayName: String,
+    val role: String? = null,
+    val description: String? = null
+)
+
+@Serializable
 data class CouncilMapPointDTO(
     val id: Int,
     val slug: String,
@@ -460,6 +468,7 @@ data class CouncilDetailDTO(
     val sourceCount: Int = 1,
     val conflictResolution: String? = null,
     val relatedFathers: List<CouncilFatherDTO> = emptyList(),
+    val hereticParticipants: List<CouncilHereticParticipantDTO> = emptyList(),
     val heresies: List<HeresySummaryDTO> = emptyList(),
     val canonCount: Int = 0,
     val sourceClaims: List<SourceClaimDTO> = emptyList()
@@ -527,6 +536,23 @@ data class PhaseStatusDTO(
 @Serializable
 data class RunPhasesRequest(
     val phases: List<String>
+)
+
+@Serializable
+data class CouncilAuditDTO(
+    val id: Int,
+    val displayName: String,
+    val slug: String,
+    val year: Int,
+    val councilType: String,
+    val hasShortDescription: Boolean,
+    val hasOriginalText: Boolean,
+    val hasSummary: Boolean,
+    val hasCanons: Boolean,
+    val hasFathers: Boolean,
+    val hasHeretics: Boolean,
+    val hasWikipediaUrl: Boolean,
+    val sourceCount: Int
 )
 
 @Serializable

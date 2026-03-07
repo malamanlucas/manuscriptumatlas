@@ -24,17 +24,17 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 | Pacote | Responsabilidade |
 |--------|------------------|
 | `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 6 arquivos |
-| `model` | Tables (26 tabelas Exposed) e DTOs (85 `@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` (17 repositórios) |
+| `model` | Tables (27 tabelas Exposed) e DTOs (87 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (18 repositórios) |
 | `service` | Lógica de negócio e orquestração (20 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (10 arquivos de rotas, 66 endpoints) |
+| `routes` | Endpoints HTTP — Ktor routing (10 arquivos de rotas, 67 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
-| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 12 arquivos |
+| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 14 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
 
 ## Tabelas do banco
 
-`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `councils`, `council_translations`, `council_fathers`, `heresies`, `heresy_translations`, `council_heresies`, `council_canons`, `sources`, `council_source_claims`, `council_ingestion_phases`, `visitor_sessions`, `page_views`, `users`, `visitor_daily_stats`
+`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `councils`, `council_translations`, `council_fathers`, `heresies`, `heresy_translations`, `council_heresies`, `council_canons`, `council_heretic_participants`, `sources`, `council_source_claims`, `council_ingestion_phases`, `visitor_sessions`, `page_views`, `users`, `visitor_daily_stats`
 
 ## Conceitos de domínio
 

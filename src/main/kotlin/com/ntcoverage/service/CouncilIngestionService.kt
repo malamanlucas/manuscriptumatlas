@@ -7,18 +7,28 @@ import com.ntcoverage.model.Heresies
 import com.ntcoverage.repository.*
 import com.ntcoverage.scraper.CouncilSourceExtractor
 import com.ntcoverage.seed.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class CouncilIngestionService(
     private val councilRepository: CouncilRepository,
     private val heresyRepository: HeresyRepository,
     private val canonRepository: CouncilCanonRepository,
+    private val hereticParticipantRepository: CouncilHereticParticipantRepository,
     private val sourceRepository: SourceRepository,
     private val claimRepository: CouncilSourceClaimRepository,
     private val churchFatherRepository: ChurchFatherRepository,
@@ -48,6 +58,11 @@ class CouncilIngestionService(
 
         val seedSourceId = sourceRepository.findIdByName("seed")
         log.info("COUNCIL_SEED: inserting {} councils (seedSourceId={})", CouncilsSeedData.entries.size, seedSourceId)
+        var totalFathersLinked = 0
+        var totalFathersNotFound = 0
+        var totalHeresiesLinked = 0
+        var totalHeresiesNotFound = 0
+
         CouncilsSeedData.entries.forEachIndexed { idx, council ->
             try {
                 val councilId = councilRepository.insertOrUpdate(council)
@@ -57,6 +72,10 @@ class CouncilIngestionService(
                     val heresyId = heresyRepository.findByNormalizedName(normalized)
                     if (heresyId != null) {
                         heresyRepository.linkCouncilHeresy(councilId, heresyId, action = "condemned")
+                        totalHeresiesLinked++
+                    } else {
+                        totalHeresiesNotFound++
+                        log.warn("COUNCIL_SEED: heresy not found for council '{}': normalizedName='{}' (raw='{}')", council.displayName, normalized, heresyName)
                     }
                 }
 
@@ -64,6 +83,11 @@ class CouncilIngestionService(
                     val father = churchFatherRepository.findByNormalizedName(fatherName)
                     if (father != null) {
                         linkCouncilFather(councilId, father.id)
+                        totalFathersLinked++
+                        log.debug("COUNCIL_SEED: linked father '{}' (id={}) to council '{}'", fatherName, father.id, council.displayName)
+                    } else {
+                        totalFathersNotFound++
+                        log.warn("COUNCIL_SEED: father NOT FOUND for council '{}': normalizedName='{}'", council.displayName, fatherName)
                     }
                 }
 
@@ -90,6 +114,9 @@ class CouncilIngestionService(
             }
         }
 
+        log.info("COUNCIL_SEED: father links — linked={}, notFound={}", totalFathersLinked, totalFathersNotFound)
+        log.info("COUNCIL_SEED: heresy links — linked={}, notFound={}", totalHeresiesLinked, totalHeresiesNotFound)
+
         log.info("COUNCIL_SEED: inserting {} translations", CouncilTranslationsSeedData.entries.size)
         var translationsApplied = 0
         CouncilTranslationsSeedData.entries.forEach { translation ->
@@ -111,6 +138,44 @@ class CouncilIngestionService(
             translationsApplied++
         }
         log.info("COUNCIL_SEED: translations applied={} of {} total entries", translationsApplied, CouncilTranslationsSeedData.entries.size)
+
+        log.info("COUNCIL_SEED: inserting {} canons", CouncilCanonsSeedData.entries.size)
+        var canonsInserted = 0
+        CouncilCanonsSeedData.entries.forEach { entry ->
+            val councilId = councilRepository.findIdBySlug(entry.councilSlug)
+            if (councilId == null) {
+                log.debug("COUNCIL_SEED: canon slug not found: '{}' (canon {})", entry.councilSlug, entry.canonNumber)
+                return@forEach
+            }
+            val inserted = canonRepository.insertIfMissing(
+                councilId = councilId,
+                canonNumber = entry.canonNumber,
+                title = entry.title,
+                canonText = entry.canonText,
+                topic = entry.topic
+            )
+            if (inserted) canonsInserted++
+        }
+        log.info("COUNCIL_SEED: canons inserted={} of {} entries", canonsInserted, CouncilCanonsSeedData.entries.size)
+
+        log.info("COUNCIL_SEED: inserting {} heretic participants", CouncilHereticParticipantsSeedData.entries.size)
+        var hereticsInserted = 0
+        CouncilHereticParticipantsSeedData.entries.forEach { entry ->
+            val councilId = councilRepository.findIdBySlug(entry.councilSlug)
+            if (councilId == null) {
+                log.debug("COUNCIL_SEED: heretic slug not found: '{}' (participant: {})", entry.councilSlug, entry.displayName)
+                return@forEach
+            }
+            val inserted = hereticParticipantRepository.insertIfNotExists(
+                councilId = councilId,
+                displayName = entry.displayName,
+                normalizedName = entry.normalizedName,
+                role = entry.role,
+                description = entry.description
+            )
+            if (inserted) hereticsInserted++
+        }
+        log.info("COUNCIL_SEED: heretic participants inserted={} of {} entries", hereticsInserted, CouncilHereticParticipantsSeedData.entries.size)
     }
 
     suspend fun phase2aSchaff() = processExtractorPhase("council_extract_schaff", "schaff")
@@ -215,12 +280,8 @@ class CouncilIngestionService(
         councilRows.forEachIndexed { idx, target ->
             listOf("pt", "es").forEach { locale ->
                 val meta = councilRepository.findTranslationMeta(target.id, locale)
-                if (meta?.translationSource == "reviewed") {
-                    log.debug("COUNCIL_TRANSLATE_ALL: skipping councilId={} locale={} (reviewed)", target.id, locale)
-                    return@forEach
-                }
-                if (meta != null && meta.hasDisplayName && meta.hasSummary) {
-                    log.debug("COUNCIL_TRANSLATE_ALL: skipping councilId={} locale={} (complete)", target.id, locale)
+                if (meta?.translationSource in listOf("reviewed", "seed")) {
+                    log.debug("COUNCIL_TRANSLATE_ALL: skipping councilId={} locale={} (source={})", target.id, locale, meta?.translationSource)
                     return@forEach
                 }
 
@@ -275,12 +336,8 @@ class CouncilIngestionService(
         heresyRows.forEachIndexed { idx, target ->
             listOf("pt", "es").forEach { locale ->
                 val meta = heresyRepository.findTranslationMeta(target.id, locale)
-                if (meta?.translationSource == "reviewed") {
-                    log.debug("HERESY_TRANSLATE_ALL: skipping heresyId={} locale={} (reviewed)", target.id, locale)
-                    return@forEach
-                }
-                if (meta != null && meta.hasName && (target.description.isNullOrBlank() || meta.hasDescription)) {
-                    log.debug("HERESY_TRANSLATE_ALL: skipping heresyId={} locale={} (complete)", target.id, locale)
+                if (meta?.translationSource in listOf("reviewed", "seed")) {
+                    log.debug("HERESY_TRANSLATE_ALL: skipping heresyId={} locale={} (source={})", target.id, locale, meta?.translationSource)
                     return@forEach
                 }
 
@@ -310,6 +367,154 @@ class CouncilIngestionService(
         log.info("HERESY_TRANSLATE_ALL: finished {} heresies, {} translations applied", heresyRows.size, translated)
     }
 
+    private val wikiJson = Json { ignoreUnknownKeys = true }
+
+    suspend fun phase9OverviewEnrichment(limit: Int = 50) = runPhaseTracked("council_overview_enrichment", runBy = "manual") {
+        val rows = transaction {
+            Councils.selectAll()
+                .where { Councils.summary.isNull() and Councils.originalText.isNull() }
+                .orderBy(Councils.year to SortOrder.ASC, Councils.id to SortOrder.ASC)
+                .limit(limit)
+                .map { row ->
+                    EnrichmentTarget(
+                        id = row[Councils.id].value,
+                        displayName = row[Councils.displayName],
+                        year = row[Councils.year],
+                        location = row[Councils.location],
+                        councilType = row[Councils.councilType],
+                        mainTopics = row[Councils.mainTopics]
+                    )
+                }
+        }
+        log.info("COUNCIL_OVERVIEW_ENRICHMENT: {} councils need overview (limit={})", rows.size, limit)
+
+        val wikipediaSourceId = sourceRepository.findIdByName("wikipedia")
+        val aiEnrichmentSourceId = sourceRepository.findIdByName("ai_enrichment")
+
+        rows.forEachIndexed { idx, target ->
+            var enriched = false
+
+            // Try Wikipedia search first
+            val searchQuery = "${target.displayName} ${target.year}"
+            val wikiTitle = searchWikipediaTitle(searchQuery)
+            if (wikiTitle != null) {
+                val wikiUrl = "https://en.wikipedia.org/wiki/${wikiTitle.replace(" ", "_")}"
+                val text = fetchWikipediaPage(wikiUrl)
+                if (!text.isNullOrBlank() && text.length >= 100) {
+                    val originalText = text.take(5_000)
+                    councilRepository.updateOriginalText(target.id, originalText)
+                    if (wikipediaSourceId != null) {
+                        claimRepository.upsertClaim(
+                            councilId = target.id,
+                            sourceId = wikipediaSourceId,
+                            claimedYear = target.year,
+                            claimedLocation = target.location,
+                            rawText = text.take(2_000),
+                            sourcePage = wikiUrl
+                        )
+                    }
+                    enriched = true
+                    log.info("COUNCIL_OVERVIEW_ENRICHMENT: [{}] Wikipedia '{}' -> {}", target.displayName, wikiTitle, wikiUrl)
+                    // Generate summary and translate to pt/es for i18n
+                    val summaryEn = summarizationService.summarizeIfNeeded(originalText)
+                    if (!summaryEn.isNullOrBlank()) {
+                        councilRepository.updateSummary(target.id, summaryEn, reviewed = false)
+                        translateAndSaveCouncilSummary(target.id, target.displayName, summaryEn)
+                    }
+                }
+            }
+
+            // Fallback to AI if Wikipedia did not yield content
+            if (!enriched) {
+                val summary = summarizationService.generateCouncilOverviewFromMetadata(
+                    displayName = target.displayName,
+                    year = target.year,
+                    location = target.location,
+                    councilType = target.councilType,
+                    mainTopics = target.mainTopics
+                )
+                if (!summary.isNullOrBlank()) {
+                    councilRepository.updateSummary(target.id, summary, reviewed = false)
+                    if (aiEnrichmentSourceId != null) {
+                        claimRepository.upsertClaim(
+                            councilId = target.id,
+                            sourceId = aiEnrichmentSourceId,
+                            claimedYear = target.year,
+                            claimedLocation = target.location,
+                            rawText = summary,
+                            sourcePage = "ai_enrichment"
+                        )
+                    }
+                    enriched = true
+                    log.info("COUNCIL_OVERVIEW_ENRICHMENT: [{}] AI-generated summary", target.displayName)
+                    // Translate to pt/es for i18n
+                    translateAndSaveCouncilSummary(target.id, target.displayName, summary)
+                }
+            }
+
+            if (!enriched) {
+                log.debug("COUNCIL_OVERVIEW_ENRICHMENT: [{}] no enrichment available", target.displayName)
+            }
+            phaseTracker.markProgress("council_overview_enrichment", idx + 1, rows.size)
+        }
+        log.info("COUNCIL_OVERVIEW_ENRICHMENT: finished {} councils", rows.size)
+    }
+
+    private data class EnrichmentTarget(
+        val id: Int,
+        val displayName: String,
+        val year: Int,
+        val location: String?,
+        val councilType: String?,
+        val mainTopics: String?
+    )
+
+    private suspend fun searchWikipediaTitle(searchQuery: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val encoded = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8)
+            val url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=$encoded&format=json&srlimit=1"
+            val json = fileCache.getOrFetch("wikipedia_search/${searchQuery.hashCode()}.json") {
+                java.net.URL(url).openConnection().apply {
+                    connectTimeout = 5_000
+                    readTimeout = 10_000
+                    setRequestProperty("User-Agent", "ManuscriptumAtlasBot/1.0 (historical research)")
+                }.getInputStream().bufferedReader().readText()
+            }
+            val root = wikiJson.parseToJsonElement(json).jsonObject
+            val search = root["query"]?.jsonObject?.get("search")?.jsonArray ?: return@withContext null
+            val first = search.firstOrNull()?.jsonObject ?: return@withContext null
+            first["title"]?.jsonPrimitive?.content
+        } catch (e: Exception) {
+            log.debug("COUNCIL_OVERVIEW_ENRICHMENT: Wikipedia search failed for '{}': {}", searchQuery, e.message)
+            null
+        }
+    }
+
+    private suspend fun fetchWikipediaPage(url: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val pageSlug = url.substringAfterLast("/")
+            val cacheKey = "wikipedia/$pageSlug.html"
+            val html = fileCache.getOrFetch(cacheKey) {
+                Jsoup.connect(url)
+                    .userAgent("ManuscriptumAtlasBot/1.0 (historical research)")
+                    .timeout(20_000)
+                    .ignoreContentType(true)
+                    .execute()
+                    .body()
+            }
+            val doc = Jsoup.parse(html)
+            doc.select("#mw-content-text p")
+                .filterNot { it.select("sup.reference, span.mw-editsection").isNotEmpty() }
+                .joinToString("\n") { it.text() }
+                .ifBlank { doc.text() }
+                .take(5_000)
+                .ifBlank { null }
+        } catch (e: Exception) {
+            log.debug("COUNCIL_OVERVIEW_ENRICHMENT: Wikipedia fetch failed for '{}': {}", url, e.message)
+            null
+        }
+    }
+
     suspend fun runPhases(phases: List<String>) {
         val runStartedAt = System.currentTimeMillis()
         log.info("COUNCIL_INGESTION: starting {} phases: {}", phases.size, phases)
@@ -328,6 +533,7 @@ class CouncilIngestionService(
                 "council_summaries" -> phase6Summaries()
                 "council_translate_all" -> phase7TranslateAll()
                 "heresy_translate_all" -> phase8TranslateHeresies()
+                "council_overview_enrichment" -> phase9OverviewEnrichment()
             }
             val phaseElapsed = System.currentTimeMillis() - phaseStartedAt
             val pct = ((idx + 1) * 100) / phases.size
@@ -464,6 +670,23 @@ class CouncilIngestionService(
         }
     }
 
+    private suspend fun translateAndSaveCouncilSummary(councilId: Int, displayName: String, summaryEn: String) {
+        listOf("pt", "es").forEach { locale ->
+            val translated = summarizationService.translateBiography(summaryEn, locale, displayName)
+            if (!translated.isNullOrBlank()) {
+                val enDisplayName = councilRepository.findById(councilId, "en")?.displayName ?: displayName
+                councilRepository.insertOrUpdateTranslation(
+                    councilId = councilId,
+                    locale = locale,
+                    displayName = enDisplayName,
+                    summary = translated,
+                    translationSource = "machine"
+                )
+                log.debug("COUNCIL_OVERVIEW_ENRICHMENT: translated summary for councilId={} to {}", councilId, locale)
+            }
+        }
+    }
+
     private fun formatDuration(ms: Long): String {
         val totalSeconds = ms / 1000
         val minutes = totalSeconds / 60
@@ -503,6 +726,7 @@ class CouncilIngestionService(
             "council_extract_wikipedia",
             "council_consensus",
             "council_summaries",
+            "council_overview_enrichment",
             "council_translate_all",
             "heresy_translate_all"
         )

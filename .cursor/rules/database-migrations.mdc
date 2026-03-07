@@ -32,6 +32,7 @@ alwaysApply: false
 - `V14__create_councils.sql` — Domínio de concílios: councils, traduções, vínculos com pais, fontes/claims e fases de ingestão
 - `V15__create_heresies_canons.sql` — Domínio de heresias e cânones: heresies, traduções, relação conselho↔heresia e council_canons
 - `V16__add_heresy_translation_source.sql` — Coluna translation_source em heresy_translations (seed, machine, reviewed)
+- `V17__create_council_heretic_participants.sql` — Tabela council_heretic_participants para hereges em concílios (texto; futura ingestão de pais hereges)
 
 ## Regras
 
@@ -39,7 +40,7 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V17**
+- Próxima migração: **V18**
 
 ## IMPORTANTE — Flyway não executa migrations
 
@@ -91,7 +92,7 @@ exec("CREATE INDEX IF NOT EXISTS idx_nome ON tabela (coluna)")
 Books, Verses, Manuscripts, ManuscriptSources, ManuscriptVerses,
 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
-Councils, CouncilTranslations, CouncilFathers, Heresies, HeresyTranslations,
+Councils, CouncilTranslations, CouncilFathers, CouncilHereticParticipants, Heresies, HeresyTranslations,
 CouncilHeresies, CouncilCanons, Sources, CouncilSourceClaims, CouncilIngestionPhases,
 VisitorDailyStats, Users
 ```

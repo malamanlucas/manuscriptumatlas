@@ -349,6 +349,7 @@
         "council_extract_wikipedia": "Conteúdo da Wikipedia",
         "council_consensus": "Consenso de fontes",
         "council_summaries": "Resumos e traduções IA",
+        "council_overview_enrichment": "Enriquecimento de visão geral (Wikipedia + IA)",
         "council_translate_all": "Traduções de concílios (pt/es)",
         "heresy_translate_all": "Traduções de heresias (pt/es)"
       }
@@ -524,6 +525,7 @@
     "summary": "Resumo IA",
     "original": "Texto original",
     "noTextAvailable": "Sem conteúdo disponível para este concílio.",
+    "shortDescriptionBadge": "Descrição breve",
     "noSources": "Nenhuma fonte registrada para este concílio.",
     "source": "Fonte",
     "sourceLevel": "Nível",
@@ -532,6 +534,9 @@
     "canon": "Cânon",
     "noCanons": "Nenhum cânon disponível para este concílio.",
     "noParticipants": "Nenhum participante vinculado.",
+    "churchFathers": "Pais da Igreja",
+    "heretics": "Hereges",
+    "hereticBadge": "Herege",
     "noHeresies": "Nenhuma heresia vinculada.",
     "quickInfo": "Informações rápidas",
     "sources": "Fontes",

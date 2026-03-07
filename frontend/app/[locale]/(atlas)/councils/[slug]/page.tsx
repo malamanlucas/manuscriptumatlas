@@ -97,7 +97,7 @@ export default function CouncilDetailPage() {
 
             {tab === "overview" && (
               <div className="space-y-4">
-                <SummaryToggle summary={council.summary} originalText={council.originalText} />
+                <SummaryToggle summary={council.summary} originalText={council.originalText} shortDescription={council.shortDescription} />
                 {council.mainTopics && (
                   <p className="text-sm text-muted-foreground">{council.mainTopics}</p>
                 )}
@@ -119,14 +119,36 @@ export default function CouncilDetailPage() {
             )}
 
             {tab === "participants" && (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {council.relatedFathers.map((father) => (
-                  <Link key={father.fatherId} href={`/fathers/${father.fatherId}`} className="rounded-lg border border-border p-3 text-sm hover:bg-secondary/40">
-                    <p className="font-medium">{father.fatherName}</p>
-                    {father.role && <p className="text-xs text-muted-foreground">{father.role}</p>}
-                  </Link>
-                ))}
-                {council.relatedFathers.length === 0 && (
+              <div className="space-y-4">
+                {(council.relatedFathers?.length ?? 0) > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-sm font-semibold">{t("churchFathers")}</h4>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {council.relatedFathers.map((father) => (
+                        <Link key={father.fatherId} href={`/fathers/${father.fatherId}`} className="rounded-lg border border-border p-3 text-sm hover:bg-secondary/40">
+                          <p className="font-medium">{father.fatherName}</p>
+                          {father.role && <p className="text-xs text-muted-foreground">{father.role}</p>}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(council.hereticParticipants?.length ?? 0) > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-sm font-semibold">{t("heretics")}</h4>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {council.hereticParticipants.map((heretic) => (
+                        <div key={heretic.id} className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                          <p className="font-medium">{heretic.displayName}</p>
+                          {heretic.role && <p className="text-xs text-muted-foreground">{heretic.role}</p>}
+                          {heretic.description && <p className="mt-1 text-xs text-muted-foreground">{heretic.description}</p>}
+                          <span className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">{t("hereticBadge")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(council.relatedFathers?.length ?? 0) === 0 && (council.hereticParticipants?.length ?? 0) === 0 && (
                   <p className="text-sm text-muted-foreground">{t("noParticipants")}</p>
                 )}
               </div>

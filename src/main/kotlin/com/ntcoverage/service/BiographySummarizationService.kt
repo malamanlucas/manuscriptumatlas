@@ -134,10 +134,16 @@ class BiographySummarizationService {
 
         if (fields.isEmpty()) return null
 
-        val systemPrompt = "Translate the following council data fields to $language. " +
+        val systemPrompt = "You are an academic specialist in ecclesiastical history and early Christianity. " +
+            "Translate the following council data fields to $language. " +
             "Return ONLY a valid JSON object with the exact same keys. " +
-            "Preserve proper nouns (city names, historical terms), dates, and numbers. " +
-            "Maintain neutral academic tone. No extra text, only the JSON."
+            "CRITICAL terminology rules: " +
+            "'Council' MUST be translated as 'Concílio' (pt) / 'Concilio' (es), NEVER as 'Conselho'/'Consejo'; " +
+            "'Synod' as 'Sínodo'; 'Ecumenical' as 'Ecumênico' (pt) / 'Ecuménico' (es). " +
+            "Use established academic names for historical locations " +
+            "(e.g. Nicaea->Niceia/Nicea, Constantinople->Constantinopla, Chalcedon->Calcedônia/Calcedonia, Ephesus->Éfeso, Antioch->Antioquia). " +
+            "Preserve dates and numbers. Use formal academic tone appropriate for ecclesiastical historiography. " +
+            "No extra text, only the JSON."
 
         val userContent = buildJsonObject { fields.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }.toString()
 
@@ -166,6 +172,40 @@ class BiographySummarizationService {
      * Translates heresy fields (name, description) to target locale.
      * Returns a map with keys "name" and optionally "description", or null if translation fails.
      */
+    /**
+     * Generates a brief council overview from metadata when no other source is available.
+     * Used as fallback in council_overview_enrichment phase. Returns null if API is disabled or fails.
+     */
+    suspend fun generateCouncilOverviewFromMetadata(
+        displayName: String,
+        year: Int,
+        location: String?,
+        councilType: String?,
+        mainTopics: String?
+    ): String? {
+        if (!summarizationEnabled || apiKey == null) return null
+
+        val meta = buildString {
+            append("Council: $displayName. Year: $year.")
+            if (!location.isNullOrBlank()) append(" Location: $location.")
+            if (!councilType.isNullOrBlank()) append(" Type: $councilType.")
+            if (!mainTopics.isNullOrBlank()) append(" Topics: $mainTopics.")
+        }
+
+        val systemPrompt = "You are an academic specialist in ecclesiastical history and early Christianity. " +
+            "Write a brief 3-5 sentence overview of this ecclesiastical council based ONLY on the metadata provided. " +
+            "Use neutral academic tone. Do not invent facts beyond what the metadata suggests. " +
+            "If the council is obscure, state that historical records are limited. " +
+            "Do not use phrases like 'based on the metadata' or 'according to available information' in the output."
+
+        return callWithRetry(
+            systemPrompt = systemPrompt,
+            userContent = meta,
+            fallback = null,
+            logPrefix = "COUNCIL_OVERVIEW_AI"
+        )
+    }
+
     suspend fun translateHeresyFields(
         name: String,
         description: String?,
@@ -181,9 +221,13 @@ class BiographySummarizationService {
 
         if (fields.isEmpty()) return null
 
-        val systemPrompt = "Translate the following heresy data fields to $language. " +
+        val systemPrompt = "You are an academic specialist in ecclesiastical history and early Christianity. " +
+            "Translate the following heresy data fields to $language. " +
             "Return ONLY a valid JSON object with the exact same keys. " +
-            "Preserve proper nouns and historical terms. Maintain neutral academic tone. No extra text, only the JSON."
+            "Use correct ecclesiastical terminology established in academic $language literature. " +
+            "Preserve proper nouns and historical terms. " +
+            "Use formal academic tone appropriate for ecclesiastical historiography. " +
+            "No extra text, only the JSON."
 
         val userContent = buildJsonObject { fields.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }.toString()
 

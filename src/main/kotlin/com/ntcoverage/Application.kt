@@ -169,6 +169,7 @@ fun Application.module() {
     val claimRepository = CouncilSourceClaimRepository()
     val heresyRepository = HeresyRepository()
     val canonRepository = CouncilCanonRepository()
+    val hereticParticipantRepository = CouncilHereticParticipantRepository()
     val phaseRepository = CouncilIngestionPhaseRepository()
     val phaseTracker = CouncilPhaseTracker(phaseRepository)
     phaseTracker.recoverStuckPhases()
@@ -190,12 +191,14 @@ fun Application.module() {
         sourceRepository = sourceRepository,
         claimRepository = claimRepository,
         heresyRepository = heresyRepository,
-        canonRepository = canonRepository
+        canonRepository = canonRepository,
+        hereticParticipantRepository = hereticParticipantRepository
     )
     val councilIngestionService = CouncilIngestionService(
         councilRepository = councilRepository,
         heresyRepository = heresyRepository,
         canonRepository = canonRepository,
+        hereticParticipantRepository = hereticParticipantRepository,
         sourceRepository = sourceRepository,
         claimRepository = claimRepository,
         churchFatherRepository = churchFatherRepository,
@@ -260,6 +263,7 @@ fun Application.module() {
                     "GET /fathers/statements/search?q= - Search statements by keyword",
                     "GET /fathers/statements/topics/summary - Statement count by topic",
                     "GET /fathers/{id}/statements - Statements by a specific father",
+                    "GET /admin/councils/audit?maxYear=&onlyMissing= - Council audit (gaps)",
                     "POST /admin/enrich-dating?domain=&limit= - Manual dating enrichment via OpenAI",
                     "GET /swagger - Swagger UI documentation"
                 )
@@ -278,6 +282,7 @@ fun Application.module() {
             ingestionScope,
             datingEnrichmentService,
             councilIngestionService,
+            councilService,
             phaseTracker
         )
         visitorTrackingRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)

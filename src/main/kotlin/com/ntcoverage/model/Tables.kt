@@ -2,6 +2,7 @@ package com.ntcoverage.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
@@ -265,6 +266,16 @@ object CouncilCanons : IntIdTable("council_canons") {
     val topic = varchar("topic", 100).nullable()
 
     init { uniqueIndex(councilId, canonNumber) }
+}
+
+object CouncilHereticParticipants : IntIdTable("council_heretic_participants") {
+    val councilId = reference("council_id", Councils, onDelete = ReferenceOption.CASCADE)
+    val displayName = varchar("display_name", 300)
+    val normalizedName = varchar("normalized_name", 300)
+    val role = varchar("role", 100).nullable()
+    val description = text("description").nullable()
+
+    init { uniqueIndex(councilId, normalizedName) }
 }
 
 object Sources : IntIdTable("sources") {

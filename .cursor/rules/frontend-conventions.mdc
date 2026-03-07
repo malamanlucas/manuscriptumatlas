@@ -38,7 +38,7 @@ frontend/
 ├── hooks/                 13 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
 ├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
-├── types/                 index.ts (71 interfaces/tipos)
+├── types/                 index.ts (72 interfaces/tipos)
 └── messages/              en.json, pt.json, es.json
 ```
 

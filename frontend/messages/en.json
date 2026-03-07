@@ -349,6 +349,7 @@
         "council_extract_wikipedia": "Wikipedia content",
         "council_consensus": "Source consensus",
         "council_summaries": "AI summaries and translations",
+        "council_overview_enrichment": "Overview enrichment (Wikipedia + AI)",
         "council_translate_all": "Council translations (pt/es)",
         "heresy_translate_all": "Heresy translations (pt/es)"
       }
@@ -524,6 +525,7 @@
     "summary": "AI Summary",
     "original": "Original text",
     "noTextAvailable": "No content available for this council.",
+    "shortDescriptionBadge": "Brief description",
     "noSources": "No recorded sources for this council.",
     "source": "Source",
     "sourceLevel": "Level",
@@ -532,6 +534,9 @@
     "canon": "Canon",
     "noCanons": "No canons available for this council.",
     "noParticipants": "No linked participants.",
+    "churchFathers": "Church Fathers",
+    "heretics": "Heretics",
+    "hereticBadge": "Heretic",
     "noHeresies": "No linked heresies.",
     "quickInfo": "Quick info",
     "sources": "Sources",
