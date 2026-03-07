@@ -15,6 +15,7 @@ import {
   getAuthToken,
   setAuthToken,
   clearAuthToken,
+  loginWithGoogle,
   AuthError,
 } from "@/lib/api";
 
@@ -91,16 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoginError(null);
 
     try {
-      const decoded = jwtDecode<{ exp: number }>(credential);
-      const maxAge = Math.max(decoded.exp - Math.floor(Date.now() / 1000), 3600);
-      setAuthToken(credential, maxAge);
-    } catch {
-      setAuthToken(credential, 3600);
-    }
-
-    try {
-      const me = await getAuthMe();
-      setUser(me);
+      const { token, user: loggedUser } = await loginWithGoogle(credential);
+      setAuthToken(token, 28800); // 8 hours
+      setUser(loggedUser);
       setStatus("authenticated");
     } catch (err) {
       clearAuthToken();

@@ -35,7 +35,7 @@ import type {
   CacheStatsDTO,
 } from "@/types";
 
-import type { UserDTO } from "@/types";
+import type { UserDTO, LoginResponse } from "@/types";
 
 const BASE = "/api";
 
@@ -119,6 +119,19 @@ async function fetchJsonAuth<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 // ── Auth / User Management API ──
+
+export async function loginWithGoogle(credential: string): Promise<LoginResponse> {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
 
 export function getAuthMe(): Promise<UserDTO> {
   return fetchJsonAuth(`${BASE}/auth/me`);
@@ -274,38 +287,23 @@ export function getManuscriptsCount(): Promise<ManuscriptsCountResponse> {
 }
 
 export function getIngestionStatus(): Promise<IngestionStatusResponse> {
-  return fetchJson(`${BASE}/admin/ingestion/status`);
+  return fetchJsonAuth(`${BASE}/admin/ingestion/status`);
 }
 
-export async function triggerIngestion(): Promise<{ message: string }> {
-  const res = await fetch(`${BASE}/admin/ingestion/run`, { method: "POST" });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`API error ${res.status}: ${body}`);
-  }
-  return res.json();
+export function triggerIngestion(): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/ingestion/run`, { method: "POST" });
 }
 
-export async function resetAndReIngest(): Promise<{ message: string }> {
-  const res = await fetch(`${BASE}/admin/ingestion/reset`, { method: "POST" });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`API error ${res.status}: ${body}`);
-  }
-  return res.json();
+export function resetAndReIngest(): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/ingestion/reset`, { method: "POST" });
 }
 
-export async function triggerDatingEnrichment(
+export function triggerDatingEnrichment(
   domain: "fathers" | "manuscripts" | "all" = "fathers",
   limit: number = 50,
 ): Promise<{ message: string }> {
   const params = buildParams({ domain, limit: limit.toString() });
-  const res = await fetch(`${BASE}/admin/enrich-dating${params}`, { method: "POST" });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`API error ${res.status}: ${body}`);
-  }
-  return res.json();
+  return fetchJsonAuth(`${BASE}/admin/enrich-dating${params}`, { method: "POST" });
 }
 
 export function getChurchFathers(params?: {

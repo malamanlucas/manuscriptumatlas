@@ -602,6 +602,11 @@ export interface UserDTO {
   role: "ADMIN" | "MEMBER";
 }
 
+export interface LoginResponse {
+  token: string;
+  user: UserDTO;
+}
+
 export interface SessionFilters {
   from?: string;
   to?: string;

@@ -851,3 +851,14 @@ data class CreateUserRequest(
 data class UpdateUserRoleRequest(
     val role: String
 )
+
+@Serializable
+data class LoginRequest(
+    val credential: String
+)
+
+@Serializable
+data class LoginResponse(
+    val token: String,
+    val user: UserDTO
+)

@@ -1,6 +1,7 @@
 package com.ntcoverage
 
 import com.auth0.jwk.JwkProviderBuilder
+import com.auth0.jwt.JWT
 import com.ntcoverage.config.DatabaseConfig
 import com.ntcoverage.config.FlywayConfig
 import com.ntcoverage.config.SourceFileCache
@@ -11,6 +12,7 @@ import com.ntcoverage.scraper.*
 import com.ntcoverage.scraper.NtvmrListClient
 import com.ntcoverage.seed.UserSeedData
 import com.ntcoverage.service.*
+import com.ntcoverage.util.JwtUtil
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -95,45 +97,28 @@ fun Application.module() {
         log.warn("GOOGLE_CLIENT_ID is not set — JWT authentication will reject all requests.")
     }
 
+    val jwtSecret = System.getenv("JWT_SECRET") ?: "manuscriptum-dev-secret-change-in-production"
+    JwtUtil.init(jwtSecret)
+
     val jwkProvider = JwkProviderBuilder(URL("https://www.googleapis.com/oauth2/v3/certs"))
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build()
 
     install(Authentication) {
-        jwt("google-jwt") {
-            verifier(jwkProvider) {
-                withClaimPresence("email")
-                withAudience(googleClientId)
-                acceptLeeway(5)
-            }
+        jwt("internal-jwt") {
+            verifier(
+                JWT.require(JwtUtil.getAlgorithm())
+                    .withIssuer(JwtUtil.getIssuer())
+                    .acceptLeeway(5)
+                    .build()
+            )
             validate { credential ->
-                val issuer = credential.payload.issuer
-                if (issuer != "https://accounts.google.com" && issuer != "accounts.google.com") {
-                    log.warn("AUTH: rejected_invalid_issuer | issuer=$issuer")
+                val email = credential.payload.getClaim("email")?.asString()
+                if (email.isNullOrBlank()) {
+                    log.warn("AUTH: rejected_missing_email_claim")
                     return@validate null
                 }
-
-                val emailVerified = credential.payload.getClaim("email_verified")?.asBoolean() ?: false
-                if (!emailVerified) {
-                    log.warn("AUTH: rejected_email_not_verified | email=${credential.payload.getClaim("email")?.asString()}")
-                    return@validate null
-                }
-
-                val email = credential.payload.getClaim("email").asString()
-                val user = userRepository.findByEmail(email)
-
-                if (user == null) {
-                    log.warn("AUTH: rejected_unknown_email | email=$email")
-                    return@validate null
-                }
-
-                log.info("AUTH: login_success | email=$email | role=${user.role}")
-                userRepository.updateLastLoginAndPicture(
-                    email,
-                    credential.payload.getClaim("picture")?.asString()
-                )
-
                 JWTPrincipal(credential.payload)
             }
             challenge { _, _ ->
@@ -276,20 +261,22 @@ fun Application.module() {
         verseRoutes(verseRepository)
         churchFatherRoutes(churchFatherService)
         councilRoutes(councilService)
-        adminRoutes(
-            orchestrator,
-            ingestionMetadataRepository,
-            ingestionScope,
-            datingEnrichmentService,
-            councilIngestionService,
-            councilService,
-            phaseTracker
-        )
         visitorTrackingRoutes(visitorService, sessionRateLimiter, heartbeatRateLimiter, pageviewRateLimiter)
 
-        authenticate("google-jwt") {
+        authLoginRoute(userRepository, jwkProvider, googleClientId)
+
+        authenticate("internal-jwt") {
             authRoutes(userRepository, userService)
             visitorAnalyticsRoutes(visitorService)
+            adminRoutes(
+                orchestrator,
+                ingestionMetadataRepository,
+                ingestionScope,
+                datingEnrichmentService,
+                councilIngestionService,
+                councilService,
+                phaseTracker
+            )
         }
     }
 
