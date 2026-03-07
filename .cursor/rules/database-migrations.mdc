@@ -50,12 +50,16 @@ O Flyway **não aplica** as migrações em runtime (incompatibilidade de naming 
 - Toda estrutura de banco precisa ter um caminho de criação no fallback Kotlin.
 - Se algo só existir no `.sql` e não no fallback, **não será criado** e haverá erro em runtime.
 
+## ⚠️ Erro comum: tabela não registrada no FlywayConfig
+
+Se uma tabela existe em `Tables.kt` e na migration `.sql` mas **não está no `SchemaUtils.createMissingTablesAndColumns()`** em `FlywayConfig.kt`, ela **não será criada** e causará `PSQLException: relation "xxx" does not exist` em runtime. Este é o erro mais frequente ao adicionar novas tabelas — **sempre verificar o registro no FlywayConfig**.
+
 ## Checklist obrigatório para toda nova tabela/estrutura
 
 ### Tabelas normais (sem particionamento)
 1. Criar a migração SQL em `V{N}__...sql` (referência)
 2. Criar objeto `Table` em `Tables.kt`
-3. Registrar na lista do `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`
+3. **Registrar na lista do `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`** ← passo mais esquecido
 4. Se necessário, adicionar índices em `applyExtraIndexesAndConstraints()`
 
 ### Tabelas particionadas (PARTITION BY RANGE/LIST/HASH)

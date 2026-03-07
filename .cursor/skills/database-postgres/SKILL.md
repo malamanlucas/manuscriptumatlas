@@ -13,9 +13,9 @@ Complementa `database-migrations.mdc`. Para convenções completas, ver essa rul
 
 ## Quick-fix: Nova tabela (normal)
 
-1. Criar `V{N}__descricao.sql` (referência) — próxima: **V17**
+1. Criar `V{N}__descricao.sql` (referência) — próxima: **V18**
 2. Criar objeto `Table` em `Tables.kt`
-3. Registrar em `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`
+3. **Registrar em `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`** — passo mais esquecido; sem ele a tabela não é criada e dá `PSQLException: relation "xxx" does not exist`
 4. Índices extras em `applyExtraIndexesAndConstraints()` se necessário
 
 ## Quick-fix: Adicionar coluna a tabela existente
