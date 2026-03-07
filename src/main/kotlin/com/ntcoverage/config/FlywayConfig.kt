@@ -47,7 +47,7 @@ object FlywayConfig {
                 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
                 Councils, CouncilTranslations, CouncilFathers, Heresies, HeresyTranslations,
                 CouncilHeresies, CouncilCanons, Sources, CouncilSourceClaims, CouncilIngestionPhases,
-                VisitorDailyStats, Users
+                CouncilHereticParticipants, VisitorDailyStats, Users
             )
             log.info("Tables created/verified via Exposed SchemaUtils.")
         }
