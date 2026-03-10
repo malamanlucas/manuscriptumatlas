@@ -109,7 +109,12 @@ async function fetchJsonAuth<T>(url: string, init?: RequestInit): Promise<T> {
     throw new AuthError(401, "Authentication required");
   }
   if (res.status === 403) {
-    throw new AuthError(403, "Access denied");
+    let msg = "Access denied";
+    try {
+      const body = await res.json();
+      if (body?.message) msg = body.message;
+    } catch { /* use default */ }
+    throw new AuthError(403, msg);
   }
   if (!res.ok) {
     const body = await res.text();
@@ -298,6 +303,15 @@ export function resetAndReIngest(): Promise<{ message: string }> {
   return fetchJsonAuth(`${BASE}/admin/ingestion/reset`, { method: "POST" });
 }
 
+export function triggerPatristicSeed(): Promise<{ message: string }> {
+  return fetchJsonAuth(`${BASE}/admin/patristic/seed`, { method: "POST" });
+}
+
+export function triggerPatristicTranslate(force: boolean = false): Promise<{ message: string }> {
+  const params = force ? "?force=true" : "";
+  return fetchJsonAuth(`${BASE}/admin/patristic/translate${params}`, { method: "POST" });
+}
+
 export function triggerDatingEnrichment(
   domain: "fathers" | "manuscripts" | "all" = "fathers",
   limit: number = 50,
@@ -314,6 +328,8 @@ export function getChurchFathers(params?: {
   locale?: string;
   yearMin?: number;
   yearMax?: number;
+  yearMinFrom?: number;
+  yearMinTo?: number;
 }): Promise<ChurchFathersListResponse> {
   const q = buildParams({
     century: params?.century?.toString(),
@@ -323,6 +339,8 @@ export function getChurchFathers(params?: {
     locale: params?.locale,
     yearMin: params?.yearMin?.toString(),
     yearMax: params?.yearMax?.toString(),
+    yearMinFrom: params?.yearMinFrom?.toString(),
+    yearMinTo: params?.yearMinTo?.toString(),
   });
   return fetchJson(`${BASE}/fathers${q}`);
 }

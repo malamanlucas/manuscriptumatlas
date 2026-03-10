@@ -322,6 +322,11 @@
     "enrichManuscripts": "Manuscritos",
     "enrichAll": "Todos los Dominios",
     "enrichButton": "Enriquecer",
+    "patristicTitle": "Ingestión Patrística",
+    "patristicDescription": "Seed de Padres de la Iglesia, declaraciones textuales y traducciones de biografías.",
+    "patristicSeedButton": "Ingerir Datos",
+    "patristicTranslateButton": "Traducir Biografías",
+    "patristicForceTranslate": "Forzar re-traducción",
     "councilIngestion": {
       "title": "Ingestión de Concilios",
       "subtitle": "Control manual de fases de extracción y enriquecimiento",
@@ -438,6 +443,8 @@
     "subtitle": "Panorama Histórico de los Siglos I–X",
     "allCenturies": "Todos los Siglos",
     "filterByCentury": "Filtro por Siglo",
+    "filterModeCentury": "Por Siglo",
+    "filterModeYear": "Por Año",
     "filterByTradition": "Tradición",
     "filterByYear": "Filtrar por Año",
     "dating": "Datación",
@@ -724,6 +731,10 @@
     "placeholderFrom": "ej. 100",
     "placeholderTo": "ej. 300",
     "filterByYear": "Filtrar por Año"
+  },
+  "yearSlider": {
+    "clear": "Limpiar",
+    "rangeLabel": "Filtrar por año de nacimiento/actividad"
   },
   "methodology": {
     "title": "Metodología de Datación",

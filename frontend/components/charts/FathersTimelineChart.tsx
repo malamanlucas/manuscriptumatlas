@@ -42,6 +42,9 @@ export function FathersTimelineChart({
       centuryMin: f.centuryMin,
       centuryMax: f.centuryMax,
       location: f.primaryLocation,
+      yearMin: f.yearMin,
+      yearMax: f.yearMax,
+      yearBest: f.yearBest,
     }));
 
   const chartHeight = Math.max(300, data.length * 36 + 80);
@@ -92,6 +95,7 @@ export function FathersTimelineChart({
                       <p className="text-muted-foreground">
                         {t("centuries")}: {toRoman(d.centuryMin)}
                         {d.centuryMax !== d.centuryMin && `–${toRoman(d.centuryMax)}`}
+                        {d.yearBest ? ` · c. ${d.yearBest} AD` : d.yearMin ? ` · ${d.yearMin}–${d.yearMax} AD` : null}
                       </p>
                       <p className="text-muted-foreground">
                         {t("tradition")}: {t(`traditions.${d.tradition}`)}

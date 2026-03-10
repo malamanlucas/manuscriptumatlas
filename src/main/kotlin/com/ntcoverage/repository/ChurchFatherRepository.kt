@@ -19,13 +19,15 @@ class ChurchFatherRepository {
         tradition: String? = null,
         yearMin: Int? = null,
         yearMax: Int? = null,
+        yearMinFrom: Int? = null,
+        yearMinTo: Int? = null,
         page: Int = 1,
         limit: Int = 50,
         locale: String = "en"
     ): List<ChurchFatherSummary> = transaction {
         val query = baseSelect(locale)
 
-        applyDateFilters(query, century, tradition, yearMin, yearMax)
+        applyDateFilters(query, century, tradition, yearMin, yearMax, yearMinFrom, yearMinTo)
 
         query
             .orderBy(ChurchFathers.centuryMin to SortOrder.ASC, ChurchFathers.displayName to SortOrder.ASC)
@@ -34,16 +36,35 @@ class ChurchFatherRepository {
             .map { it.toSummary(locale) }
     }
 
-    fun countAll(century: Int? = null, tradition: String? = null, yearMin: Int? = null, yearMax: Int? = null): Int = transaction {
+    fun countAll(
+        century: Int? = null,
+        tradition: String? = null,
+        yearMin: Int? = null,
+        yearMax: Int? = null,
+        yearMinFrom: Int? = null,
+        yearMinTo: Int? = null
+    ): Int = transaction {
         val query = ChurchFathers.selectAll()
 
-        applyDateFilters(query, century, tradition, yearMin, yearMax)
+        applyDateFilters(query, century, tradition, yearMin, yearMax, yearMinFrom, yearMinTo)
 
         query.count().toInt()
     }
 
-    private fun applyDateFilters(query: Query, century: Int?, tradition: String?, yearMin: Int?, yearMax: Int?) {
-        if (yearMin != null || yearMax != null) {
+    private fun applyDateFilters(
+        query: Query, century: Int?, tradition: String?,
+        yearMin: Int?, yearMax: Int?,
+        yearMinFrom: Int? = null, yearMinTo: Int? = null
+    ) {
+        if (yearMinFrom != null || yearMinTo != null) {
+            query.andWhere { ChurchFathers.yearMin.isNotNull() }
+            if (yearMinFrom != null) {
+                query.andWhere { ChurchFathers.yearMin greaterEq yearMinFrom }
+            }
+            if (yearMinTo != null) {
+                query.andWhere { ChurchFathers.yearMin lessEq yearMinTo }
+            }
+        } else if (yearMin != null || yearMax != null) {
             query.andWhere { ChurchFathers.yearMin.isNotNull() }
             if (yearMin != null) {
                 query.andWhere { ChurchFathers.yearMax greaterEq yearMin }

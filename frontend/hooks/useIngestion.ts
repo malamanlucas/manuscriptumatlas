@@ -4,6 +4,8 @@ import {
   triggerIngestion,
   resetAndReIngest,
   triggerDatingEnrichment,
+  triggerPatristicSeed,
+  triggerPatristicTranslate,
 } from "@/lib/api";
 
 export function useIngestionStatus() {
@@ -39,6 +41,18 @@ export function useResetAndReIngest() {
         queryKey: ["admin", "ingestion", "status"],
       });
     },
+  });
+}
+
+export function usePatristicSeed() {
+  return useMutation({
+    mutationFn: triggerPatristicSeed,
+  });
+}
+
+export function usePatristicTranslate() {
+  return useMutation({
+    mutationFn: ({ force }: { force: boolean }) => triggerPatristicTranslate(force),
   });
 }
 

@@ -9,6 +9,8 @@ import {
   useTriggerIngestion,
   useResetAndReIngest,
   useDatingEnrichment,
+  usePatristicSeed,
+  usePatristicTranslate,
 } from "@/hooks/useIngestion";
 import {
   Loader2,
@@ -21,6 +23,8 @@ import {
   Timer,
   Trash2,
   Sparkles,
+  BookOpen,
+  Languages,
 } from "lucide-react";
 import { CouncilIngestionPanel } from "@/components/ingestion/CouncilIngestionPanel";
 
@@ -39,8 +43,11 @@ function IngestionContent() {
   const trigger = useTriggerIngestion();
   const reset = useResetAndReIngest();
   const enrich = useDatingEnrichment();
+  const patristicSeed = usePatristicSeed();
+  const patristicTranslate = usePatristicTranslate();
   const [showConfirm, setShowConfirm] = useState(false);
   const [enrichDomain, setEnrichDomain] = useState<"fathers" | "manuscripts" | "all">("fathers");
+  const [forceTranslate, setForceTranslate] = useState(false);
 
   const STATUS_CONFIG: Record<
     string,
@@ -230,6 +237,73 @@ function IngestionContent() {
               {enrich.isError && (
                 <p className="mt-3 text-sm text-red-400">
                   {(enrich.error as Error).message}
+                </p>
+              )}
+            </div>
+
+            {/* Patristic Ingestion */}
+            <div className="rounded-xl border border-blue-500/30 bg-blue-950/10 p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+                  <BookOpen className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("patristicTitle")}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("patristicDescription")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  onClick={() => patristicSeed.mutate()}
+                  disabled={patristicSeed.isPending || patristicTranslate.isPending || data.isRunning}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {patristicSeed.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <BookOpen className="h-4 w-4" />
+                  )}
+                  {t("patristicSeedButton")}
+                </button>
+                <button
+                  onClick={() => patristicTranslate.mutate({ force: forceTranslate })}
+                  disabled={patristicTranslate.isPending || patristicSeed.isPending || data.isRunning}
+                  className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {patristicTranslate.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  {t("patristicTranslateButton")}
+                </button>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={forceTranslate}
+                    onChange={(e) => setForceTranslate(e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  {t("patristicForceTranslate")}
+                </label>
+              </div>
+              {patristicSeed.isSuccess && (
+                <p className="mt-3 text-sm text-emerald-500">
+                  {(patristicSeed.data as { message: string }).message}
+                </p>
+              )}
+              {patristicTranslate.isSuccess && (
+                <p className="mt-3 text-sm text-emerald-500">
+                  {(patristicTranslate.data as { message: string }).message}
+                </p>
+              )}
+              {(patristicSeed.isError || patristicTranslate.isError) && (
+                <p className="mt-3 text-sm text-red-400">
+                  {((patristicSeed.error || patristicTranslate.error) as Error).message}
                 </p>
               )}
             </div>

@@ -136,6 +136,10 @@ Revisar manualmente: descrições de novas migrations, conceitos de domínio, pa
 - **Church Councils**: concílios até 1000 d.C., heresias, cânones, vínculos patrísticos
 - **Source Consensus Engine**: consolidação de claims por peso/score/fallback determinístico
 
+## Planos de implementação
+
+- Todo plano gerado pelo Claude (arquivos `.md` de planejamento) deve ser salvo na **raiz do projeto** (`/`), nunca em subpastas.
+
 ## Idioma
 
 - Código-fonte, variáveis e classes: **inglês**

@@ -16,10 +16,12 @@ export function useChurchFathers(params?: {
   limit?: number;
   yearMin?: number;
   yearMax?: number;
+  yearMinFrom?: number;
+  yearMinTo?: number;
 }) {
   const locale = useLocale();
   return useQuery({
-    queryKey: ["fathers", locale, params?.century, params?.tradition, params?.page, params?.limit, params?.yearMin, params?.yearMax],
+    queryKey: ["fathers", locale, params?.century, params?.tradition, params?.page, params?.limit, params?.yearMin, params?.yearMax, params?.yearMinFrom, params?.yearMinTo],
     queryFn: () => getChurchFathers({ ...params, locale }),
     staleTime: 5 * 60 * 1000,
   });

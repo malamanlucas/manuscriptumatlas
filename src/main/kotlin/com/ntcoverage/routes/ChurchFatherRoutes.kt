@@ -48,13 +48,15 @@ fun Route.churchFatherRoutes(service: ChurchFatherService) {
         val century = call.request.queryParameters["century"]?.toIntOrNull()?.takeIf { it in 1..10 }
         val yearMin = call.request.queryParameters["yearMin"]?.toIntOrNull()?.takeIf { it in 1..2000 }
         val yearMax = call.request.queryParameters["yearMax"]?.toIntOrNull()?.takeIf { it in 1..2000 }
+        val yearMinFrom = call.request.queryParameters["yearMinFrom"]?.toIntOrNull()?.takeIf { it in 0..2000 }
+        val yearMinTo = call.request.queryParameters["yearMinTo"]?.toIntOrNull()?.takeIf { it in 0..2000 }
         val tradition = call.request.queryParameters["tradition"]?.takeIf {
             it in listOf("greek", "latin", "syriac", "coptic")
         }
         val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
         val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 100) ?: 50
 
-        val result = service.listFathers(century, tradition, yearMin, yearMax, page, limit, locale)
+        val result = service.listFathers(century, tradition, yearMin, yearMax, yearMinFrom, yearMinTo, page, limit, locale)
         call.respond(result)
     }
 

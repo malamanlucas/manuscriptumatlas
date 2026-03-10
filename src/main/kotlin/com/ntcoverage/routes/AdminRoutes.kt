@@ -9,6 +9,7 @@ import com.ntcoverage.service.CouncilPhaseTracker
 import com.ntcoverage.service.CouncilService
 import com.ntcoverage.service.DatingEnrichmentService
 import com.ntcoverage.service.IngestionOrchestrator
+import com.ntcoverage.service.PatristicIngestionService
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -27,7 +28,8 @@ fun Route.adminRoutes(
     datingEnrichmentService: DatingEnrichmentService,
     councilIngestionService: CouncilIngestionService,
     councilService: CouncilService,
-    phaseTracker: CouncilPhaseTracker
+    phaseTracker: CouncilPhaseTracker,
+    patristicIngestionService: PatristicIngestionService
 ) {
     get("/admin/ingestion/status") {
         val status = metadataRepository.getStatus()
@@ -88,6 +90,31 @@ fun Route.adminRoutes(
 
         call.respond(HttpStatusCode.Accepted, MessageResponse(
             "Dating enrichment started for domain=$domain, limit=$limit"
+        ))
+    }
+
+    post("/admin/patristic/seed") {
+        if (!IngestionConfig.enableIngestion) {
+            call.respond(HttpStatusCode.Forbidden, MessageResponse("Ingestion is disabled via ENABLE_INGESTION=false"))
+            return@post
+        }
+        ingestionScope.launch {
+            patristicIngestionService.seedOnly()
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Patristic seed started"))
+    }
+
+    post("/admin/patristic/translate") {
+        if (!IngestionConfig.enableIngestion) {
+            call.respond(HttpStatusCode.Forbidden, MessageResponse("Ingestion is disabled via ENABLE_INGESTION=false"))
+            return@post
+        }
+        val force = call.request.queryParameters["force"]?.toBooleanStrictOrNull() ?: false
+        ingestionScope.launch {
+            patristicIngestionService.translateOnly(force)
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse(
+            if (force) "Patristic translation started (force re-translate)" else "Patristic translation started"
         ))
     }
 

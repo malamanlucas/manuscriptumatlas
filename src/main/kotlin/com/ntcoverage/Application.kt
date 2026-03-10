@@ -275,15 +275,13 @@ fun Application.module() {
                 datingEnrichmentService,
                 councilIngestionService,
                 councilService,
-                phaseTracker
+                phaseTracker,
+                patristicIngestionService
             )
         }
     }
 
     monitor.subscribe(ApplicationStarted) {
-        ingestionScope.launch {
-            orchestrator.launchIfEnabled()
-        }
         retentionScheduler.start(ingestionScope)
     }
 

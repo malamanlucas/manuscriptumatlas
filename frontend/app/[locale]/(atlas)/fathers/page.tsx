@@ -6,10 +6,10 @@ import { Header } from "@/components/layout/Header";
 import { FathersTimelineChart } from "@/components/charts/FathersTimelineChart";
 import { useChurchFathers, useSearchChurchFathers } from "@/hooks/useChurchFathers";
 import { CenturyRangeFilter } from "@/components/filters/CenturyRangeFilter";
-import { YearRangeFilter } from "@/components/filters/YearRangeFilter";
+import { YearSliderFilter } from "@/components/filters/YearSliderFilter";
 import { Link } from "@/i18n/navigation";
 import { toRoman } from "@/lib/utils";
-import { Search, List, Table2 } from "lucide-react";
+import { Search, List, Table2, Calendar, Clock } from "lucide-react";
 import { ConfidenceDot } from "@/components/ui/ConfidenceDot";
 
 type TraditionFilter = "all" | "greek" | "latin" | "syriac" | "coptic";
@@ -35,17 +35,20 @@ export default function FathersPage() {
   const [selectedCentury, setSelectedCentury] = useState<number | undefined>(undefined);
   const [tradition, setTradition] = useState<TraditionFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterYearMin, setFilterYearMin] = useState<number | undefined>(undefined);
-  const [filterYearMax, setFilterYearMax] = useState<number | undefined>(undefined);
+  const [filterMode, setFilterMode] = useState<"century" | "year">("century");
+  const [yearSliderPos, setYearSliderPos] = useState<number | undefined>(undefined);
+
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"compact" | "complete">("compact");
 
   const tradParam = tradition === "all" ? undefined : tradition;
+  const yearMinFrom = filterMode === "year" && yearSliderPos !== undefined ? 0 : undefined;
+  const yearMinTo = filterMode === "year" && yearSliderPos !== undefined ? yearSliderPos : undefined;
   const { data, isLoading, error } = useChurchFathers({
-    century: (filterYearMin || filterYearMax) ? undefined : selectedCentury,
+    century: filterMode === "century" ? selectedCentury : undefined,
     tradition: tradParam,
-    yearMin: filterYearMin,
-    yearMax: filterYearMax,
+    yearMinFrom,
+    yearMinTo,
     page,
   });
   const { data: searchResults } = useSearchChurchFathers(searchQuery);
@@ -66,36 +69,64 @@ export default function FathersPage() {
       <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         {/* Filters */}
         <div className="rounded-xl border border-border bg-card p-4 md:p-6 space-y-4">
-          <div>
-            <label className="mb-2 block text-xs font-medium text-muted-foreground">
-              {t("filterByCentury")}
-            </label>
-            <CenturyRangeFilter
-              value={selectedCentury}
-              onChange={(c) => {
-                setSelectedCentury(c);
-                if (c !== undefined) { setFilterYearMin(undefined); setFilterYearMax(undefined); }
-                setPage(1);
-              }}
-            />
+          {/* Filter mode toggle */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center rounded-lg border border-border bg-secondary/50 p-0.5">
+              <button
+                onClick={() => {
+                  setFilterMode("century");
+                  setYearSliderPos(undefined);
+                  setPage(1);
+                }}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  filterMode === "century"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                {t("filterModeCentury")}
+              </button>
+              <button
+                onClick={() => {
+                  setFilterMode("year");
+                  setSelectedCentury(undefined);
+                  setPage(1);
+                }}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  filterMode === "year"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                {t("filterModeYear")}
+              </button>
+            </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-xs font-medium text-muted-foreground">
-              {t("filterByYear")}
-            </label>
-            <YearRangeFilter
-              yearMin={filterYearMin}
-              yearMax={filterYearMax}
-              onChange={(min, max) => {
-                setFilterYearMin(min);
-                setFilterYearMax(max);
-                if (min !== undefined || max !== undefined) setSelectedCentury(undefined);
-                setPage(1);
-              }}
-              disabled={selectedCentury !== undefined}
-            />
-          </div>
+          {/* Conditional filter */}
+          {filterMode === "century" ? (
+            <div>
+              <CenturyRangeFilter
+                value={selectedCentury}
+                onChange={(c) => {
+                  setSelectedCentury(c);
+                  setPage(1);
+                }}
+              />
+            </div>
+          ) : (
+            <div>
+              <YearSliderFilter
+                yearTo={yearSliderPos}
+                onYearChange={(to) => {
+                  setYearSliderPos(to);
+                  setPage(1);
+                }}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
             <div>

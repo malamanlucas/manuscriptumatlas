@@ -20,6 +20,23 @@ class PatristicIngestionService(
         val totalStart = System.currentTimeMillis()
         log.info("PATRISTIC_INGESTION_START: beginning full patristic seed ingestion")
 
+        val inserted = seedOnly()
+
+        val statementsStart = System.currentTimeMillis()
+        log.info("TEXTUAL_STATEMENTS_SEED_START: processing ${TextualStatementsSeedData.entries.size} statements")
+        val statementsInserted = seedTextualStatements()
+        val statementsDuration = System.currentTimeMillis() - statementsStart
+        log.info("TEXTUAL_STATEMENTS_SEED_DONE: $statementsInserted new statements inserted, durationMs=$statementsDuration")
+
+        val translationResults = translateOnly()
+
+        val totalDuration = System.currentTimeMillis() - totalStart
+        log.info("PATRISTIC_INGESTION_DONE: fathers=$inserted, statements=$statementsInserted, fatherTranslations=${translationResults.fatherTranslations}, statementTranslations=${translationResults.statementTranslations}, bioTranslations=${translationResults.bioTranslations}, totalDurationMs=$totalDuration")
+
+        return inserted
+    }
+
+    suspend fun seedOnly(): Int {
         val entries = ChurchFathersSeedData.entries
         var inserted = 0
         var skipped = 0
@@ -69,6 +86,12 @@ class PatristicIngestionService(
         val statementsDuration = System.currentTimeMillis() - statementsStart
         log.info("TEXTUAL_STATEMENTS_SEED_DONE: $statementsInserted new statements inserted, durationMs=$statementsDuration")
 
+        return inserted
+    }
+
+    data class TranslationResult(val fatherTranslations: Int, val statementTranslations: Int, val bioTranslations: Int)
+
+    suspend fun translateOnly(force: Boolean = false): TranslationResult {
         val translationsStart = System.currentTimeMillis()
         log.info("TRANSLATIONS_SEED_START: seeding father and statement translations")
         val fatherTranslations = seedFatherTranslations()
@@ -77,15 +100,12 @@ class PatristicIngestionService(
         log.info("TRANSLATIONS_SEED_DONE: $fatherTranslations father translations, $statementTranslations statement translations inserted, durationMs=$translationsDuration")
 
         val bioStart = System.currentTimeMillis()
-        log.info("BIO_TRANSLATIONS_START: translating biographies to pt/es")
-        val bioTranslations = translateBiographies()
+        log.info("BIO_TRANSLATIONS_START: translating biographies to pt/es (force=$force)")
+        val bioTranslations = translateBiographies(force)
         val bioDuration = System.currentTimeMillis() - bioStart
         log.info("BIO_TRANSLATIONS_DONE: $bioTranslations biography translations generated, durationMs=$bioDuration")
 
-        val totalDuration = System.currentTimeMillis() - totalStart
-        log.info("PATRISTIC_INGESTION_DONE: fathers=$inserted, statements=$statementsInserted, fatherTranslations=$fatherTranslations, statementTranslations=$statementTranslations, bioTranslations=$bioTranslations, totalDurationMs=$totalDuration")
-
-        return inserted
+        return TranslationResult(fatherTranslations, statementTranslations, bioTranslations)
     }
 
     private fun seedTextualStatements(): Int {
@@ -199,7 +219,7 @@ class PatristicIngestionService(
         return statements.firstOrNull { it.sourceReference == sourceReference }?.id
     }
 
-    private suspend fun translateBiographies(): Int {
+    private suspend fun translateBiographies(force: Boolean = false): Int {
         val targetLocales = listOf("pt", "es")
         var translated = 0
         var skippedExisting = 0
@@ -208,7 +228,7 @@ class PatristicIngestionService(
         var failed = 0
         val fathersWithBio = ChurchFathersSeedData.entries.filter { !it.biographyOriginal.isNullOrBlank() }
 
-        log.info("BIO_TRANSLATE_START: ${fathersWithBio.size} fathers with biographies, ${targetLocales.size} target locales (${fathersWithBio.size * targetLocales.size} potential translations)")
+        log.info("BIO_TRANSLATE_START: ${fathersWithBio.size} fathers with biographies, ${targetLocales.size} target locales (${fathersWithBio.size * targetLocales.size} potential translations), force=$force")
 
         for ((fatherIndex, entry) in fathersWithBio.withIndex()) {
             val normalizedName = normalize(entry.displayName)
@@ -221,7 +241,7 @@ class PatristicIngestionService(
             for (locale in targetLocales) {
                 val meta = repository.findTranslationMeta(father.id, locale)
 
-                if (meta != null && !meta.biographyOriginal.isNullOrBlank()) {
+                if (!force && meta != null && !meta.biographyOriginal.isNullOrBlank()) {
                     skippedExisting++
                     log.debug("BIO_TRANSLATE: [${fatherIndex + 1}/${fathersWithBio.size}] skipping '${entry.displayName}' locale=$locale — already translated")
                     continue

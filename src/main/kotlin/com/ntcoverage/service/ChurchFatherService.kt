@@ -13,12 +13,14 @@ class ChurchFatherService(
         tradition: String? = null,
         yearMin: Int? = null,
         yearMax: Int? = null,
+        yearMinFrom: Int? = null,
+        yearMinTo: Int? = null,
         page: Int = 1,
         limit: Int = 50,
         locale: String = "en"
     ): ChurchFathersListResponse {
-        val fathers = repository.findAll(century, tradition, yearMin, yearMax, page, limit, locale)
-        val total = repository.countAll(century, tradition, yearMin, yearMax)
+        val fathers = repository.findAll(century, tradition, yearMin, yearMax, yearMinFrom, yearMinTo, page, limit, locale)
+        val total = repository.countAll(century, tradition, yearMin, yearMax, yearMinFrom, yearMinTo)
         return ChurchFathersListResponse(total = total, fathers = fathers)
     }
 

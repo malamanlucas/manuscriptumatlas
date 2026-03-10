@@ -22,7 +22,7 @@ class BiographySummarizationService {
 
     private val apiKey: String? = System.getenv("OPENAI_API_KEY")?.takeIf { it.isNotBlank() }
     private val model: String = System.getenv("OPENAI_MODEL") ?: "gpt-4o-mini"
-    private val timeoutMs: Long = System.getenv("OPENAI_TIMEOUT_MS")?.toLongOrNull() ?: 12_000L
+    private val timeoutMs: Long = System.getenv("OPENAI_TIMEOUT_MS")?.toLongOrNull() ?: 30_000L
     private val summarizationEnabled: Boolean = System.getenv("ENABLE_BIO_SUMMARIZATION")?.lowercase() != "false"
     private val translationEnabled: Boolean = System.getenv("ENABLE_BIO_TRANSLATION")?.lowercase() != "false"
 
@@ -86,10 +86,13 @@ class BiographySummarizationService {
             return null
         }
 
-        val systemPrompt = "Translate faithfully the following Church Father biography to $language. " +
-            "Do not interpret, summarize, expand, or omit content. " +
+        val systemPrompt = "You are a professional academic translator specializing in early Christianity and patristics. " +
+            "Translate the following Church Father biography COMPLETELY to $language. " +
+            "CRITICAL: Every single sentence must be translated — do NOT leave any part in English. " +
+            "Do not interpret, summarize, expand, or omit any content. " +
             "Preserve all proper names, dates, and historical references exactly. " +
-            "Maintain neutral academic tone."
+            "Use established $language academic terminology for ecclesiastical terms. " +
+            "Maintain neutral academic tone throughout."
 
         val startMs = System.currentTimeMillis()
         val result = callWithRetry(

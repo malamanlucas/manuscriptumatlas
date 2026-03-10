@@ -322,6 +322,11 @@
     "enrichManuscripts": "Manuscripts",
     "enrichAll": "All Domains",
     "enrichButton": "Enrich",
+    "patristicTitle": "Patristic Ingestion",
+    "patristicDescription": "Seed Church Fathers, textual statements, and biography translations.",
+    "patristicSeedButton": "Seed Data",
+    "patristicTranslateButton": "Translate Biographies",
+    "patristicForceTranslate": "Force re-translate",
     "councilIngestion": {
       "title": "Council Ingestion",
       "subtitle": "Manual control of extraction and enrichment phases",
@@ -438,6 +443,8 @@
     "subtitle": "Historical Overview of Centuries I–X",
     "allCenturies": "All Centuries",
     "filterByCentury": "Filter by Century",
+    "filterModeCentury": "By Century",
+    "filterModeYear": "By Year",
     "filterByTradition": "Tradition",
     "filterByYear": "Filter by Year",
     "dating": "Dating",
@@ -724,6 +731,10 @@
     "placeholderFrom": "e.g. 100",
     "placeholderTo": "e.g. 300",
     "filterByYear": "Filter by Year"
+  },
+  "yearSlider": {
+    "clear": "Clear",
+    "rangeLabel": "Filter by birth/activity year"
   },
   "methodology": {
     "title": "Dating Methodology",
