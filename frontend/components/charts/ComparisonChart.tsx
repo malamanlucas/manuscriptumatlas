@@ -23,7 +23,7 @@ interface ComparisonChartProps {
   series: ComparisonSeries[];
 }
 
-const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
+const COLORS = ["#4a6fa5", "#a65d57", "#5a8a7a", "#b8976a", "#7a6e8a"];
 
 export function ComparisonChart({ series }: ComparisonChartProps) {
   const allCenturies = new Set<number>();

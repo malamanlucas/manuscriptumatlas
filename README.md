@@ -1,19 +1,22 @@
 # Manuscriptum Atlas
 
-Plataforma de análise manuscritológica computacional do Novo Testamento grego. Calcula cobertura textual acumulativa por livro, capítulo e século, cataloga ~140 manuscritos Gregory-Aland, e inclui um domínio de **Pais da Igreja** com declarações patrísticas sobre transmissão textual.
+Plataforma acadêmica de cobertura textual do Novo Testamento grego — manuscritos, testemunhos patrísticos, concílios, heresias, e estudo bíblico interlinear. Cataloga ~140 manuscritos Gregory-Aland, oferece cobertura textual acumulativa por livro/capítulo/século, leitor bíblico multi-tradução com interlinear grego/hebraico, e motor de consenso multi-fonte para dados históricos.
 
 ## Stack
 
 | Camada | Tecnologia |
 |--------|------------|
 | **Backend** | Kotlin 2.1, Ktor 3.1, JVM 21 |
-| **Banco** | PostgreSQL 16, Exposed ORM, Flyway |
+| **Banco** | PostgreSQL 16, Exposed ORM, Flyway (21 migrations) |
 | **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
-| **Visualização** | Recharts 3 |
+| **LLM** | OpenAI GPT-5.4 / GPT-4.1-mini (3-tier) + LLM Queue (Claude Code) |
+| **Messaging** | Apache Kafka (KRaft mode) |
+| **Visualização** | Recharts 3, Leaflet (mapas) |
 | **Data fetching** | TanStack React Query 5 |
 | **i18n** | next-intl (pt, en, es) |
 | **Tema** | next-themes (light/dark/system) |
-| **Infra** | Docker Compose (postgres, init, app, frontend) |
+| **Observability** | Prometheus + Grafana + Loki + Micrometer |
+| **Infra** | Docker Compose (postgres, kafka, init, app, frontend, prometheus, grafana, loki, promtail) |
 
 ## Execução
 
@@ -21,11 +24,11 @@ Plataforma de análise manuscritológica computacional do Novo Testamento grego.
 
 ```bash
 # Menu interativo (dev ou prod)
-./up.sh
+./scripts/up.sh
 
 # Ou diretamente:
-./up.dev.sh    # Desenvolvimento (PG exposto, cache habilitado)
-./up.prod.sh   # Produção (sem cache, limites de memória)
+./scripts/up.dev.sh    # Desenvolvimento (PG exposto, cache habilitado)
+./scripts/up.prod.sh   # Produção (sem cache, limites de memória)
 ```
 
 **Serviços:**
@@ -44,8 +47,8 @@ docker compose up --build -d
 ### Backup e Restore
 
 ```bash
-./backup.sh              # Gera dump em backups/
-./restore.sh [arquivo]   # Restaura dump específico
+./scripts/backup.sh              # Gera dump em backups/
+./scripts/restore.sh [arquivo]   # Restaura dump específico
 ```
 
 ## Arquitetura
@@ -54,65 +57,71 @@ docker compose up --build -d
 Routes → Service → Repository → Database (Exposed/PostgreSQL)
 ```
 
-**Backend** (44 arquivos Kotlin):
-- 4 configs, 12 tabelas, 37 DTOs, 9 repositórios, 10 serviços, 7 arquivos de rotas, 4 scrapers, 6 seeds
+**Backend** (100+ arquivos Kotlin):
+- 9 configs, 45 tabelas (33 main + 12 bible), 126 DTOs, 27 repositórios, 30 serviços, 12 arquivos de rotas, 15 scrapers, 17 seeds, 6 componentes LLM
 
 **Frontend** (Next.js):
-- 20 páginas, 15 componentes, 9 hooks, 32 tipos, 3 locales
+- 24 páginas, 47+ componentes (11 diretórios), 18 hooks, 14 arquivos de tipos, 16 módulos API, 44 namespaces i18n, 3 locales
 
 ## API REST
 
-25 endpoints organizados em 7 grupos:
+60+ endpoints organizados em 12 grupos:
 
-| Grupo | Endpoints |
-|-------|-----------|
-| **Cobertura** | `/coverage`, `/coverage/{book}`, `/coverage/{book}/chapters/{century}`, `/coverage/gospels/{century}`, `/century/{number}`, `/timeline`, `/timeline/full`, `/missing/{book}/{century}` |
+| Grupo | Exemplos |
+|-------|----------|
+| **Cobertura** | `/coverage`, `/coverage/{book}`, `/timeline`, `/missing/{book}/{century}` |
 | **Estatísticas** | `/stats/overview`, `/stats/manuscripts-count` |
-| **Manuscritos** | `/manuscripts`, `/manuscripts/{gaId}` |
+| **Manuscritos** | `/manuscripts`, `/manuscripts/{gaId}`, `/verses/manuscripts` |
 | **Métricas** | `/metrics/nt`, `/metrics/{book}` |
-| **Versículos** | `/books`, `/verses/manuscripts` |
-| **Pais da Igreja** | `/fathers`, `/fathers/search`, `/fathers/{id}`, `/fathers/{id}/statements`, `/fathers/statements`, `/fathers/statements/search`, `/fathers/statements/topics/summary` |
-| **Admin** | `/admin/ingestion/status`, `/admin/ingestion/run`, `/admin/ingestion/reset` |
+| **Pais da Igreja** | `/fathers`, `/fathers/{id}`, `/fathers/statements`, `/fathers/search` |
+| **Concílios** | `/councils`, `/councils/{slug}`, `/councils/{slug}/canons` |
+| **Heresias** | `/heresies`, `/heresies/{slug}` |
+| **Bíblia** | `/bible/versions`, `/bible/chapter`, `/bible/interlinear`, `/bible/search` |
+| **Apologética** | `/apologetics/topics`, `/apologetics/topics/{id}/responses` |
+| **Auth** | `/auth/google`, `/auth/me`, `/auth/dev-login` |
+| **Admin/Ingestão** | `/admin/ingestion/*`, `/admin/reset/*`, `/admin/{domain}/ingestion/*` |
+| **Admin/LLM Queue** | `/admin/llm/queue/stats`, `/admin/llm/queue/pending`, `/admin/llm/queue/apply/*` |
 
-Filtros: `?type=papyrus`, `?century=N`, `?page=1&limit=50`, `?topic=CANON`, `?tradition=greek`, `?q=keyword`, `?locale=pt`
+Filtros: `?type=`, `?century=`, `?page=&limit=`, `?topic=`, `?tradition=`, `?q=`, `?locale=`
+
+Documentação completa: [`docs/api-reference.md`](docs/api-reference.md)
 
 ## Modelo de Dados
 
-12 tabelas PostgreSQL:
+45 tabelas PostgreSQL em 2 databases:
 
-| Tabela | Descrição |
-|--------|-----------|
-| `books` | 27 livros canônicos do NT |
-| `verses` | 7.956 versículos |
-| `manuscripts` | Manuscritos com GA-ID, datação, tipo |
-| `manuscript_verses` | N:N manuscrito ↔ versículo |
-| `manuscript_sources` | Metadados acadêmicos 1:1 |
-| `coverage_by_century` | Cache materializado de cobertura |
-| `ingestion_metadata` | Status da ingestão |
-| `book_translations` | Traduções i18n de livros |
-| `church_fathers` | 35 pais da igreja |
-| `father_textual_statements` | 36 declarações textuais curadas |
-| `church_father_translations` | Traduções i18n dos pais (pt, es) |
-| `father_statement_translations` | Traduções i18n das declarações (pt, es) |
+**nt_coverage** (33 tabelas): manuscritos, patrístico, concílios, heresias, apologética, observatório, auth, LLM queue
+**bible_db** (12 tabelas): versões, livros, versículos, interlinear, léxico grego/hebraico
+
+Domínios principais:
+
+| Domínio | Tabelas-chave |
+|---------|---------------|
+| Manuscritos | `manuscripts`, `manuscript_verses`, `coverage_by_century` |
+| Patrístico | `church_fathers`, `father_textual_statements` + traduções |
+| Concílios | `councils`, `sources`, `council_source_claims`, `council_canons` |
+| Heresias | `heresies`, `council_heresies`, `council_heretic_participants` |
+| Bíblia | `bible_versions`, `bible_verses`, `interlinear_words`, `greek_lexicon` |
+| Apologética | `apologetic_topics`, `apologetic_responses` + traduções |
+| Observatório | `visitor_sessions` (particionada), `page_views` (particionada) |
+| LLM | `llm_usage_logs`, `llm_prompt_queue` |
+
+Documentação completa: [`docs/database.md`](docs/database.md)
 
 ## Ingestão
 
-Orquestrada pelo `IngestionOrchestrator` no startup:
+4 pipelines independentes com 49 fases no total, orquestrados pelo `IngestionOrchestrator`:
 
-1. **Seed canônico**: 27 livros + 7.956 versículos (idempotente)
-2. **Manuscritos** (`ENABLE_MANUSCRIPT_INGESTION`): NTVMR API → TEI/XML → manuscript_verses
-3. **Patrístico** (`ENABLE_PATRISTIC_INGESTION`): 35 pais + 36 declarações + traduções (idempotente)
+| Pipeline | Fases | Descrição |
+|----------|-------|-----------|
+| **Manuscritos** | 4 | NTVMR API → TEI/XML → cobertura materializada |
+| **Patrístico** | 6 | Seed + traduções + biografias LLM + dating |
+| **Concílios** | 14 | 6 fontes acadêmicas → consenso ponderado → tradução |
+| **Bíblia** | 25 | 4 versões + interlinear grego/hebraico + léxico + alinhamento |
 
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `ENABLE_INGESTION` | `true` | Habilitar ingestão |
-| `ENABLE_MANUSCRIPT_INGESTION` | `true` | Ingestão de manuscritos |
-| `ENABLE_PATRISTIC_INGESTION` | `true` | Ingestão patrística |
-| `INGESTION_SKIP_IF_POPULATED` | `false` | Pular se banco já populado |
-| `USE_NTVMR` | `true` | Usar API NTVMR |
-| `NTVMR_DELAY_MS` | `500` | Delay entre requisições |
-| `LOAD_MANUSCRIPTS_FROM_NTVMR` | `false` | Carregar lista de manuscritos da API |
-| `INGESTION_TIMEOUT_MINUTES` | `30` | Timeout global |
+Fases LLM usam sistema de queue assíncrono: `_prepare` → `/run-llm` (Claude Code) → `_apply`.
+
+Documentação completa: [`docs/ingestion-pipelines.md`](docs/ingestion-pipelines.md)
 
 ## Regras de Negócio
 
@@ -122,7 +131,15 @@ Orquestrada pelo `IngestionOrchestrator` no startup:
 - Manuscritos até o século X são considerados
 - Seed patrístico idempotente via chave lógica
 
-## Documentação Adicional
+## Documentação
 
-- [`cursor.md`](cursor.md) — Documentação técnica completa
+- [`docs/architecture.md`](docs/architecture.md) — Arquitetura do sistema, stack, fluxos de dados
+- [`docs/backend.md`](docs/backend.md) — Backend Kotlin: packages, serviços, repositórios, LLM
+- [`docs/frontend.md`](docs/frontend.md) — Frontend Next.js: páginas, componentes, hooks, i18n
+- [`docs/database.md`](docs/database.md) — Esquema PostgreSQL: tabelas, migrations, índices
+- [`docs/api-reference.md`](docs/api-reference.md) — Referência completa da API REST (60+ endpoints)
+- [`docs/infrastructure.md`](docs/infrastructure.md) — Docker, scripts, variáveis de ambiente
+- [`docs/ingestion-pipelines.md`](docs/ingestion-pipelines.md) — Pipelines de ingestão (4 domínios, 49 fases)
+- [`docs/llm-concepts.md`](docs/llm-concepts.md) — Arquitetura LLM: tiers, queue, Kafka
+- [`docs/bible-interlinear-system.md`](docs/bible-interlinear-system.md) — Sistema interlinear grego/hebraico
 - [`docs/ingestion-architecture.md`](docs/ingestion-architecture.md) — Diagramas Mermaid do fluxo de ingestão

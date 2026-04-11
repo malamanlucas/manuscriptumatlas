@@ -1,0 +1,17 @@
+-- V18: Bible Text & Study module schema (documentation only)
+-- NOTE: Flyway does NOT run migrations at runtime.
+-- The actual schema is created by BibleFlywayConfig.kt via Exposed SchemaUtils
+-- against the bible_db database (separate from atlas_db/nt_coverage).
+--
+-- Tables created in bible_db:
+--   bible_versions          - KJV, ARC, ACF version metadata
+--   bible_books             - 66 books (39 OT + 27 NT)
+--   bible_book_abbreviations - Multi-locale abbreviations (Mt, Gn, Jo, etc.)
+--   bible_chapters          - Chapter metadata with verse counts
+--   bible_verses            - One row per verse (31,102 total)
+--   bible_verse_texts       - Actual translation text per version+verse
+--
+-- Future tables (Entrega 2):
+--   interlinear_words       - Word-by-word Greek/Hebrew with lemma + morphology
+--   greek_lexicon           - Strong's Greek dictionary (~5,600 entries)
+--   hebrew_lexicon          - Strong's Hebrew dictionary (~8,600 entries)

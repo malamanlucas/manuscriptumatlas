@@ -1,0 +1,31 @@
+# Bible Ingestion Filter
+# =====================
+# Controla quais livros/capítulos serão processados pelas fases de ingestão.
+# 
+# Formato:
+#   BookName           → todos os capítulos do livro
+#   BookName:3         → apenas capítulo 3
+#   BookName:1-5       → capítulos 1 a 5
+#   ALL                → todos os 66 livros (ignora o resto do arquivo)
+#
+# Linhas com # são ignoradas. Arquivo vazio = ALL.
+#
+# Exemplos:
+#   John               → todos os 21 capítulos de João
+#   John:1             → só João 1
+#   John:1-3           → João 1, 2 e 3
+#   Genesis:1          → Gênesis 1
+#   Matthew            → todo Mateus
+#
+# Fases afetadas:
+#   - Seed de livros/versículos/abreviações
+#   - Ingestão de texto (KJV, AA, ACF, ARC69)
+#   - Interlinear NT (TAGNT)
+#   - Tradução de glosses (IA)
+#
+# Fases NÃO afetadas (sempre globais):
+#   - Seed de versões
+#   - Léxico grego/hebraico
+#   - Tradução de léxico (IA)
+
+John

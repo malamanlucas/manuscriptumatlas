@@ -46,7 +46,7 @@ export default function MetricsPage() {
 
         {data && (
           <>
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("overallStabilization")}</h3>
               <p className="text-muted-foreground">
                 {t("stabilizationDescription", {
@@ -57,7 +57,7 @@ export default function MetricsPage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("coverageByCentury")}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -89,8 +89,8 @@ export default function MetricsPage() {
             </div>
 
             <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <h3 className="text-base font-semibold p-6 pb-0">{t("metricsByBook")}</h3>
-              <div className="overflow-x-auto p-6">
+              <h3 className="text-base font-semibold p-4 pb-0 md:p-6 md:pb-0">{t("metricsByBook")}</h3>
+              <div className="overflow-x-auto p-4 md:p-6">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">

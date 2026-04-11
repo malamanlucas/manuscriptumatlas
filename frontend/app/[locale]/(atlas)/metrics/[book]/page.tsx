@@ -57,7 +57,7 @@ export default function BookMetricsPage() {
 
         {data && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("keyMetrics")}</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
@@ -85,7 +85,7 @@ export default function BookMetricsPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("coverageByCentury")}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -115,7 +115,7 @@ export default function BookMetricsPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("centuryGrowthRate")}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">

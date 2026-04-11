@@ -20,14 +20,14 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-  "#06b6d4",
-  "#84cc16",
+  "#4a6fa5",
+  "#5a8a7a",
+  "#b8976a",
+  "#a65d57",
+  "#7a6e8a",
+  "#9e7b8a",
+  "#5e8e9e",
+  "#7a8e5a",
 ];
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -154,8 +154,8 @@ export function TimelineTab({ filters }: { filters: SessionFilters }) {
               <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke="#4a6fa5"
+                fill="#4a6fa5"
                 fillOpacity={0.2}
               />
             ) : (
@@ -212,7 +212,7 @@ export function TimelineTab({ filters }: { filters: SessionFilters }) {
                         key={hour}
                         className="flex-1 aspect-square m-0.5 rounded-sm"
                         style={{
-                          backgroundColor: `hsl(217, 91%, ${100 - intensity * 0.5}%)`,
+                          backgroundColor: `hsl(215, 30%, ${100 - intensity * 0.4}%)`,
                         }}
                         title={`${DAYS[dow]} ${hour}:00 — ${count}`}
                       />

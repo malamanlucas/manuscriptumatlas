@@ -13,11 +13,18 @@ description: Docker Compose structure and environment variables. Use when workin
 | init | postgres:16-alpine | Restore opcional via RESTORE_FILE (backups/) |
 | app | build: . | Backend Ktor (porta 8080) |
 | frontend | build: ./frontend | Next.js (porta 3000) |
+| prometheus | prom/prometheus:v3.2.1 | Coleta metricas (porta 9090) |
+| loki | grafana/loki:3.4.2 | Agregacao de logs (porta 3100) |
+| promtail | grafana/promtail:3.4.2 | Shipper de logs via Docker socket |
+| grafana | grafana/grafana:11.5.2 | Dashboards e visualizacao (porta 3001) |
 
 ## Volumes
 
 - `pgdata` — dados do PostgreSQL
 - `source-cache` — cache de fontes externas (scrapers)
+- `prometheus-data` — dados do Prometheus (metricas, retencao 15d)
+- `loki-data` — dados do Loki (logs)
+- `grafana-data` — dados do Grafana (dashboards customizados)
 
 ## Variáveis de ambiente (app)
 
@@ -26,7 +33,7 @@ Ingestão: `ENABLE_INGESTION`, `ENABLE_MANUSCRIPT_INGESTION`, `ENABLE_PATRISTIC_
 NTVMR: `USE_NTVMR`, `NTVMR_DELAY_MS`, `LOAD_MANUSCRIPTS_FROM_NTVMR`  
 OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT_MS`, `ENABLE_BIO_SUMMARIZATION`, `ENABLE_BIO_TRANSLATION`, `ENABLE_DATING_ENRICHMENT`  
 Auth: `GOOGLE_CLIENT_ID`  
-Outros: `SOURCE_CACHE_DIR`, `NEW_RELIC_ENVIRONMENT`
+Outros: `SOURCE_CACHE_DIR`
 
 ## Build args (frontend)
 

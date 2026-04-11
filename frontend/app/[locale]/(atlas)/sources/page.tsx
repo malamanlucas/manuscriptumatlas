@@ -14,7 +14,7 @@ export default function SourcesPage() {
       />
 
       <div className="mx-auto w-full max-w-3xl p-4 md:p-6 space-y-8">
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("primarySource")}
           </h2>
@@ -32,7 +32,7 @@ export default function SourcesPage() {
           </p>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("gregoryAland")}
           </h2>
@@ -50,7 +50,7 @@ export default function SourcesPage() {
           </p>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("datingMethodology")}
           </h2>
@@ -67,7 +67,7 @@ export default function SourcesPage() {
           </p>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("limitations")}
           </h2>
@@ -90,7 +90,7 @@ export default function SourcesPage() {
           </div>
         </section>
 
-        <section id="councilSources" className="rounded-xl border border-border bg-card p-6 scroll-mt-24">
+        <section id="councilSources" className="rounded-xl border border-border bg-card p-4 md:p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">
             {t("councilSources")}
           </h2>

@@ -1,6 +1,6 @@
 ---
 description: Convenções para migrações de banco e schema
-globs: "src/main/resources/db/migration/**/*.sql"
+globs: "backend/src/main/resources/db/migration/**/*.sql"
 alwaysApply: false
 ---
 
@@ -8,13 +8,13 @@ alwaysApply: false
 
 ## Localização
 
-`src/main/resources/db/migration/`
+`backend/src/main/resources/db/migration/`
 
 ## Nomenclatura
 
 `V{N}__{descricao_snake_case}.sql` (dois underscores após o número)
 
-## Migrações existentes
+## Migrações existentes (V1–V19)
 
 - `V1__create_tables.sql` — Tabelas base (books, verses, manuscripts, manuscript_verses, coverage_by_century)
 - `V2__add_indexes_for_type_filter.sql` — Índices para filtro por tipo
@@ -23,16 +23,18 @@ alwaysApply: false
 - `V5__create_book_translations.sql` — Traduções de nomes de livros (pt, es)
 - `V6__create_church_fathers.sql` — Pais da igreja + extensão pg_trgm + índices GIN
 - `V7__create_father_textual_statements.sql` — Declarações textuais + CHECK constraints + índices (B-tree, GIN trigram, composto)
-- `V8__create_church_father_translations.sql` — Traduções i18n: church_father_translations + father_statement_translations + índices de lookup + GIN trigram
-- `V9__extend_church_fathers_biography.sql` — Colunas de biografia em church_fathers (manner_of_death, biography_original, biography_summary, biography_summary_reviewed) e traduções correspondentes em church_father_translations
-- `V10__add_translation_source.sql` — Coluna translation_source em church_father_translations (seed vs. outra origem)
-- `V11__create_visitor_tracking.sql` — Tabelas particionadas visitor_sessions e page_views (RANGE by month), visitor_daily_stats, 15 índices estratégicos, função create_monthly_partitions()
-- `V12__create_users.sql` — Tabela users para autenticação Google SSO com RBAC (email unique, role CHECK ADMIN/MEMBER, timestamps)
-- `V13__add_year_dating_fields.sql` — Campos de datação por ano (year_min, year_max, year_best, dating_source, dating_reference, dating_confidence) em manuscripts e church_fathers + índices em year_best
+- `V8__create_church_father_translations.sql` — Traduções i18n: church_father_translations + father_statement_translations + índices
+- `V9__extend_church_fathers_biography.sql` — Colunas de biografia em church_fathers + traduções correspondentes
+- `V10__add_translation_source.sql` — Coluna translation_source em church_father_translations
+- `V11__create_visitor_tracking.sql` — Tabelas particionadas visitor_sessions e page_views (RANGE by month), visitor_daily_stats, 15 índices, função create_monthly_partitions()
+- `V12__create_users.sql` — Tabela users com RBAC (email unique, role CHECK ADMIN/MEMBER)
+- `V13__add_year_dating_fields.sql` — Campos de datação (year_min, year_max, year_best, dating_source, dating_reference, dating_confidence)
 - `V14__create_councils.sql` — Domínio de concílios: councils, traduções, vínculos com pais, fontes/claims e fases de ingestão
-- `V15__create_heresies_canons.sql` — Domínio de heresias e cânones: heresies, traduções, relação conselho↔heresia e council_canons
-- `V16__add_heresy_translation_source.sql` — Coluna translation_source em heresy_translations (seed, machine, reviewed)
-- `V17__create_council_heretic_participants.sql` — Tabela council_heretic_participants para hereges em concílios (texto; futura ingestão de pais hereges)
+- `V15__create_heresies_canons.sql` — Heresias e cânones: heresies, traduções, relação conselho<->heresia, council_canons
+- `V16__add_heresy_translation_source.sql` — Coluna translation_source em heresy_translations
+- `V17__create_council_heretic_participants.sql` — Tabela council_heretic_participants para hereges em concílios
+- `V18__create_llm_usage_logs.sql` — Tabela llm_usage_logs para rastreamento de chamadas LLM (provider, tokens, custo, latência)
+- `V19__create_bible_db_schema.sql` — Schema separado para módulo bíblico (bible_db)
 
 ## Regras
 
@@ -40,42 +42,40 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V18**
+- Próxima migração: **V20**
 
 ## IMPORTANTE — Flyway não executa migrations
 
-O Flyway **não aplica** as migrações em runtime (incompatibilidade de naming convention). O sistema depende inteiramente do **fallback em `FlywayConfig.kt`** para criar o schema. Isso significa que:
+O Flyway **não aplica** as migrações em runtime. O sistema depende inteiramente do **fallback em `FlywayConfig.kt`** para criar o schema:
 
-- A migration `.sql` serve como **documentação e referência**, mas **nunca roda automaticamente**.
-- Toda estrutura de banco precisa ter um caminho de criação no fallback Kotlin.
-- Se algo só existir no `.sql` e não no fallback, **não será criado** e haverá erro em runtime.
+- A migration `.sql` serve como **documentação e referência**, mas **nunca roda automaticamente**
+- Toda estrutura de banco precisa ter um caminho de criação no fallback Kotlin
+- Se algo só existir no `.sql` e não no fallback, **não será criado** e haverá erro em runtime
 
-## ⚠️ Erro comum: tabela não registrada no FlywayConfig
+## Erro comum: tabela não registrada no FlywayConfig
 
-Se uma tabela existe em `Tables.kt` e na migration `.sql` mas **não está no `SchemaUtils.createMissingTablesAndColumns()`** em `FlywayConfig.kt`, ela **não será criada** e causará `PSQLException: relation "xxx" does not exist` em runtime. Este é o erro mais frequente ao adicionar novas tabelas — **sempre verificar o registro no FlywayConfig**.
+Se uma tabela existe em `Tables.kt` e na migration `.sql` mas **não está no `SchemaUtils.createMissingTablesAndColumns()`** em `FlywayConfig.kt`, ela **não será criada** e causará `PSQLException: relation "xxx" does not exist` em runtime.
 
-## Checklist obrigatório para toda nova tabela/estrutura
+## Checklist por tipo de estrutura
 
 ### Tabelas normais (sem particionamento)
-1. Criar a migração SQL em `V{N}__...sql` (referência)
+1. Criar migração SQL `V{N}__...sql`
 2. Criar objeto `Table` em `Tables.kt`
-3. **Registrar na lista do `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`** ← passo mais esquecido
+3. **Registrar no `SchemaUtils.createMissingTablesAndColumns()` em `FlywayConfig.kt`** <-- passo mais esquecido
 4. Se necessário, adicionar índices em `applyExtraIndexesAndConstraints()`
 
 ### Tabelas particionadas (PARTITION BY RANGE/LIST/HASH)
-**SchemaUtils NÃO suporta tabelas particionadas.** Elas precisam ser criadas via SQL raw no fallback.
+SchemaUtils NÃO suporta tabelas particionadas. Criar via SQL raw no fallback:
 
-1. Criar a migração SQL em `V{N}__...sql` (referência)
-2. Criar objeto `Table` em `Tables.kt` (apontando para a tabela pai — Exposed faz queries normalmente)
-3. **NÃO registrar** no `SchemaUtils.createMissingTablesAndColumns()`
-4. Adicionar criação via `exec(SQL)` dentro de `createVisitorPartitionedTables()` (ou método equivalente) em `FlywayConfig.kt`
-5. Verificar se a tabela já existe antes de criar (`SELECT 1 FROM pg_class WHERE relname = '...' AND relkind = 'p'`)
-6. Criar as partições iniciais (mínimo: mês atual + 2 meses à frente)
-7. Criar a função SQL de auto-particionamento se aplicável
-8. Criar os índices via `exec()` em método próprio (ex: `applyVisitorIndexes()`)
+1. Criar migração SQL `V{N}__...sql`
+2. Criar objeto `Table` em `Tables.kt` (apontando para tabela pai)
+3. **NÃO registrar** no SchemaUtils
+4. Criar via `exec(SQL)` em `FlywayConfig.kt` (verificar existência com `pg_class`)
+5. Criar partições iniciais (mês atual + 2 meses)
+6. Criar função de auto-particionamento e índices via `exec()`
 
 ### Funções SQL (PL/pgSQL)
-Se a migration define funções SQL (`CREATE OR REPLACE FUNCTION`), elas também precisam ser criadas no fallback Kotlin, pois o Flyway não as executa.
+Também precisam ser criadas no fallback Kotlin via `exec()`.
 
 ## Padrão de verificação de existência
 
@@ -90,18 +90,19 @@ val exists = exec("SELECT 1 FROM pg_class WHERE relname = 'nome_tabela' AND relk
 exec("CREATE INDEX IF NOT EXISTS idx_nome ON tabela (coluna)")
 ```
 
-## Tabelas no SchemaUtils (apenas tabelas normais)
+## Tabelas no SchemaUtils (26 tabelas normais)
 
 ```
 Books, Verses, Manuscripts, ManuscriptSources, ManuscriptVerses,
 CoverageByCentury, IngestionMetadata, BookTranslations, ChurchFathers,
 FatherTextualStatements, ChurchFatherTranslations, FatherStatementTranslations,
-Councils, CouncilTranslations, CouncilFathers, CouncilHereticParticipants, Heresies, HeresyTranslations,
-CouncilHeresies, CouncilCanons, Sources, CouncilSourceClaims, CouncilIngestionPhases,
-VisitorDailyStats, Users
+Councils, CouncilTranslations, CouncilFathers, CouncilHereticParticipants,
+Heresies, HeresyTranslations, CouncilHeresies, CouncilCanons,
+Sources, CouncilSourceClaims, CouncilIngestionPhases,
+VisitorDailyStats, Users, LlmUsageLogs
 ```
 
-## Tabelas criadas via SQL raw no fallback (particionadas)
+## Tabelas criadas via SQL raw (particionadas)
 
 ```
 visitor_sessions  — createVisitorPartitionedTables()
@@ -109,3 +110,7 @@ page_views        — createVisitorPartitionedTables()
 + função create_monthly_partitions()
 + 14 índices via applyVisitorIndexes()
 ```
+
+## Bible module (schema separado)
+
+Tabelas do módulo bíblico gerenciadas por `BibleDatabaseConfig` em schema separado (`bible_db`).

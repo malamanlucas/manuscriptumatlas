@@ -175,7 +175,7 @@ function AccordionItem({ item }: { item: FaqItem }) {
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium hover:bg-muted/30 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-muted/30 transition-colors md:px-5 md:py-4"
       >
         <span>{item.question}</span>
         <ChevronDown
@@ -186,7 +186,7 @@ function AccordionItem({ item }: { item: FaqItem }) {
         />
       </button>
       {open && (
-        <div className="border-t border-border px-5 py-4 text-sm text-muted-foreground leading-relaxed">
+        <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground leading-relaxed md:px-5 md:py-4">
           {item.answer}
         </div>
       )}

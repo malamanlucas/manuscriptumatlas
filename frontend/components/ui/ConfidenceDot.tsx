@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 
 const dotColors: Record<string, string> = {
-  HIGH: "bg-emerald-500",
-  MEDIUM: "bg-amber-500",
-  LOW: "bg-red-500",
+  HIGH: "bg-[#5a8a7a]",
+  MEDIUM: "bg-[#b8976a]",
+  LOW: "bg-[#a65d57]",
 };
 
 interface ConfidenceDotProps {

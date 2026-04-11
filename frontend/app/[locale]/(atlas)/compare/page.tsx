@@ -40,19 +40,19 @@ export default function ComparePage() {
       series.push({
         label: tc("papyri"),
         entries: papyrusData.entries,
-        color: "#3b82f6",
+        color: "#4a6fa5",
       });
     if (uncialData)
       series.push({
         label: tc("uncials"),
         entries: uncialData.entries,
-        color: "#ef4444",
+        color: "#a65d57",
       });
     if (allData)
       series.push({
         label: t("combined"),
         entries: allData.entries,
-        color: "#10b981",
+        color: "#5a8a7a",
       });
     return series;
   };
@@ -63,25 +63,25 @@ export default function ComparePage() {
       series.push({
         label: tBooks("Matthew"),
         entries: matthewData.entries,
-        color: "#3b82f6",
+        color: "#4a6fa5",
       });
     if (markData)
       series.push({
         label: tBooks("Mark"),
         entries: markData.entries,
-        color: "#ef4444",
+        color: "#a65d57",
       });
     if (lukeData)
       series.push({
         label: tBooks("Luke"),
         entries: lukeData.entries,
-        color: "#10b981",
+        color: "#5a8a7a",
       });
     if (johnData)
       series.push({
         label: tBooks("John"),
         entries: johnData.entries,
-        color: "#f59e0b",
+        color: "#b8976a",
       });
     return series;
   };
@@ -92,25 +92,25 @@ export default function ComparePage() {
       series.push({
         label: tBooks("Romans"),
         entries: romansData.entries,
-        color: "#8b5cf6",
+        color: "#7a6e8a",
       });
     if (hebrewsData)
       series.push({
         label: tBooks("Hebrews"),
         entries: hebrewsData.entries,
-        color: "#ec4899",
+        color: "#9e7b8a",
       });
     if (revelationData)
       series.push({
         label: tBooks("Revelation"),
         entries: revelationData.entries,
-        color: "#14b8a6",
+        color: "#5e8e9e",
       });
     if (johnData)
       series.push({
         label: tBooks("John"),
         entries: johnData.entries,
-        color: "#f59e0b",
+        color: "#b8976a",
       });
     return series;
   };
@@ -148,7 +148,7 @@ export default function ComparePage() {
       <Header title={t("title")} subtitle={t("subtitle")} />
 
       <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="flex flex-wrap gap-2">
             {presets.map((p) => (
               <button
@@ -167,7 +167,7 @@ export default function ComparePage() {
         </div>
 
         {series.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-xl border border-border bg-card p-4 md:p-6">
             <h2 className="mb-4 text-base font-semibold">
               {preset === "papyrus-vs-uncial"
                 ? t("papyriVsUncialsVsCombined")
@@ -232,7 +232,7 @@ export default function ComparePage() {
         )}
 
         {preset === "gospels-vs-epistles" && (
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-xl border border-border bg-card p-4 md:p-6">
             <h2 className="mb-4 text-base font-semibold">
               {t("gospelCoverageSummary")}
             </h2>

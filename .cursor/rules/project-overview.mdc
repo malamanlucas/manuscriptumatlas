@@ -5,13 +5,15 @@ alwaysApply: true
 
 # Manuscriptum Atlas
 
-Sistema de análise de cobertura textual do Novo Testamento grego, baseado em manuscritos históricos e testemunhos patrísticos. Calcula métricas de cobertura acumulativa por século e livro, e cataloga declarações dos Pais da Igreja sobre transmissão textual.
+Sistema de análise de cobertura textual do Novo Testamento grego — manuscritos históricos, testemunhos patrísticos, concílios, heresias e módulo bíblico. Métricas de cobertura acumulativa por século/livro, com ingestão multi-fonte e suporte LLM multi-provider.
 
 ## Stack
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
 - **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / Recharts / Leaflet + react-leaflet / TanStack Query / next-intl
-- **Infra:** Docker Compose (postgres + init + app + frontend)
+- **LLM:** Anthropic Claude Opus 4.6 (primário) + OpenAI GPT-5.4 (fallback) + DeepSeek + OpenRouter via `LlmOrchestrator`
+- **Infra:** Docker Compose (postgres + init + app + frontend + prometheus + grafana + loki + promtail)
+- **Observability:** Prometheus + Grafana (porta 3001) + Loki + Micrometer + structured JSON logging
 
 ## Arquitetura em camadas
 
@@ -23,18 +25,53 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 
 | Pacote | Responsabilidade |
 |--------|------------------|
-| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 6 arquivos |
-| `model` | Tables (27 tabelas Exposed) e DTOs (87 `@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` (18 repositórios) |
-| `service` | Lógica de negócio e orquestração (20 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (10 arquivos de rotas, 67 endpoints) |
+| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 8 arquivos |
+| `model` | Tables (28 tabelas Exposed) e DTOs (113 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (24 repositórios) |
+| `service` | Lógica de negócio e orquestração (26 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (11 arquivos de rotas, 100 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
-| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 14 arquivos |
+| `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 17 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
 
-## Tabelas do banco
+## Estrutura do projeto
 
-`books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`, `church_fathers`, `father_textual_statements`, `church_father_translations`, `father_statement_translations`, `councils`, `council_translations`, `council_fathers`, `heresies`, `heresy_translations`, `council_heresies`, `council_canons`, `council_heretic_participants`, `sources`, `council_source_claims`, `council_ingestion_phases`, `visitor_sessions`, `page_views`, `users`, `visitor_daily_stats`
+```
+manuscriptumatlas/
+  backend/         <- Kotlin/Ktor (src/, build.gradle.kts, Dockerfile)
+  frontend/        <- Next.js/React (app/, components/, hooks/, lib/, types/)
+  deploy/          <- Docker Compose, nginx, setup scripts
+  scripts/         <- Shell scripts operacionais
+  docs/            <- Documentação e planos
+```
+
+## Tabelas do banco (28)
+
+**Core:** `books`, `verses`, `manuscripts`, `manuscript_sources`, `manuscript_verses`, `coverage_by_century`, `ingestion_metadata`, `book_translations`
+
+**Patrística:** `church_fathers`, `church_father_translations`, `father_textual_statements`, `father_statement_translations`
+
+**Concílios:** `councils`, `council_translations`, `council_fathers`, `heresies`, `heresy_translations`, `council_heresies`, `council_canons`, `council_heretic_participants`, `sources`, `council_source_claims`, `council_ingestion_phases`
+
+**Infraestrutura:** `visitor_sessions` (particionada), `page_views` (particionada), `visitor_daily_stats`, `users`, `llm_usage_logs`
+
+**Bible module:** schema separado (`bible_db`)
+
+## Rotas do backend (11 arquivos)
+
+| Arquivo | Prefixo | Auth |
+|---------|---------|------|
+| `CoverageRoutes` | `/coverage` | Público |
+| `StatsRoutes` | `/stats` | Público |
+| `ManuscriptRoutes` | `/manuscripts` | Público |
+| `MetricsRoutes` | `/metrics` | Público |
+| `VerseRoutes` | `/verses` | Público |
+| `ChurchFatherRoutes` | `/fathers` | Público |
+| `CouncilRoutes` | `/councils` | Público |
+| `BibleRoutes` | `/bible` | Público |
+| `AuthRoutes` | `/auth` | Misto |
+| `VisitorRoutes` | `/visitor` | Misto |
+| `AdminRoutes` | `/admin` | JWT Admin |
 
 ## Conceitos de domínio
 
@@ -42,39 +79,52 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 - **Cobertura acumulativa**: século N inclui todos os séculos anteriores
 - **Tipos**: papyrus, uncial, minuscule, lectionary
 - **NTVMR**: API do INTF Münster para dados de manuscritos
-- **Ranges de versículos**: strings como "1:1-5" expandidas em versículos individuais
 - **TextualTopic**: MANUSCRIPTS, AUTOGRAPHS, APOCRYPHA, CANON, TEXTUAL_VARIANTS, TRANSLATION, CORRUPTION, SCRIPTURE_AUTHORITY
-- **Tradição patrística**: greek, latin, syriac, etc.
-- **pg_trgm**: busca fuzzy com trigram similarity para declarações textuais
-- **Observatory**: sistema de observabilidade de visitantes com rastreamento de sessões, page views, fingerprinting e dashboard multi-tab
-- **Particionamento mensal**: tabelas `visitor_sessions` e `page_views` particionadas por RANGE em `created_at`
-- **RetentionScheduler**: job diário que cria partições futuras, dropa partições > 90 dias e agrega stats em `visitor_daily_stats`
-- **Rate Limiting**: SimpleRateLimiter in-memory para endpoints de tracking (session, heartbeat, pageview)
-- **Google SSO + RBAC**: autenticação via Google JWT (resource-server only), tabela `users` com role tipado (`UserRole.ADMIN`/`MEMBER`), cache in-memory 5min
-- **UserRole**: ADMIN (acesso total) ou MEMBER (páginas públicas, sem Observatory/Ingestion/User Management)
-- **AuthGate**: componente React reutilizável que protege páginas admin (login Google + verificação de role)
-- **Sidebar reorganizada**: 5 grupos (Analysis, Patristic, Reference, Books, Administration); grupo Administration visível apenas para ADMIN
-- **Dating enrichment**: datação por ano (year_min, year_max, year_best) para manuscritos e pais da igreja; fontes: NTVMR (confidence=HIGH), seed (MEDIUM), OpenAI (LOW)
-- **DatingConfidence**: HIGH (NTVMR/fonte acadêmica primária), MEDIUM (seed curado), LOW (OpenAI, até validação manual)
-- **DatingEnrichmentService**: enriquecimento sob demanda via OpenAI para obter anos de datação; disparado manualmente via `POST /admin/enrich-dating`
-- **Church Councils**: domínio histórico com concílios até 1000 d.C. (ecumênicos/regionais/locais), heresias associadas, cânones e vínculos com Pais da Igreja
-- **Ingestão multi-fonte de concílios**: seed curado + extratores (Schaff, Hefele, Catholic Encyclopedia, Fordham, Wikidata, Wikipedia) com execução em fases e controle manual no admin
-- **Source Consensus Engine**: consolidação de claims por peso de fonte, score de confiança e resolução de conflito com fallback determinístico
+- **pg_trgm**: busca fuzzy com trigram similarity
+- **Observatory**: observabilidade de visitantes (sessões, page views, fingerprinting, dashboard multi-tab)
+- **Particionamento mensal**: `visitor_sessions` e `page_views` por RANGE em `created_at`
+- **RetentionScheduler**: job diário — cria partições futuras, dropa > 90 dias, agrega stats
+- **Google SSO + RBAC**: UserRole.ADMIN (acesso total) / MEMBER (páginas públicas)
+- **AuthGate**: componente React que protege páginas admin (fullscreen loading bloqueante)
+- **Dating enrichment**: datação por ano com DatingConfidence (HIGH/MEDIUM/LOW)
+- **Church Councils**: concílios até 1000 d.C., heresias, cânones, vínculos patrísticos
+- **Source Consensus Engine**: consolidação de claims por peso/score/fallback determinístico
+- **LlmOrchestrator**: abstração multi-provider (Anthropic primário, OpenAI/DeepSeek/OpenRouter fallback) com rate limiting
+- **LlmUsageLogs**: rastreamento de chamadas LLM (provider, tokens, custo, latência)
+- **IngestionPhaseTracker**: rastreamento persistente de fases de ingestão com recuperação de fases stuck
+- **Bible module**: leitor bíblico com busca, comparação, interlinear grego-português e concordância Strong's (DB separado: `bible_db`). Interlinear usa TAGNT + tradução de glosses via LLM (JSON-first parsing) + alinhamento grego→tradução via LLM. `processGlossResponse()` com guard contra gap-filling em JSON.
+- **Wiki-LLM**: página de documentação da arquitetura LLM do sistema
+
+## Pipelines de ingestão
+
+### Manuscritos (3 fases)
+`manuscript_load_catalog` -> `manuscript_fetch_content` -> `manuscript_link_verses`
+
+### Patrística (5 fases)
+`patristic_seed_fathers` -> `patristic_seed_statements` -> `patristic_translate_fathers` -> `patristic_translate_statements` -> `patristic_translate_biographies`
+
+### Concílios (11 fases)
+`council_seed` -> `council_extract_schaff` / `hefele` / `catholic_enc` / `fordham` -> `council_extract_wikidata` -> `council_extract_wikipedia` -> `council_consensus` -> `council_summaries` -> `council_translate_all` -> `heresy_translate_all`
+
+### Bíblia (13 fases)
+Seeds → texto (KJV/AA/ACF/ARC69) → interlinear TAGNT → léxico grego/hebraico → `bible_translate_glosses` (LLM, JSON-first) → `bible_translate_lexicon` (LLM). Filtro por livro/capítulo via `bible-ingestion-filter.txt`.
 
 ## Padrões importantes
 
-- **Flyway NÃO executa migrations** — toda estrutura de banco é criada pelo fallback em `FlywayConfig.kt`. As migrations `.sql` servem apenas como documentação. Tabelas normais vão no `SchemaUtils`; tabelas particionadas e funções SQL precisam de `exec(SQL)` raw no fallback. **Se algo só existir no `.sql`, não será criado e dará erro em runtime.**
-- Seed de pais/declarações é idempotente (chave lógica: fatherId + sourceWork + sourceReference)
-- Rotas literais (`/fathers/statements`) devem ser declaradas antes de rotas dinâmicas (`/fathers/{id}`) no Ktor
-- Queries paginadas usam ORDER BY determinístico (`approximate_year ASC NULLS LAST, id ASC`)
+- **Flyway NÃO executa migrations** — toda estrutura de banco é criada pelo fallback em `FlywayConfig.kt`. Migrations `.sql` = documentação.
+- Rotas literais (`/fathers/statements`) ANTES de dinâmicas (`/fathers/{id}`) no Ktor
+- Seed idempotente (chaves lógicas por domínio)
+- Queries paginadas com ORDER BY determinístico
 
-## Checklist obrigatório para toda nova feature
+## Checklist obrigatório por feature
 
-Toda feature deve considerar, sem exceção:
-1. **i18n** — textos visíveis ao usuário devem estar nos 3 arquivos de mensagens (pt, en, es); dados do backend devem suportar `?locale=` quando aplicável
-2. **Responsividade** — layouts devem funcionar em mobile, tablet e desktop; usar classes responsivas do Tailwind (`sm:`, `md:`, `lg:`) e testar em telas pequenas
+1. **i18n** — textos nos 3 locales (pt, en, es); backend com `?locale=` quando aplicável
+2. **Responsividade** — mobile, tablet e desktop; testar em 320px
+3. **Tema** — light e dark mode
+4. **Tipos** — TypeScript sem `any`
+5. **Loading/Error** — estados tratados
 
 ## Idioma
 
-- Código-fonte, variáveis e nomes de classes: **inglês**
+- Código-fonte, variáveis e classes: **inglês**
 - Comunicação com o usuário: **português**

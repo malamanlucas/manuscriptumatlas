@@ -30,3 +30,15 @@ get("/fathers/{id}") { ... }         // DEPOIS
 ## Quick-fix: Novo domínio completo
 
 Ver checklist de 10 passos em `kotlin-conventions.mdc` seção "Registrar novos domínios".
+
+## Parsing de resposta LLM (padrão JSON-first)
+
+Ao processar respostas LLM que devem ser JSON `{key: value}`:
+
+1. **Tentar JSON parsing primeiro** (`tryParseJsonGlosses`) — key-based matching robusto
+2. **Se JSON parcial**, retornar apenas os matched — nunca preencher gaps com line-by-line
+3. **Se conteúdo parece JSON mas nada matchou**, retornar vazio (não cair em fallback posicional)
+4. **Line-by-line** somente para respostas genuinamente plain-text (sem `{` ou `}`)
+
+Referência: `BibleIngestionService.processGlossResponse()` — corrigido em 2026-04 para evitar
+armazenamento de fragmentos JSON como dados válidos.

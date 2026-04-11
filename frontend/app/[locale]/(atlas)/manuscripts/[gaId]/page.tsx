@@ -48,7 +48,7 @@ export default function ManuscriptDetailPage() {
 
         {data && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-xs text-muted-foreground">{tc("gaId")}</p>
@@ -102,7 +102,7 @@ export default function ManuscriptDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("booksPreserved")}</h3>
               <div className="space-y-4">
                 {data.booksPreserved.map((br) => (
@@ -116,7 +116,7 @@ export default function ManuscriptDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">{t("intervalsSummary")}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">

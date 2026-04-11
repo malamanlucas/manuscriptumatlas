@@ -36,7 +36,7 @@ export default function ManuscriptsPage() {
       />
 
       <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end md:justify-between">
             <div className="flex shrink-0 gap-2">
               <button
@@ -91,7 +91,7 @@ export default function ManuscriptsPage() {
                 ))}
               </select>
             </div>
-            <div className="min-w-[200px] shrink-0">
+            <div className="min-w-0 w-full shrink-0 md:min-w-[200px] md:w-auto">
               <label className="mb-1 block text-xs font-medium text-muted-foreground whitespace-nowrap">
                 {t("yearFilter")}
               </label>

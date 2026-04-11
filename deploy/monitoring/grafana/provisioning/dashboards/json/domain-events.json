@@ -1,0 +1,129 @@
+{
+  "uid": "domain-events",
+  "title": "Domain Events & Audit",
+  "tags": ["manuscriptum", "events"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "NT Coverage Overview",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT b.name AS \"Book\", COUNT(DISTINCT mv.manuscript_id) AS \"Manuscripts\", COUNT(DISTINCT mv.verse_id) AS \"Verses Covered\", (SELECT COUNT(*) FROM verses v WHERE v.book_id = b.id) AS \"Total Verses\", ROUND(COUNT(DISTINCT mv.verse_id) * 100.0 / NULLIF((SELECT COUNT(*) FROM verses v WHERE v.book_id = b.id), 0), 1) AS \"Coverage %\" FROM books b LEFT JOIN manuscript_verses mv ON mv.verse_id IN (SELECT id FROM verses WHERE book_id = b.id) GROUP BY b.id, b.name ORDER BY b.id LIMIT 27",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Coverage %" }, "properties": [{ "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } }, { "id": "min", "value": 0 }, { "id": "max", "value": 100 }, { "id": "thresholds", "value": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 90 }] } }] }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Manuscripts by Type",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT manuscript_type AS \"Type\", COUNT(*) AS \"Count\" FROM manuscripts GROUP BY manuscript_type ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Manuscripts by Century",
+      "type": "barchart",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT effective_century::text || 'th' AS \"Century\", COUNT(*) AS \"Manuscripts\" FROM manuscripts WHERE effective_century IS NOT NULL GROUP BY effective_century ORDER BY effective_century",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Church Fathers by Tradition",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COALESCE(tradition, 'Unknown') AS \"Tradition\", COUNT(*) AS \"Count\" FROM church_fathers GROUP BY tradition ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Textual Statements by Topic",
+      "type": "barchart",
+      "gridPos": { "h": 6, "w": 8, "x": 6, "y": 6 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT topic AS \"Topic\", COUNT(*) AS \"Statements\" FROM father_textual_statements GROUP BY topic ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Councils by Type",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 5, "x": 14, "y": 6 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT council_type AS \"Type\", COUNT(*) AS \"Count\" FROM councils GROUP BY council_type ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 7,
+      "title": "Users",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 5, "x": 19, "y": 6 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT role AS \"Role\", COUNT(*) AS \"Count\" FROM users GROUP BY role ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 8,
+      "title": "Audit Events",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{container=~\".*app.*\"} |~ \"(AUDIT:|user_created|user_role_changed|user_deleted)\"",
+        "legendFormat": ""
+      }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    },
+    {
+      "id": 9,
+      "title": "Retention Job Logs",
+      "type": "logs",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 20 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{container=~\".*app.*\"} |~ \"RETENTION\"",
+        "legendFormat": ""
+      }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    },
+    {
+      "id": 10,
+      "title": "Application Warnings & Errors",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{container=~\".*app.*\"} | json | level =~ \"WARN|ERROR\"",
+        "legendFormat": ""
+      }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    }
+  ],
+  "schemaVersion": 39
+}

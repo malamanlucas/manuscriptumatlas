@@ -3,7 +3,6 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["newrelic", "@newrelic/next"],
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
     return [

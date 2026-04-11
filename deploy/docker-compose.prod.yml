@@ -1,0 +1,82 @@
+services:
+  postgres:
+    ports: !override
+      - "35857:5432"
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: "jK5KSAktJtLbCwbVFy4X5YXvIgpGEHR"
+    shm_size: "128mb"
+
+  app:
+    ports: !override
+      - "35856:8080"
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "jdbc:postgresql://postgres:5432/nt_coverage"
+      DATABASE_USER: "postgres"
+      DATABASE_PASSWORD: "jK5KSAktJtLbCwbVFy4X5YXvIgpGEHR"
+      JAVA_OPTS: "-Xms128m -Xmx512m"
+      USE_NTVMR: "true"
+      NTVMR_DELAY_MS: "100"
+      ENABLE_INGESTION: "true"
+      ENABLE_MANUSCRIPT_INGESTION: "true"
+      ENABLE_PATRISTIC_INGESTION: "true"
+      INGESTION_SKIP_IF_POPULATED: "true"
+      INGESTION_TIMEOUT_MINUTES: "30"
+      LOAD_MANUSCRIPTS_FROM_NTVMR: "true"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      OPENAI_MODEL: "gpt-5.4"
+      OPENAI_TIMEOUT_MS: "12000"
+      ENABLE_BIO_SUMMARIZATION: "true"
+      ENABLE_BIO_TRANSLATION: "true"
+      ENABLE_DATING_ENRICHMENT: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  frontend:
+    ports: !override
+      - "35855:3000"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  prometheus:
+    ports: !override
+      - "127.0.0.1:9091:9090"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  loki:
+    ports: !override
+      - "127.0.0.1:3100:3100"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  promtail:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  grafana:
+    ports: !override
+      - "127.0.0.1:3001:3000"
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-changeme}"
+    deploy:
+      resources:
+        limits:
+          memory: 256M

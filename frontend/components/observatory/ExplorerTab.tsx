@@ -111,9 +111,9 @@ export function ExplorerTab({ filters }: { filters: SessionFilters }) {
               <th className="px-3 py-2.5">{t("table.browser")}</th>
               <th className="px-3 py-2.5">OS</th>
               <th className="px-3 py-2.5">{t("table.device")}</th>
-              <th className="px-3 py-2.5">{t("table.language")}</th>
-              <th className="px-3 py-2.5">{t("table.timezone")}</th>
-              <th className="px-3 py-2.5">{t("table.loadTime")}</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">{t("table.language")}</th>
+              <th className="hidden px-3 py-2.5 lg:table-cell">{t("table.timezone")}</th>
+              <th className="hidden px-3 py-2.5 sm:table-cell">{t("table.loadTime")}</th>
               <th className="px-3 py-2.5">{t("table.created")}</th>
             </tr>
           </thead>
@@ -136,11 +136,11 @@ export function ExplorerTab({ filters }: { filters: SessionFilters }) {
                 </td>
                 <td className="px-3 py-2">{s.osName ?? "—"}</td>
                 <td className="px-3 py-2">{s.deviceType ?? "—"}</td>
-                <td className="px-3 py-2">{s.language ?? "—"}</td>
-                <td className="px-3 py-2 truncate max-w-[120px]">
+                <td className="hidden px-3 py-2 md:table-cell">{s.language ?? "—"}</td>
+                <td className="hidden px-3 py-2 truncate max-w-[120px] lg:table-cell">
                   {s.timezone ?? "—"}
                 </td>
-                <td className="px-3 py-2">
+                <td className="hidden px-3 py-2 sm:table-cell">
                   {s.pageLoadTimeMs ? `${s.pageLoadTimeMs}ms` : "—"}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">

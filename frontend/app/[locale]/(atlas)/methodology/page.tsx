@@ -20,7 +20,7 @@ export default function MethodologyPage() {
 
       <div className="mx-auto w-full max-w-3xl p-4 md:p-6 space-y-8">
         {/* Section 1 — Overview */}
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">{t("overviewTitle")}</h2>
           <div className="space-y-3 text-muted-foreground leading-relaxed">
             <p>
@@ -36,7 +36,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Section 2 — Manuscript Sources */}
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("manuscriptSourcesTitle")}
           </h2>
@@ -68,7 +68,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Section 3 — Patristic Sources */}
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("patristicSourcesTitle")}
           </h2>
@@ -97,7 +97,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Section 4 — Confidence Levels */}
-        <section id="confidence" className="rounded-xl border border-border bg-card p-6 scroll-mt-6">
+        <section id="confidence" className="rounded-xl border border-border bg-card p-4 md:p-6 scroll-mt-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("confidenceTitle")}
           </h2>
@@ -172,7 +172,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Section 5 — yearBest */}
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">{t("yearBestTitle")}</h2>
           <div className="space-y-3 text-muted-foreground leading-relaxed">
             <p>
@@ -193,7 +193,7 @@ export default function MethodologyPage() {
         </section>
 
         {/* Section 6 — Enrichment Process */}
-        <section className="rounded-xl border border-border bg-card p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-semibold mb-4">
             {t("enrichmentTitle")}
           </h2>

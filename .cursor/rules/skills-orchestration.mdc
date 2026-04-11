@@ -5,20 +5,38 @@ alwaysApply: true
 
 # Orquestração de Skills
 
-Antes de implementar, identificar o tipo de solicitação e aplicar as skills nesta ordem (ler cada uma antes de editar):
+Antes de implementar, identificar o tipo de solicitação e aplicar as skills nesta ordem:
 
 | Tipo | Ordem |
 |------|-------|
-| Novo domínio completo | architecture-layers → database-postgres → backend-kotlin → frontend-patterns → i18n-translations |
-| Nova tabela/schema | architecture-layers → database-postgres → backend-kotlin |
-| Novo endpoint/serviço | architecture-layers → backend-kotlin |
-| Alteração de schema | database-postgres → backend-kotlin |
-| Layout/UI/responsividade | frontend-responsiveness |
-| Tradução/i18n | i18n-translations |
-| Ingestão/pipeline | ingestion-pipeline |
-| Novo componente/página | frontend-patterns → i18n-translations |
-| Docker/infra | infra-docker |
-| Bug backend | backend-kotlin |
-| Bug banco | database-postgres → backend-kotlin |
+| Novo domínio completo | arquitetura -> banco -> backend -> frontend -> i18n |
+| Nova tabela/schema | arquitetura -> banco -> backend |
+| Novo endpoint/serviço | arquitetura -> backend |
+| Alteração de schema | banco -> backend |
+| Novo componente/página | frontend -> i18n |
+| Layout/UI/responsividade | frontend |
+| Tradução/i18n | i18n |
+| Ingestão/pipeline | ingestion |
+| Docker/infra | docker |
+| Bug backend | backend |
+| Bug banco | banco -> backend |
+| Testes | testing |
 
-Regra: features que atravessam camadas — seguir ordem arquitetura → banco → backend → frontend → infra.
+Regra: features que atravessam camadas — seguir ordem arquitetura -> banco -> backend -> frontend -> infra.
+
+## Detecção de contexto
+
+| Contexto detectado | Skill |
+|-------------------|-------|
+| Kotlin, Ktor, endpoint, service, repository, route | backend |
+| Tabela, migration, schema, coluna, PostgreSQL, Flyway | database |
+| Componente, React, hook, página, layout, responsividade | frontend |
+| Tradução, locale, i18n, mensagens, idioma | i18n |
+| Ingestão, ingestion, pipeline, scraper, fases, enriquecimento | ingestion |
+| Docker, compose, infra, deploy, variável de ambiente | docker |
+| Testes, test, E2E, Playwright, Vitest, Testing Library | testing |
+
+## Não carregar skills para
+
+- Dúvidas, explicações ou perguntas conceituais — responder diretamente
+- Tarefas puramente de leitura/exploração do código

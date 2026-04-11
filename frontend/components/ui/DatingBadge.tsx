@@ -12,9 +12,9 @@ interface DatingBadgeProps {
 }
 
 const confidenceStyles: Record<string, string> = {
-  HIGH: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  MEDIUM: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  LOW: "bg-red-500/15 text-red-400 border-red-500/30",
+  HIGH: "bg-[#5a8a7a]/15 text-[#5a8a7a] border-[#5a8a7a]/30",
+  MEDIUM: "bg-[#b8976a]/15 text-[#b8976a] border-[#b8976a]/30",
+  LOW: "bg-[#a65d57]/15 text-[#a65d57] border-[#a65d57]/30",
 };
 
 export function DatingBadge({
@@ -51,7 +51,7 @@ export function DatingBadge({
         )}
 
         {confidence === "LOW" && (
-          <span className="text-[11px] text-red-400/80">{t("aiGenerated")}</span>
+          <span className="text-[11px] text-[#a65d57]/80">{t("aiGenerated")}</span>
         )}
 
         {datingSource && (

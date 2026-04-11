@@ -15,17 +15,17 @@ import { ConfidenceDot } from "@/components/ui/ConfidenceDot";
 type TraditionFilter = "all" | "greek" | "latin" | "syriac" | "coptic";
 
 const TRADITION_BADGE_COLORS: Record<string, string> = {
-  greek: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  latin: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  syriac: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  coptic: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  greek: "bg-[#4a6fa5]/20 text-[#4a6fa5] border-[#4a6fa5]/30",
+  latin: "bg-[#b8976a]/20 text-[#b8976a] border-[#b8976a]/30",
+  syriac: "bg-[#5a8a7a]/20 text-[#5a8a7a] border-[#5a8a7a]/30",
+  coptic: "bg-[#7a6e8a]/20 text-[#7a6e8a] border-[#7a6e8a]/30",
 };
 
 const TRADITION_DOT_COLORS: Record<string, string> = {
-  greek: "bg-blue-500",
-  latin: "bg-amber-500",
-  syriac: "bg-emerald-500",
-  coptic: "bg-purple-500",
+  greek: "bg-[#4a6fa5]",
+  latin: "bg-[#b8976a]",
+  syriac: "bg-[#5a8a7a]",
+  coptic: "bg-[#7a6e8a]",
 };
 
 export default function FathersPage() {

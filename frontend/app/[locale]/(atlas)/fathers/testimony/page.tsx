@@ -26,14 +26,14 @@ const ALL_TOPICS: TextualTopic[] = [
 ];
 
 const TOPIC_COLORS: Record<string, string> = {
-  MANUSCRIPTS: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  AUTOGRAPHS: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  APOCRYPHA: "bg-red-500/15 text-red-400 border-red-500/30",
-  CANON: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  TEXTUAL_VARIANTS: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  TRANSLATION: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  CORRUPTION: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  SCRIPTURE_AUTHORITY: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  MANUSCRIPTS: "bg-[#4a6fa5]/15 text-[#4a6fa5] border-[#4a6fa5]/30",
+  AUTOGRAPHS: "bg-[#b8976a]/15 text-[#b8976a] border-[#b8976a]/30",
+  APOCRYPHA: "bg-[#a65d57]/15 text-[#a65d57] border-[#a65d57]/30",
+  CANON: "bg-[#5a8a7a]/15 text-[#5a8a7a] border-[#5a8a7a]/30",
+  TEXTUAL_VARIANTS: "bg-[#7a6e8a]/15 text-[#7a6e8a] border-[#7a6e8a]/30",
+  TRANSLATION: "bg-[#5e8e9e]/15 text-[#5e8e9e] border-[#5e8e9e]/30",
+  CORRUPTION: "bg-[#9e7b5a]/15 text-[#9e7b5a] border-[#9e7b5a]/30",
+  SCRIPTURE_AUTHORITY: "bg-[#6a7a9e]/15 text-[#6a7a9e] border-[#6a7a9e]/30",
 };
 
 export default function TestimonyPage() {

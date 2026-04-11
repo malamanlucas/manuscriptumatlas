@@ -1,9 +1,46 @@
+# Build
 build/
-.gradle/
-.idea/
-*.iml
+bin/
 out/
 *.class
-*.log
+.gradle/
+.kotlin/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
 .env
-open-api-key.txt
+.env.*
+!.env.example
+*-key.txt
+password.txt
+
+# Database backups
+backups/*.dump
+
+# Screenshots temporários
+*.png
+!frontend/public/**/*.png
+
+# Monitoring
+newrelic.yml
+
+# IDE-specific docs
+cursor.md
+database.csv
+
+# Node
+frontend/node_modules/
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Logs
+*.log

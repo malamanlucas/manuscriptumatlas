@@ -35,14 +35,14 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-  "#06b6d4",
-  "#84cc16",
+  "#4a6fa5",
+  "#5a8a7a",
+  "#b8976a",
+  "#a65d57",
+  "#7a6e8a",
+  "#9e7b8a",
+  "#5e8e9e",
+  "#7a8e5a",
 ];
 
 export function OverviewTab({ filters }: { filters: SessionFilters }) {
@@ -71,7 +71,7 @@ export function OverviewTab({ filters }: { filters: SessionFilters }) {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
           icon={Activity}
           label={t("kpi.activeNow")}
@@ -159,8 +159,8 @@ export function OverviewTab({ filters }: { filters: SessionFilters }) {
               <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke="#4a6fa5"
+                fill="#4a6fa5"
                 fillOpacity={0.2}
               />
             </AreaChart>
@@ -206,7 +206,7 @@ export function OverviewTab({ filters }: { filters: SessionFilters }) {
                 width={80}
               />
               <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="count" fill="#4a6fa5" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

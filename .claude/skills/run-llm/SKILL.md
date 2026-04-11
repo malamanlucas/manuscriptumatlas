@@ -1,0 +1,120 @@
+---
+name: run-llm
+description: Processa prompts LLM pendentes da fila do backend usando Claude Code como motor LLM
+user_invocable: true
+---
+
+# Run LLM Queue
+
+Voce e o motor LLM do Manuscriptum Atlas. Leia prompts pendentes da fila, processe-os com o modelo adequado ao tier, e salve os resultados no backend.
+
+## Autenticacao
+
+```bash
+TOKEN=$(curl -s -X POST "http://localhost:8080/auth/dev-login?email=dev@manuscriptum.local" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+```
+
+Se `SERVICE_CLIENT_ID` estiver configurado, prefira client_credentials:
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/token \
+  -d "grant_type=client_credentials&client_id=${SERVICE_CLIENT_ID}&client_secret=${SERVICE_CLIENT_SECRET}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+```
+
+## Tier → Modelo
+
+| Tier | Fases | Modelo | Model ID |
+|------|-------|--------|----------|
+| **LOW** | `bible_translate_glosses` | **Haiku** | `claude-haiku-4-5` |
+| **MEDIUM** | `bible_translate_enrichment_*` | **Haiku** | `claude-haiku-4-5` |
+| **MEDIUM** | `bible_translate_lexicon`, `bible_translate_hebrew_lexicon`, `council_*`, `heresy_*`, `bio_*` | **Sonnet** | `claude-sonnet-4-6` |
+| **HIGH** | `bible_align_*`, `dating_*`, `apologetics_*` | **Opus** | `claude-opus-4-6` |
+
+**Regra rapida:** `enrichment` no nome → Haiku. `tier=LOW` → Haiku. `tier=MEDIUM` (resto) → Sonnet. `tier=HIGH` → Opus direto.
+
+## Fluxo
+
+### 1. Stats — ver o que tem na fila
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/admin/llm/queue/stats
+```
+
+Se `totalPending` = 0 → fila vazia, parar.
+
+### 2. Claim + processar
+
+Ordem de prioridade: LOW → MEDIUM enrichment → MEDIUM lexicon → HIGH.
+
+**Claim ate 50 itens por vez:**
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=LOW&limit=50"
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=MEDIUM&limit=50"
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=HIGH&limit=10"
+```
+
+### 3. Processar — UM ITEM POR VEZ por Agent
+
+**REGRA CRITICA DE CORRECAO:** Cada Agent deve processar **exatamente 1 item** e retornar **exatamente 1 resposta**. NAO agrupe multiplos itens em um unico Agent — isso causa respostas desalinhadas (o item N recebe a resposta do item N-1).
+
+**Para cada item claimed:**
+
+1. **Spawne um Agent** com o modelo correto (`model: "haiku"`, `model: "sonnet"`, ou processe direto se Opus).
+2. Passe o `systemPrompt` e `userContent` do item.
+3. O Agent deve retornar **APENAS a resposta**, sem explicacoes, sem prefixo, sem markdown.
+
+**Paralelismo seguro:** Spawne **multiplos Agents em paralelo** (3-5 simultaneos), mas cada um processando **1 unico item**. Assim voce tem velocidade E correcao.
+
+Exemplo para 5 itens Haiku em paralelo:
+```
+Agent 1 (haiku) → item[0] → resposta para item[0].id
+Agent 2 (haiku) → item[1] → resposta para item[1].id
+Agent 3 (haiku) → item[2] → resposta para item[2].id
+Agent 4 (haiku) → item[3] → resposta para item[3].id
+Agent 5 (haiku) → item[4] → resposta para item[4].id
+```
+
+Cada Agent retorna a resposta, e voce salva com o ID correto do item que foi enviado a AQUELE Agent.
+
+### 4. Salvar resultados
+
+Para cada resposta de Agent, salve imediatamente:
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:8080/admin/llm/queue/{id}/complete \
+  -d '{"id":<id>,"responseContent":"<resposta>","modelUsed":"<model_id>","inputTokens":0,"outputTokens":0}'
+```
+
+Se falhar:
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:8080/admin/llm/queue/{id}/fail \
+  -d '{"message":"<erro>"}'
+```
+
+### 5. Apply ao banco
+
+Apos completar todos os itens de uma fase:
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" http://localhost:8080/admin/llm/queue/apply/{phaseName}
+```
+
+### 6. Repetir
+
+Volte ao passo 1. Processe ate a fila esvaziar ou o loop externo parar.
+
+## Dicas de velocidade
+
+- **Paralelismo por item:** Spawne 3-5 Agents em paralelo, cada um com 1 item. Isso e rapido E correto.
+- **Nao agrupe itens em um Agent:** Isso causa off-by-one nas respostas. SEMPRE 1 item = 1 Agent.
+- **Claims grandes:** Claim 50 de uma vez, depois processe em lotes de 5 paralelos.
+- **Nao espere apply:** Chame apply apos salvar todos os itens de uma fase, nao apos cada item.
+- **Pule stats repetido:** Apos o primeiro check, va direto pro claim.
+
+## Notas
+
+- O endpoint `/claim` usa `SELECT FOR UPDATE SKIP LOCKED` — multiplas sessoes podem rodar em paralelo sem conflito.
+- O `callbackContext` contem JSON para o downstream — nao modifique.
+- Reporte `modelUsed` com o ID real do modelo.
+- Use `curl` via Bash tool para chamadas HTTP (WebFetch nao funciona com localhost).
+- **NUNCA** agrupe multiplos itens em um Agent — respostas ficam desalinhadas.

@@ -13,13 +13,14 @@ import {
 } from "recharts";
 import { toRoman } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import type { ChurchFatherSummary } from "@/types";
 
 const TRADITION_COLORS: Record<string, string> = {
-  greek: "#3b82f6",
-  latin: "#f59e0b",
-  syriac: "#10b981",
-  coptic: "#8b5cf6",
+  greek: "#4a6fa5",
+  latin: "#b8976a",
+  syriac: "#5a8a7a",
+  coptic: "#7a6e8a",
 };
 
 interface FathersTimelineChartProps {
@@ -27,15 +28,62 @@ interface FathersTimelineChartProps {
   onBarClick?: (century: number) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function FatherYAxisTick({ x, y, payload, idByName, locale }: any) {
+  const name = payload?.value as string;
+  const fatherId = idByName?.get(name);
+  const href = fatherId ? `/${locale}/fathers/${fatherId}` : undefined;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {href ? (
+        <a href={href}>
+          <text
+            x={-6}
+            y={0}
+            dy={4}
+            textAnchor="end"
+            fontSize={13}
+            fontWeight={500}
+            fill="var(--primary)"
+            textDecoration="underline"
+            cursor="pointer"
+            style={{ letterSpacing: "0.01em" }}
+          >
+            {name}
+          </text>
+        </a>
+      ) : (
+        <text
+          x={-6}
+          y={0}
+          dy={4}
+          textAnchor="end"
+          fontSize={13}
+          fontWeight={500}
+          fill="var(--foreground)"
+          style={{ letterSpacing: "0.01em" }}
+        >
+          {name}
+        </text>
+      )}
+    </g>
+  );
+}
+
 export function FathersTimelineChart({
   fathers,
   onBarClick,
 }: FathersTimelineChartProps) {
   const t = useTranslations("fathers");
+  const locale = useLocale();
+
+  const idByName = new Map<string, number>();
+  fathers.forEach((f) => idByName.set(f.displayName, f.id));
 
   const data = fathers
     .sort((a, b) => a.centuryMin - b.centuryMin || a.centuryMax - b.centuryMax)
     .map((f) => ({
+      id: f.id,
       name: f.displayName,
       range: [f.centuryMin, f.centuryMax + 0.8],
       tradition: f.tradition,
@@ -47,7 +95,7 @@ export function FathersTimelineChart({
       yearBest: f.yearBest,
     }));
 
-  const chartHeight = Math.max(300, data.length * 36 + 80);
+  const chartHeight = Math.max(300, data.length * 40 + 80);
 
   return (
     <div>
@@ -57,7 +105,7 @@ export function FathersTimelineChart({
             <BarChart
               data={data}
               layout="vertical"
-              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+              margin={{ top: 10, right: 30, left: 40, bottom: 10 }}
               onClick={(state) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const payload = (state as any)?.activePayload;
@@ -72,13 +120,13 @@ export function FathersTimelineChart({
                 domain={[0.5, 10.8]}
                 ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
                 tickFormatter={(v) => toRoman(Math.round(v))}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 13, fontWeight: 500 }}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={140}
-                tick={{ fontSize: 11 }}
+                width={180}
+                tick={<FatherYAxisTick idByName={idByName} locale={locale} />}
               />
               <Tooltip
                 contentStyle={{
@@ -111,7 +159,7 @@ export function FathersTimelineChart({
               />
               <Legend
                 content={() => (
-                  <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs">
+                  <div className="mt-2 flex flex-wrap justify-center gap-4 text-sm">
                     {Object.entries(TRADITION_COLORS).map(([key, color]) => (
                       <div key={key} className="flex items-center gap-1.5">
                         <div

@@ -1,8 +1,8 @@
 import type { CouncilType } from "@/types";
 
 const TYPE_CLASS: Record<string, string> = {
-  ECUMENICAL: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  REGIONAL: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  ECUMENICAL: "bg-[#b8976a]/15 text-[#b8976a]",
+  REGIONAL: "bg-[#4a6fa5]/15 text-[#4a6fa5]",
   LOCAL: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400",
 };
 

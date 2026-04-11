@@ -55,9 +55,9 @@ export function VerseGrid({ chapters, previousChapters, bookName }: VerseGridPro
                       "flex h-6 w-6 items-center justify-center rounded text-[10px] font-mono transition-all",
                       isCovered
                         ? isNew
-                          ? "bg-amber-400 text-black"
-                          : "bg-emerald-500 text-white"
-                        : "bg-red-400/80 text-white",
+                          ? "bg-[#b8976a] text-white"
+                          : "bg-[#5a8a7a] text-white"
+                        : "bg-[#a65d57]/80 text-white",
                       bookName && "cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-1"
                     )}
                   >

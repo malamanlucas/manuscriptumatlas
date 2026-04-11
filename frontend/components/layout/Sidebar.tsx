@@ -7,6 +7,7 @@ import {
   Clock,
   GitCompareArrows,
   BookOpen,
+  BrainCircuit,
   ScrollText,
   Library,
   BarChart3,
@@ -23,6 +24,11 @@ import {
   FlaskConical,
   Landmark,
   ShieldAlert,
+  ShieldQuestion,
+  ChevronDown,
+  PieChart,
+  Languages,
+  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSelector } from "./LanguageSelector";
@@ -30,13 +36,15 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
 
+type NavItem = { href: string; label: string; icon: React.ElementType };
+
 export function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
-  const { isOpen, close } = useSidebar();
+  const { isOpen, close, isCollapsed, toggleCollapse, expandedSections, toggleSection } = useSidebar();
   const { isAdmin } = useAuth();
 
-  const analysisItems = [
+  const analysisItems: NavItem[] = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/manuscripts", label: t("explorer"), icon: Library },
     { href: "/verse-lookup", label: t("verseLookup"), icon: Search },
@@ -45,31 +53,39 @@ export function Sidebar() {
     { href: "/metrics", label: t("metrics"), icon: BarChart3 },
   ];
 
-  const patristicItems = [
+  const patristicItems: NavItem[] = [
+    { href: "/patristic-dashboard", label: t("patristicDashboard"), icon: PieChart },
     { href: "/fathers", label: t("fathers"), icon: Users },
     { href: "/fathers/testimony", label: t("testimony"), icon: Quote },
     { href: "/councils", label: t("councils"), icon: Landmark },
     { href: "/heresies", label: t("heresies"), icon: ShieldAlert },
+    { href: "/apologetics", label: t("apologetics"), icon: ShieldQuestion },
   ];
 
-  const referenceItems = [
+  const bibleItems: NavItem[] = [
+    { href: "/bible", label: t("bibleReader"), icon: BookOpen },
+    { href: "/bible/compare", label: t("bibleCompare"), icon: GitCompareArrows },
+    { href: "/bible/search", label: t("bibleSearch"), icon: Search },
+    { href: "/bible/interlinear", label: t("interlinear"), icon: Languages },
+  ];
+
+  const referenceItems: NavItem[] = [
     { href: "/manuscript-count", label: t("manuscriptCount"), icon: Hash },
     { href: "/history", label: t("history"), icon: BookMarked },
     { href: "/sources", label: t("sources"), icon: Database },
     { href: "/methodology", label: t("methodology"), icon: FlaskConical },
     { href: "/faq", label: t("faq"), icon: HelpCircle },
+    { href: "/wiki-llm", label: t("wikiLlm"), icon: BrainCircuit },
   ];
 
-  const adminItems = [
+  const adminItems: NavItem[] = [
     { href: "/observatory", label: t("observatory"), icon: Telescope },
     { href: "/ingestion-status", label: t("ingestion"), icon: Activity },
+    { href: "/llm-usage", label: t("llmUsage"), icon: BrainCircuit },
     { href: "/admin/users", label: t("users"), icon: Shield },
   ];
 
-  const renderNavItem = (
-    item: { href: string; label: string; icon: React.ElementType },
-    size: "normal" | "small" = "normal"
-  ) => {
+  const renderNavItem = (item: NavItem, size: "normal" | "small" = "normal") => {
     const isActive =
       pathname === item.href || pathname.startsWith(item.href + "/");
     return (
@@ -95,13 +111,47 @@ export function Sidebar() {
     );
   };
 
-  const renderSectionLabel = (label: string) => (
-    <div className="pb-2 pt-4">
-      <p className="px-3 text-xs font-semibold uppercase tracking-wider text-white/40">
-        {label}
-      </p>
-    </div>
-  );
+  const renderCollapsibleSection = (
+    sectionKey: string,
+    label: string,
+    items: NavItem[],
+    size: "normal" | "small" = "normal"
+  ) => {
+    const isExpanded = expandedSections.has(sectionKey);
+    const hasActiveChild = items.some(
+      (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+    );
+
+    return (
+      <div key={sectionKey}>
+        <button
+          onClick={() => toggleSection(sectionKey)}
+          className="flex w-full cursor-pointer items-center justify-between px-3 pb-2 pt-4"
+        >
+          <p className={cn(
+            "text-xs font-semibold uppercase tracking-wider",
+            hasActiveChild && !isExpanded ? "text-white/70" : "text-white/40"
+          )}>
+            {label}
+          </p>
+          <ChevronDown
+            className={cn(
+              "h-3 w-3 text-white/40 transition-transform duration-200",
+              isExpanded ? "rotate-0" : "-rotate-90"
+            )}
+          />
+        </button>
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-200",
+            isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          {items.map((item) => renderNavItem(item, size))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -117,7 +167,7 @@ export function Sidebar() {
         className={cn(
           "fixed left-0 top-0 z-50 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground",
           "transition-transform duration-300 ease-in-out",
-          "md:translate-x-0",
+          isCollapsed ? "md:-translate-x-full" : "md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -130,42 +180,27 @@ export function Sidebar() {
         </Link>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {renderSectionLabel(t("analysis"))}
-          {analysisItems.map((item) => renderNavItem(item))}
+          {renderCollapsibleSection("analysis", t("analysis"), analysisItems)}
+          {renderCollapsibleSection("patristic", t("patristic"), patristicItems)}
+          {renderCollapsibleSection("bible", t("bible"), bibleItems)}
+          {renderCollapsibleSection("reference", t("reference"), referenceItems, "small")}
 
-          {renderSectionLabel(t("patristic"))}
-          {patristicItems.map((item) => renderNavItem(item))}
-
-          {renderSectionLabel(t("reference"))}
-          {referenceItems.map((item) => renderNavItem(item, "small"))}
-
-          {renderSectionLabel(t("books"))}
-          <Link
-            href="/dashboard"
-            onClick={close}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              pathname === "/dashboard"
-                ? "text-white/90"
-                : "text-white/60 hover:text-white/90"
-            )}
-          >
-            <BookOpen className="h-4 w-4" />
-            {t("allBooks")}
-          </Link>
-
-          {isAdmin && (
-            <>
-              {renderSectionLabel(t("administration"))}
-              {adminItems.map((item) => renderNavItem(item, "small"))}
-            </>
-          )}
+          {isAdmin && renderCollapsibleSection("admin", t("administration"), adminItems, "small")}
         </nav>
 
         <div className="border-t border-white/10 px-6 py-4 space-y-3">
           <ThemeToggle />
           <LanguageSelector />
-          <p className="text-xs text-white/40">{t("version")}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-white/40">{t("version")}</p>
+            <button
+              onClick={toggleCollapse}
+              className="hidden rounded-md p-1 text-white/40 hover:bg-white/10 hover:text-white/80 md:inline-flex"
+              title={t("hideSidebar")}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </aside>
     </>

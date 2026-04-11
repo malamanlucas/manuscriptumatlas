@@ -57,7 +57,7 @@ export function TimelineChart({
           <Bar
             dataKey="newVersesCount"
             name={t("newVerses")}
-            fill="#3b82f6"
+            fill="#4a6fa5"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>
@@ -70,8 +70,8 @@ export function TimelineChart({
       <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorCoverage" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="5%" stopColor="#4a6fa5" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#4a6fa5" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -92,7 +92,7 @@ export function TimelineChart({
         <Area
           type="monotone"
           dataKey="cumulativePercent"
-          stroke="#3b82f6"
+          stroke="#4a6fa5"
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorCoverage)"

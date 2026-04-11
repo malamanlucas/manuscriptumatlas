@@ -1,0 +1,184 @@
+{
+  "uid": "visitor-analytics",
+  "title": "Visitor Analytics",
+  "tags": ["manuscriptum", "visitors"],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Sessions Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= CURRENT_DATE",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "id": 2,
+      "title": "Unique Visitors Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COUNT(DISTINCT visitor_id) AS \"Visitors\" FROM visitor_sessions WHERE created_at >= CURRENT_DATE",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }] } } }
+    },
+    {
+      "id": 3,
+      "title": "Pageviews Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COUNT(*) AS \"Pageviews\" FROM page_views WHERE created_at >= CURRENT_DATE",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "purple", "value": null }] } } }
+    },
+    {
+      "id": 4,
+      "title": "Avg Load Time Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT ROUND(AVG(page_load_time_ms)) AS \"Avg ms\" FROM visitor_sessions WHERE created_at >= CURRENT_DATE AND page_load_time_ms > 0",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "steps": [
+        { "color": "green", "value": null },
+        { "color": "yellow", "value": 2000 },
+        { "color": "red", "value": 5000 }
+      ] } } }
+    },
+    {
+      "id": 5,
+      "title": "Returning Visitors %",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "WITH today AS (SELECT visitor_id, COUNT(*) AS sc FROM visitor_sessions WHERE created_at >= CURRENT_DATE - INTERVAL '30 days' GROUP BY visitor_id) SELECT ROUND(COUNT(*) FILTER (WHERE sc > 1) * 100.0 / NULLIF(COUNT(*), 0), 1) AS \"Returning %\" FROM today",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "steps": [
+        { "color": "yellow", "value": null },
+        { "color": "green", "value": 20 }
+      ] } } }
+    },
+    {
+      "id": 6,
+      "title": "Active Now",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COUNT(DISTINCT visitor_id) AS \"Active\" FROM visitor_sessions WHERE last_activity_at >= NOW() - INTERVAL '5 minutes'",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [
+        { "color": "green", "value": null },
+        { "color": "yellow", "value": 10 },
+        { "color": "red", "value": 50 }
+      ] } } }
+    },
+    {
+      "id": 7,
+      "title": "Daily Sessions & Visitors",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT stat_date AS time, total_sessions AS \"Sessions\", unique_visitors AS \"Unique Visitors\" FROM visitor_daily_stats WHERE $__timeFilter(stat_date) ORDER BY stat_date",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 20, "pointSize": 5, "showPoints": "always" } } }
+    },
+    {
+      "id": 8,
+      "title": "Daily Pageviews",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT stat_date AS time, total_pageviews AS \"Pageviews\" FROM visitor_daily_stats WHERE $__timeFilter(stat_date) ORDER BY stat_date",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60 }, "color": { "fixedColor": "purple" } } }
+    },
+    {
+      "id": 9,
+      "title": "Top Pages",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT path AS \"Page\", COUNT(*) AS \"Views\", ROUND(AVG(duration_ms)) AS \"Avg Duration (ms)\" FROM page_views WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY path ORDER BY 2 DESC LIMIT 20",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 10,
+      "title": "Browser Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COALESCE(browser_name, 'Unknown') AS \"Browser\", COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY browser_name ORDER BY 2 DESC LIMIT 10",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 11,
+      "title": "Device Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COALESCE(device_type, 'Unknown') AS \"Device\", COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY device_type ORDER BY 2 DESC",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 12,
+      "title": "Activity Heatmap (Day x Hour)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT to_char(created_at, 'Dy') AS \"Day\", EXTRACT(HOUR FROM created_at)::int AS \"Hour\", COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY CASE to_char(created_at, 'Dy') WHEN 'Mon' THEN 1 WHEN 'Tue' THEN 2 WHEN 'Wed' THEN 3 WHEN 'Thu' THEN 4 WHEN 'Fri' THEN 5 WHEN 'Sat' THEN 6 WHEN 'Sun' THEN 7 END, 2",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 13,
+      "title": "Top Referrers (30d)",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS \"Referrer\", COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY referrer ORDER BY 2 DESC LIMIT 15",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 14,
+      "title": "OS Distribution (30d)",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT COALESCE(os_name, 'Unknown') AS \"OS\", COUNT(*) AS \"Sessions\" FROM visitor_sessions WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY os_name ORDER BY 2 DESC LIMIT 10",
+        "format": "table"
+      }]
+    }
+  ],
+  "schemaVersion": 39
+}

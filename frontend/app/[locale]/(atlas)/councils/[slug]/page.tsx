@@ -87,7 +87,7 @@ export default function CouncilDetailPage() {
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-background p-1">
+            <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-background p-1">
               <TabButton active={tab === "overview"} onClick={() => setTab("overview")} icon={<BookOpen className="h-4 w-4" />} label={t("tabs.overview")} />
               <TabButton active={tab === "canons"} onClick={() => setTab("canons")} icon={<ScrollText className="h-4 w-4" />} label={t("tabs.canons")} />
               <TabButton active={tab === "participants"} onClick={() => setTab("participants")} icon={<Users className="h-4 w-4" />} label={t("tabs.participants")} />
@@ -138,11 +138,11 @@ export default function CouncilDetailPage() {
                     <h4 className="mb-2 text-sm font-semibold">{t("heretics")}</h4>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {council.hereticParticipants.map((heretic) => (
-                        <div key={heretic.id} className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                        <div key={heretic.id} className="rounded-lg border border-[#b8976a]/30 bg-[#b8976a]/5 p-3 text-sm">
                           <p className="font-medium">{heretic.displayName}</p>
                           {heretic.role && <p className="text-xs text-muted-foreground">{heretic.role}</p>}
                           {heretic.description && <p className="mt-1 text-xs text-muted-foreground">{heretic.description}</p>}
-                          <span className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">{t("hereticBadge")}</span>
+                          <span className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[#b8976a]">{t("hereticBadge")}</span>
                         </div>
                       ))}
                     </div>
@@ -216,24 +216,24 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
     >
       {icon}
-      {label}
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }
 
 const confidenceBarColor: Record<string, string> = {
-  HIGH: "bg-emerald-500",
-  MEDIUM: "bg-amber-500",
-  LOW: "bg-red-500",
+  HIGH: "bg-[#5a8a7a]",
+  MEDIUM: "bg-[#b8976a]",
+  LOW: "bg-[#a65d57]",
 };
 
 const sourceLevelColors: Record<string, string> = {
-  PRIMARY: "bg-emerald-500/15 text-emerald-400",
-  ACADEMIC: "bg-blue-500/15 text-blue-400",
-  STRUCTURED: "bg-violet-500/15 text-violet-400",
+  PRIMARY: "bg-[#5a8a7a]/15 text-[#5a8a7a]",
+  ACADEMIC: "bg-[#4a6fa5]/15 text-[#4a6fa5]",
+  STRUCTURED: "bg-[#7a6e8a]/15 text-[#7a6e8a]",
   AGGREGATOR: "bg-zinc-500/15 text-zinc-400",
 };
 
@@ -295,7 +295,7 @@ function ConfidenceCard({
           <div>
             <button
               onClick={onToggleConflict}
-              className="inline-flex w-full items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400"
+              className="inline-flex w-full items-center justify-between rounded-lg border border-[#b8976a]/30 bg-[#b8976a]/10 px-3 py-1.5 text-xs font-medium text-[#b8976a]"
             >
               {t("conflictResolved")}
               {showConflict ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}

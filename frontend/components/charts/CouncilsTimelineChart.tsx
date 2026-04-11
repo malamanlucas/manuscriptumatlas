@@ -46,9 +46,9 @@ export function CouncilsTimelineChart({ councils, onCenturyClick }: Props) {
             labelFormatter={(label) => `${t("century")} ${toRoman(Number(label))}`}
           />
           <Legend />
-          <Bar dataKey="ecumenical" stackId="a" fill="#f59e0b" />
-          <Bar dataKey="regional" stackId="a" fill="#3b82f6" />
-          <Bar dataKey="local" stackId="a" fill="#6b7280" />
+          <Bar dataKey="ecumenical" stackId="a" fill="#b8976a" />
+          <Bar dataKey="regional" stackId="a" fill="#4a6fa5" />
+          <Bar dataKey="local" stackId="a" fill="#8a8a8a" />
         </BarChart>
       </ResponsiveContainer>
     </div>

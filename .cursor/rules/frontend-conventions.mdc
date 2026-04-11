@@ -17,83 +17,104 @@ alwaysApply: false
 - Lucide React para ícones
 - next-themes para tema (light/dark/system)
 - next-intl para internacionalização (pt, en, es)
+- Prometheus + Grafana + Loki para observabilidade
 
 ## Estrutura
 
 ```
 frontend/
-├── app/[locale]/          Páginas (26 rotas) — App Router com i18n
+├── app/[locale]/          Páginas (34 rotas) — App Router com i18n
 ├── components/
+│   ├── bible/              BibleNavigation, BibleReader, BibleSearchBar, BibleSearchResults, InterlinearView, LinkedVerseReader, StrongsConcordance, StrongsEntry, StudySidebar, VerseCompare
 │   ├── charts/             ComparisonChart, CouncilsTimelineChart, FathersTimelineChart, Heatmap, TimelineChart
 │   ├── councils/           CouncilMapView, CouncilTypeBadge, SourceProvenancePanel, SummaryToggle
 │   ├── coverage/           BookCard, CenturySlider, GospelPanel, VerseGrid
-│   ├── filters/            CenturyRangeFilter, YearRangeFilter
-│   ├── ingestion/          CouncilIngestionPanel
+│   ├── filters/            CenturyRangeFilter, YearRangeFilter, YearSliderFilter
+│   ├── ingestion/          BibleIngestionPanel, CouncilIngestionPanel, IngestionPhasePanel, ManuscriptIngestionPanel, PatristicIngestionPanel
 │   ├── layout/             Header, LanguageSelector, Sidebar, SidebarContext, ThemeToggle
-│   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorsTab
+│   ├── llm/                ErrorDetailModal, LlmProviderCard, LlmRateLimitPanel, LlmUsageTable
+│   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorTracker, VisitorsTab
 │   ├── stats/              StatsOverview
-│   ├── tracking/           VisitorTracker
 │   ├── ui/                 ConfidenceDot, DatingBadge
 │   └── providers.tsx       React Query + Theme providers
-├── hooks/                 13 hooks customizados
+├── hooks/                 16 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
 ├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
-├── types/                 index.ts (72 interfaces/tipos)
+├── types/                 index.ts (95 interfaces/tipos)
 └── messages/              en.json, pt.json, es.json
 ```
 
 ## Padrões
 
 - Componentes funcionais com TypeScript
-- Hooks customizados em `frontend/hooks/` (um por domínio: useCoverage, useManuscripts, useChurchFathers, useTextualStatements, etc.)
-- Utilitários e funções de API em `frontend/lib/`
-- Tipos centralizados em `frontend/types/index.ts`
+- Hooks customizados em `frontend/hooks/` (um por domínio)
+- API layer modular em `frontend/lib/api/` (um arquivo por domínio)
+- Tipos distribuídos em `frontend/types/` (um arquivo por domínio + index.ts para exports)
 - Preferir Server Components; usar `"use client"` apenas quando necessário
 - Tipagem explícita — evitar `any`
 
 ## Data Fetching
 
 - Usar TanStack Query (`useQuery`, `useMutation`) para chamadas à API
-- API backend disponível via rewrite `/api/*` → `http://app:8080` (Docker) ou `http://localhost:8080` (dev)
-- Funções de fetch centralizadas em `lib/api.ts`
+- API backend disponível via rewrite `/api/*` -> `http://app:8080` (Docker) ou `http://localhost:8080` (dev)
+- Funções de fetch centralizadas em `lib/api/` (modular por domínio)
+- Axios instance com interceptors para auth token em `lib/api/client.ts`
 
 ## Estilização
 
 - Tailwind CSS utility-first
 - Sem CSS modules ou styled-components
+- Dark mode via `dark:` prefix
 
 ## Responsividade
 
-- Todo componente e página deve funcionar em mobile (≥320px), tablet e desktop
-- Páginas de dashboard/admin (ex.: ingestion-status, observatory): usar `max-w-7xl` com `mx-auto w-full` para preencher o espaço disponível; evitar `max-w-3xl` que deixa espaço vazio à direita
-- Usar breakpoints do Tailwind: `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
-- Layouts com grid/flex devem adaptar colunas por breakpoint (ex.: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`)
-- Tabelas largas devem ter scroll horizontal em mobile (`overflow-x-auto`)
-- Sidebar deve colapsar em telas pequenas
-- Textos e espaçamentos devem escalar (ex.: `text-sm md:text-base`, `p-4 md:p-6`)
-- Testar sempre em viewport mobile antes de considerar a feature pronta
+- Todo componente e página deve funcionar em mobile (>=320px), tablet e desktop
+- Dashboards/admin: usar `max-w-7xl` com `mx-auto w-full`
+- Breakpoints: `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
+- Grid adaptativo: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+- Tabelas largas: `overflow-x-auto`
+- Sidebar colapsa em telas pequenas
+- Textos escaláveis: `text-sm md:text-base`, `p-4 md:p-6`
 
 ## Internacionalização
 
 - **Frontend** (labels, botões, UI): `messages/{locale}.json` + `useTranslations()`
 - **Backend** (dados de domínio): API retorna textos traduzidos via `?locale=` e tabelas `*_translations`
-- Arquivos de mensagens em `messages/{locale}.json`
-- Usar `useTranslations()` do next-intl para strings de interface
 - Todas as rotas sob `[locale]/`
-- Idiomas suportados: pt (português), en (inglês), es (espanhol)
-- **Nenhum texto visível ao usuário deve ser hardcoded** — sempre usar chaves de tradução
-- Ao adicionar novas features, atualizar os 3 arquivos de mensagens simultaneamente
-- Endpoints do backend que retornam textos traduzíveis devem suportar `?locale=`
+- Idiomas: pt (português), en (inglês), es (espanhol)
+- **Nenhum texto visível ao usuário deve ser hardcoded**
+- Ao adicionar features, atualizar os 3 arquivos simultaneamente
 
 ## Checklist por feature
 
-Antes de considerar uma feature pronta:
-1. **i18n**: todos os textos visíveis estão nos 3 locales (pt, en, es)?
-2. **Responsividade**: funciona em mobile (320px), tablet (768px) e desktop (1280px)?
-3. **Tema**: funciona em light e dark mode?
-4. **Tipos**: TypeScript sem `any`, interfaces em `types/index.ts`?
-5. **Loading/Error**: estados de carregamento e erro tratados?
+1. **i18n**: todos os textos nos 3 locales?
+2. **Responsividade**: mobile (320px), tablet (768px), desktop (1280px)?
+3. **Tema**: light e dark mode?
+4. **Tipos**: TypeScript sem `any`, interfaces nos arquivos de tipos?
+5. **Loading/Error**: estados tratados?
 
-## Páginas (26 rotas)
+## Páginas (34 rotas)
 
-Admin / Users, Book / Name, Compare, Councils, Councils / Slug, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, Heresies, Heresies / Slug, History, Home, Ingestion Status, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Sources, Timeline, Verse Lookup
+Admin / Users, Bible, Bible / Compare, Bible / Interlinear, Bible / Search, Bible / Strongs / Number, Book / Name, Compare, Councils, Councils / Slug, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, Heresies, Heresies / Slug, History, Home, Ingestion Status, Llm Usage, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Patristic Dashboard, Sources, Timeline, Verse Lookup, Wiki Llm
+Dashboard, Book/Name, Compare, Timeline, Metrics, Metrics/Book, Manuscript-Count, Manuscripts, Manuscripts/GaId, Verse-Lookup, History, Sources, Methodology, FAQ
+
+**Patrística:**
+Fathers, Fathers/Id, Fathers/Testimony, Patristic-Dashboard
+
+**Concílios:**
+Councils, Councils/Slug, Heresies, Heresies/Slug
+
+**Bíblia:**
+Bible (home), Bible/Search, Bible/Compare/{book}/{chapter}/{verse}, Bible/Interlinear/{book}/{chapter}/{verse}, Bible/Strongs/[number]
+
+**Admin:**
+Admin/Users, Ingestion-Status, Observatory, LLM-Usage, Wiki-LLM
+
+**Outros:**
+Home (redirect), Manifesto
+
+## Componentes de ingestão (padrão reutilizável)
+
+- `IngestionPhasePanel` — componente genérico (status, progresso, botões run/reset)
+- `ManuscriptIngestionPanel`, `PatristicIngestionPanel`, `CouncilIngestionPanel`, `BibleIngestionPanel` — painéis por domínio que delegam ao genérico
+- Hooks: `useIngestionPhases.ts` (fases por domínio), `useIngestion.ts` (status global)

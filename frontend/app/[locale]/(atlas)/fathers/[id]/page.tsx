@@ -14,28 +14,28 @@ import { CouncilTypeBadge } from "@/components/councils/CouncilTypeBadge";
 import type { TextualTopic } from "@/types";
 
 const TRADITION_BADGE_COLORS: Record<string, string> = {
-  greek: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  latin: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  syriac: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  coptic: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  greek: "bg-[#4a6fa5]/20 text-[#4a6fa5] border-[#4a6fa5]/30",
+  latin: "bg-[#b8976a]/20 text-[#b8976a] border-[#b8976a]/30",
+  syriac: "bg-[#5a8a7a]/20 text-[#5a8a7a] border-[#5a8a7a]/30",
+  coptic: "bg-[#7a6e8a]/20 text-[#7a6e8a] border-[#7a6e8a]/30",
 };
 
 const TRADITION_DOT_COLORS: Record<string, string> = {
-  greek: "bg-blue-500",
-  latin: "bg-amber-500",
-  syriac: "bg-emerald-500",
-  coptic: "bg-purple-500",
+  greek: "bg-[#4a6fa5]",
+  latin: "bg-[#b8976a]",
+  syriac: "bg-[#5a8a7a]",
+  coptic: "bg-[#7a6e8a]",
 };
 
 const TOPIC_COLORS: Record<string, string> = {
-  MANUSCRIPTS: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  AUTOGRAPHS: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  APOCRYPHA: "bg-red-500/15 text-red-400 border-red-500/30",
-  CANON: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  TEXTUAL_VARIANTS: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  TRANSLATION: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  CORRUPTION: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  SCRIPTURE_AUTHORITY: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  MANUSCRIPTS: "bg-[#4a6fa5]/15 text-[#4a6fa5] border-[#4a6fa5]/30",
+  AUTOGRAPHS: "bg-[#b8976a]/15 text-[#b8976a] border-[#b8976a]/30",
+  APOCRYPHA: "bg-[#a65d57]/15 text-[#a65d57] border-[#a65d57]/30",
+  CANON: "bg-[#5a8a7a]/15 text-[#5a8a7a] border-[#5a8a7a]/30",
+  TEXTUAL_VARIANTS: "bg-[#7a6e8a]/15 text-[#7a6e8a] border-[#7a6e8a]/30",
+  TRANSLATION: "bg-[#5e8e9e]/15 text-[#5e8e9e] border-[#5e8e9e]/30",
+  CORRUPTION: "bg-[#9e7b5a]/15 text-[#9e7b5a] border-[#9e7b5a]/30",
+  SCRIPTURE_AUTHORITY: "bg-[#6a7a9e]/15 text-[#6a7a9e] border-[#6a7a9e]/30",
 };
 
 export default function FatherDetailPage() {
@@ -125,7 +125,7 @@ export default function FatherDetailPage() {
         </Link>
 
         {/* Tabs */}
-        <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
           <button
             onClick={() => setActiveTab("info")}
             className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${

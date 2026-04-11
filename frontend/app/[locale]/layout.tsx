@@ -3,7 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Providers } from "@/components/providers";
-import { VisitorTracker } from "@/components/tracking/VisitorTracker";
+import { VisitorTracker } from "@/components/observatory/VisitorTracker";
 
 type Props = {
   children: React.ReactNode;

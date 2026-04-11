@@ -4,8 +4,7 @@ import {
   triggerIngestion,
   resetAndReIngest,
   triggerDatingEnrichment,
-  triggerPatristicSeed,
-  triggerPatristicTranslate,
+  resetDomain,
 } from "@/lib/api";
 
 export function useIngestionStatus() {
@@ -44,15 +43,24 @@ export function useResetAndReIngest() {
   });
 }
 
-export function usePatristicSeed() {
+export function useResetDomain() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: triggerPatristicSeed,
-  });
-}
-
-export function usePatristicTranslate() {
-  return useMutation({
-    mutationFn: ({ force }: { force: boolean }) => triggerPatristicTranslate(force),
+    mutationFn: (domain: "manuscripts" | "patristic" | "councils" | "bible" | "bible-layer1" | "bible-layer2" | "bible-layer3" | "bible-layer4") => resetDomain(domain),
+    onSuccess: async (_data, domain) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "ingestion"] }),
+        queryClient.invalidateQueries({ queryKey: ["manuscript-ingestion"] }),
+        queryClient.invalidateQueries({ queryKey: ["patristic-ingestion"] }),
+        queryClient.invalidateQueries({ queryKey: ["council-ingestion"] }),
+        queryClient.invalidateQueries({ queryKey: ["bible-ingestion"] }),
+      ]);
+      console.log(`[useResetDomain] reset ${domain} succeeded, queries invalidated`);
+    },
+    onError: (error, domain) => {
+      console.error(`[useResetDomain] reset ${domain} failed:`, error);
+      alert(`Erro ao resetar ${domain}: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+    },
   });
 }
 

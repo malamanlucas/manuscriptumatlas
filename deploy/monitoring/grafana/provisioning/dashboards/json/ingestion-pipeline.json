@@ -1,0 +1,115 @@
+{
+  "uid": "ingestion-pipeline",
+  "title": "Ingestion Pipeline",
+  "tags": ["manuscriptum", "ingestion"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ingestion Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT status AS \"Status\" FROM ingestion_metadata ORDER BY started_at DESC NULLS LAST LIMIT 1",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "mappings": [
+        { "type": "value", "options": { "success": { "color": "green", "text": "SUCCESS" }, "failed": { "color": "red", "text": "FAILED" }, "running": { "color": "yellow", "text": "RUNNING" }, "idle": { "color": "blue", "text": "IDLE" } } }
+      ] } }
+    },
+    {
+      "id": 2,
+      "title": "Manuscripts Ingested",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 6, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT manuscripts_ingested AS \"Count\" FROM ingestion_metadata ORDER BY started_at DESC NULLS LAST LIMIT 1",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }] } } }
+    },
+    {
+      "id": 3,
+      "title": "Verses Linked",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 10, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT verses_linked AS \"Count\" FROM ingestion_metadata ORDER BY started_at DESC NULLS LAST LIMIT 1",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "id": 4,
+      "title": "Last Duration",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 5, "x": 14, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT duration_ms AS \"Duration\" FROM ingestion_metadata WHERE duration_ms IS NOT NULL ORDER BY started_at DESC NULLS LAST LIMIT 1",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 5,
+      "title": "Last Run",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 5, "x": 19, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT finished_at AS \"Finished\" FROM ingestion_metadata WHERE finished_at IS NOT NULL ORDER BY started_at DESC NULLS LAST LIMIT 1",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } }
+    },
+    {
+      "id": 6,
+      "title": "All Phases — Current Status",
+      "type": "table",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT phase_name AS \"Phase\", status AS \"Status\", items_processed AS \"Processed\", items_total AS \"Total\", CASE WHEN items_total > 0 THEN ROUND(items_processed * 100.0 / items_total, 1) ELSE 0 END AS \"Progress %\", started_at AS \"Started\", completed_at AS \"Completed\", CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL THEN EXTRACT(EPOCH FROM (completed_at - started_at))::int ELSE NULL END AS \"Duration (s)\", error_message AS \"Error\", last_run_by AS \"Run By\" FROM council_ingestion_phases ORDER BY CASE WHEN status = 'running' THEN 0 WHEN status = 'failed' THEN 1 WHEN status = 'success' THEN 2 ELSE 3 END, phase_name",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Status" }, "properties": [{ "id": "custom.cellOptions", "value": { "type": "color-text" } }, { "id": "mappings", "value": [
+            { "type": "value", "options": { "success": { "color": "green" }, "failed": { "color": "red" }, "running": { "color": "yellow" }, "pending": { "color": "blue" } } }
+          ] }] },
+          { "matcher": { "id": "byName", "options": "Progress %" }, "properties": [{ "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } }, { "id": "min", "value": 0 }, { "id": "max", "value": 100 }] }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Data Counts — Domain Overview",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "targets": [{
+        "rawSql": "SELECT 'Manuscripts' AS \"Domain\", COUNT(*) AS \"Count\" FROM manuscripts UNION ALL SELECT 'Verses', COUNT(*) FROM verses UNION ALL SELECT 'Manuscript-Verse Links', COUNT(*) FROM manuscript_verses UNION ALL SELECT 'Church Fathers', COUNT(*) FROM church_fathers UNION ALL SELECT 'Textual Statements', COUNT(*) FROM father_textual_statements UNION ALL SELECT 'Councils', COUNT(*) FROM councils UNION ALL SELECT 'Heresies', COUNT(*) FROM heresies UNION ALL SELECT 'Council Canons', COUNT(*) FROM council_canons UNION ALL SELECT 'Sources', COUNT(*) FROM sources UNION ALL SELECT 'Source Claims', COUNT(*) FROM council_source_claims ORDER BY 1",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 8,
+      "title": "Ingestion Logs",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{container=~\".*app.*\"} |~ \"(INGESTION|PHASE_TRACKER|MANUSCRIPT|COUNCIL_SEED|PATRISTIC|BIBLE_FILTER|RESET_)\"",
+        "legendFormat": ""
+      }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    }
+  ],
+  "schemaVersion": 39
+}

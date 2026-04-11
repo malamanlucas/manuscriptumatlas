@@ -7,6 +7,7 @@ import {
   getChurchFatherDetail,
   searchChurchFathers,
   getFatherCouncils,
+  getPatristicStats,
 } from "@/lib/api";
 
 export function useChurchFathers(params?: {
@@ -53,6 +54,14 @@ export function useFatherCouncils(id: number | null) {
     queryKey: ["fathers", "councils", locale, id],
     queryFn: () => getFatherCouncils(id!, locale),
     enabled: id !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePatristicStats() {
+  return useQuery({
+    queryKey: ["fathers", "stats"],
+    queryFn: getPatristicStats,
     staleTime: 5 * 60 * 1000,
   });
 }

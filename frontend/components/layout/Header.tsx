@@ -1,10 +1,55 @@
 "use client";
 
-import { Menu, LogIn, LogOut, AlertCircle, Loader2 } from "lucide-react";
+import { Menu, LogIn, LogOut, AlertCircle, Loader2, Timer, PanelLeftOpen } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
 import { GoogleLogin } from "@react-oauth/google";
 import { useState, useRef, useEffect } from "react";
+
+function SessionCountdown({ expiresAt }: { expiresAt: number }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, expiresAt - Date.now()));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = Math.max(0, expiresAt - Date.now());
+      setRemaining(diff);
+      if (diff <= 0) clearInterval(timer);
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [expiresAt]);
+
+  if (remaining <= 0) return null;
+
+  const totalMinutes = Math.floor(remaining / 60_000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  let label: string;
+  if (days > 0) {
+    label = `${days}d ${hours}h`;
+  } else if (hours > 0) {
+    label = `${hours}h ${minutes}m`;
+  } else {
+    label = `${minutes}m`;
+  }
+
+  const isLow = totalMinutes < 60;
+
+  return (
+    <span
+      className={`hidden items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-mono sm:inline-flex ${
+        isLow
+          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+          : "bg-muted text-muted-foreground"
+      }`}
+      title={`Sessao expira em ${days}d ${hours}h ${minutes}m`}
+    >
+      <Timer className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
 
 interface HeaderProps {
   title: string;
@@ -12,8 +57,8 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle }: HeaderProps) {
-  const { toggle } = useSidebar();
-  const { user, isAuthenticated, status, loginError, login, logout } = useAuth();
+  const { toggle, isCollapsed, toggleCollapse } = useSidebar();
+  const { user, isAuthenticated, status, loginError, expiresAt, login, logout } = useAuth();
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -47,6 +92,15 @@ export function Header({ title, subtitle }: HeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </button>
+      {isCollapsed && (
+        <button
+          onClick={toggleCollapse}
+          className="hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground md:inline-flex"
+          aria-label="Show sidebar"
+        >
+          <PanelLeftOpen className="h-5 w-5" />
+        </button>
+      )}
       <div className="flex-1">
         <h1 className="text-lg font-semibold">{title}</h1>
         {subtitle && (
@@ -71,6 +125,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             <span className="hidden rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 sm:inline">
               {user.role}
             </span>
+            {expiresAt && <SessionCountdown expiresAt={expiresAt} />}
             <button
               onClick={logout}
               className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"

@@ -7,10 +7,6 @@ import { AuthGate } from "@/components/observatory/AuthGate";
 import {
   useIngestionStatus,
   useTriggerIngestion,
-  useResetAndReIngest,
-  useDatingEnrichment,
-  usePatristicSeed,
-  usePatristicTranslate,
 } from "@/hooks/useIngestion";
 import {
   Loader2,
@@ -21,12 +17,18 @@ import {
   FileText,
   Link2,
   Timer,
-  Trash2,
-  Sparkles,
+  ScrollText,
   BookOpen,
-  Languages,
+  Church,
+  Cpu,
 } from "lucide-react";
+import { ManuscriptIngestionPanel } from "@/components/ingestion/ManuscriptIngestionPanel";
+import { PatristicIngestionPanel } from "@/components/ingestion/PatristicIngestionPanel";
 import { CouncilIngestionPanel } from "@/components/ingestion/CouncilIngestionPanel";
+import { BibleIngestionPanel } from "@/components/ingestion/BibleIngestionPanel";
+import { LlmQueuePanel } from "@/components/ingestion/LlmQueuePanel";
+
+type DomainTab = "manuscripts" | "patristic" | "councils" | "bible" | "llmQueue";
 
 export default function IngestionStatusPage() {
   return (
@@ -41,55 +43,30 @@ function IngestionContent() {
   const tc = useTranslations("common");
   const { data, isLoading, error } = useIngestionStatus();
   const trigger = useTriggerIngestion();
-  const reset = useResetAndReIngest();
-  const enrich = useDatingEnrichment();
-  const patristicSeed = usePatristicSeed();
-  const patristicTranslate = usePatristicTranslate();
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [enrichDomain, setEnrichDomain] = useState<"fathers" | "manuscripts" | "all">("fathers");
-  const [forceTranslate, setForceTranslate] = useState(false);
-
-  const STATUS_CONFIG: Record<
-    string,
-    { label: string; color: string; bg: string; icon: React.ReactNode }
-  > = {
-    idle: {
-      label: t("idle"),
-      color: "text-gray-600 dark:text-gray-400",
-      bg: "bg-gray-100 dark:bg-gray-800",
-      icon: <Clock className="h-5 w-5" />,
-    },
-    running: {
-      label: t("running"),
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-900",
-      icon: <Loader2 className="h-5 w-5 animate-spin" />,
-    },
-    success: {
-      label: t("success"),
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900",
-      icon: <CheckCircle className="h-5 w-5" />,
-    },
-    failed: {
-      label: t("failed"),
-      color: "text-red-600 dark:text-red-400",
-      bg: "bg-red-100 dark:bg-red-900",
-      icon: <XCircle className="h-5 w-5" />,
-    },
-  };
+  const [activeTab, setActiveTab] = useState<DomainTab>("manuscripts");
 
   const statusKey = data?.isRunning ? "running" : (data?.status ?? "idle");
-  const config = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.idle;
+
+  const STATUS_ICON: Record<string, React.ReactNode> = {
+    idle: <Clock className="h-4 w-4 text-muted-foreground" />,
+    running: <Loader2 className="h-4 w-4 animate-spin text-blue-500" />,
+    success: <CheckCircle className="h-4 w-4 text-emerald-500" />,
+    failed: <XCircle className="h-4 w-4 text-red-500" />,
+  };
+
+  const TABS: { key: DomainTab; icon: React.ReactNode }[] = [
+    { key: "manuscripts", icon: <ScrollText className="h-4 w-4" /> },
+    { key: "patristic", icon: <BookOpen className="h-4 w-4" /> },
+    { key: "councils", icon: <Church className="h-4 w-4" /> },
+    { key: "bible", icon: <BookOpen className="h-4 w-4" /> },
+    { key: "llmQueue", icon: <Cpu className="h-4 w-4" /> },
+  ];
 
   return (
     <div className="min-h-screen">
-      <Header
-        title={t("title")}
-        subtitle={t("subtitle")}
-      />
+      <Header title={t("title")} subtitle={t("subtitle")} />
 
-      <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
+      <div className="mx-auto w-full max-w-5xl p-4 md:p-6 space-y-5">
         {isLoading && (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
             {t("loadingStatus")}
@@ -104,21 +81,27 @@ function IngestionContent() {
 
         {data && (
           <>
-            <div className="rounded-xl border border-border bg-card p-6">
+            {/* Compact status bar + metrics */}
+            <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`rounded-lg p-2 ${config.bg} ${config.color}`}>
-                    {config.icon}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {STATUS_ICON[statusKey] ?? STATUS_ICON.idle}
+                    <span className="text-sm font-medium">{t(statusKey as "idle")}</span>
                   </div>
-                  <div>
-                    <p className={`text-lg font-semibold ${config.color}`}>
-                      {config.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.enableIngestion
-                        ? t("enabled")
-                        : t("disabled")}
-                    </p>
+                  <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Timer className="h-3.5 w-3.5" />
+                      {data.durationMs != null ? formatDuration(data.durationMs) : "—"}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5" />
+                      {data.manuscriptsIngested.toLocaleString()}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Link2 className="h-3.5 w-3.5" />
+                      {data.versesLinked.toLocaleString()}
+                    </span>
                   </div>
                 </div>
                 <button
@@ -134,253 +117,67 @@ function IngestionContent() {
                   {t("runNow")}
                 </button>
               </div>
-              {(trigger.isError || reset.isError) && (
+
+              {/* Mobile metrics */}
+              <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground sm:hidden">
+                <span className="flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5" />
+                  {data.durationMs != null ? formatDuration(data.durationMs) : "—"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  {data.manuscriptsIngested.toLocaleString()}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5" />
+                  {data.versesLinked.toLocaleString()}
+                </span>
+              </div>
+
+              {trigger.isError && (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-                  {((trigger.error || reset.error) as Error).message}
+                  {(trigger.error as Error).message}
                 </p>
               )}
             </div>
-
-            {/* Reset + Re-ingest */}
-            <div className="rounded-xl border border-red-300/30 bg-red-950/20 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-red-400">
-                    {t("resetTitle")}
-                  </p>
-                  <p className="text-xs text-red-400/70 mt-0.5">
-                    {t("resetDescription")}
-                  </p>
-                </div>
-                {!showConfirm ? (
-                  <button
-                    onClick={() => setShowConfirm(true)}
-                    disabled={data.isRunning || reset.isPending || !data.enableIngestion}
-                    className="flex shrink-0 items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t("resetButton")}
-                  </button>
-                ) : (
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      onClick={() => setShowConfirm(false)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-                    >
-                      {t("cancel")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        reset.mutate();
-                        setShowConfirm(false);
-                      }}
-                      disabled={reset.isPending}
-                      className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-                    >
-                      {reset.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      {t("confirmReset")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Dating Enrichment */}
-            <div className="rounded-xl border border-amber-500/30 bg-amber-950/10 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900">
-                    <Sparkles className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {t("enrichTitle")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t("enrichDescription")}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={enrichDomain}
-                    onChange={(e) => setEnrichDomain(e.target.value as "fathers" | "manuscripts" | "all")}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="fathers">{t("enrichFathers")}</option>
-                    <option value="manuscripts">{t("enrichManuscripts")}</option>
-                    <option value="all">{t("enrichAll")}</option>
-                  </select>
-                  <button
-                    onClick={() => enrich.mutate({ domain: enrichDomain, limit: 50 })}
-                    disabled={enrich.isPending}
-                    className="flex shrink-0 items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {enrich.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                    {t("enrichButton")}
-                  </button>
-                </div>
-              </div>
-              {enrich.isSuccess && (
-                <p className="mt-3 text-sm text-emerald-500">
-                  {(enrich.data as { message: string }).message}
-                </p>
-              )}
-              {enrich.isError && (
-                <p className="mt-3 text-sm text-red-400">
-                  {(enrich.error as Error).message}
-                </p>
-              )}
-            </div>
-
-            {/* Patristic Ingestion */}
-            <div className="rounded-xl border border-blue-500/30 bg-blue-950/10 p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
-                  <BookOpen className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {t("patristicTitle")}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {t("patristicDescription")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  onClick={() => patristicSeed.mutate()}
-                  disabled={patristicSeed.isPending || patristicTranslate.isPending || data.isRunning}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {patristicSeed.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <BookOpen className="h-4 w-4" />
-                  )}
-                  {t("patristicSeedButton")}
-                </button>
-                <button
-                  onClick={() => patristicTranslate.mutate({ force: forceTranslate })}
-                  disabled={patristicTranslate.isPending || patristicSeed.isPending || data.isRunning}
-                  className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {patristicTranslate.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Languages className="h-4 w-4" />
-                  )}
-                  {t("patristicTranslateButton")}
-                </button>
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={forceTranslate}
-                    onChange={(e) => setForceTranslate(e.target.checked)}
-                    className="rounded border-border"
-                  />
-                  {t("patristicForceTranslate")}
-                </label>
-              </div>
-              {patristicSeed.isSuccess && (
-                <p className="mt-3 text-sm text-emerald-500">
-                  {(patristicSeed.data as { message: string }).message}
-                </p>
-              )}
-              {patristicTranslate.isSuccess && (
-                <p className="mt-3 text-sm text-emerald-500">
-                  {(patristicTranslate.data as { message: string }).message}
-                </p>
-              )}
-              {(patristicSeed.isError || patristicTranslate.isError) && (
-                <p className="mt-3 text-sm text-red-400">
-                  {((patristicSeed.error || patristicTranslate.error) as Error).message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
-                icon={<Timer className="h-5 w-5 text-blue-500" />}
-                bg="bg-blue-100 dark:bg-blue-900"
-                label={t("duration")}
-                value={
-                  data.durationMs != null
-                    ? formatDuration(data.durationMs)
-                    : "—"
-                }
-              />
-              <MetricCard
-                icon={<FileText className="h-5 w-5 text-amber-500" />}
-                bg="bg-amber-100 dark:bg-amber-900"
-                label={t("manuscripts")}
-                value={data.manuscriptsIngested.toLocaleString()}
-              />
-              <MetricCard
-                icon={<Link2 className="h-5 w-5 text-emerald-500" />}
-                bg="bg-emerald-100 dark:bg-emerald-900"
-                label={t("versesLinked")}
-                value={data.versesLinked.toLocaleString()}
-              />
-              <MetricCard
-                icon={<Clock className="h-5 w-5 text-violet-500" />}
-                bg="bg-violet-100 dark:bg-violet-900"
-                label={t("lastRun")}
-                value={
-                  data.startedAt
-                    ? new Date(data.startedAt).toLocaleString()
-                    : tc("never")
-                }
-              />
-            </div>
-
-            <CouncilIngestionPanel />
 
             {data.status === "failed" && data.errorMessage && (
-              <div className="rounded-xl border border-red-300 bg-red-50 p-5 dark:border-red-800 dark:bg-red-950">
-                <h3 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2">
-                  {tc("error")}
-                </h3>
+              <div className="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
                 <p className="text-sm text-red-600 dark:text-red-400 font-mono">
                   {data.errorMessage}
                 </p>
               </div>
             )}
+
+            {/* Tabs */}
+            <div className="rounded-xl border border-border bg-card">
+              <div className="flex border-b border-border">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? "border-b-2 border-primary text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="hidden sm:inline">{t(`tabs.${tab.key}`)}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="p-4">
+                {activeTab === "manuscripts" && <ManuscriptIngestionPanel />}
+                {activeTab === "patristic" && <PatristicIngestionPanel />}
+                {activeTab === "councils" && <CouncilIngestionPanel />}
+                {activeTab === "bible" && <BibleIngestionPanel />}
+                {activeTab === "llmQueue" && <LlmQueuePanel />}
+              </div>
+            </div>
+
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  icon,
-  bg,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  bg: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center gap-3">
-        <div className={`rounded-lg p-2 ${bg}`}>{icon}</div>
-        <div>
-          <p className="text-lg font-bold">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
-        </div>
       </div>
     </div>
   );

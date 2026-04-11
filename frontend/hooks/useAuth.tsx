@@ -27,6 +27,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loginError: string | null;
+  expiresAt: number | null;
   login: (credential: string) => Promise<void>;
   logout: () => void;
 }
@@ -37,9 +38,12 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   isAdmin: false,
   loginError: null,
+  expiresAt: null,
   login: async () => {},
   logout: () => {},
 });
+
+const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -49,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
 
   const hydrate = useCallback(async () => {
     const token = getAuthToken();
@@ -64,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("unauthenticated");
         return;
       }
+      setExpiresAt(decoded.exp * 1000);
     } catch {
       clearAuthToken();
       setStatus("unauthenticated");
@@ -80,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearAuthToken();
       }
       setStatus("unauthenticated");
+      setExpiresAt(null);
     }
   }, []);
 
@@ -93,7 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { token, user: loggedUser } = await loginWithGoogle(credential);
-      setAuthToken(token, 28800); // 8 hours
+      setAuthToken(token, SEVEN_DAYS_SECONDS);
+      try {
+        const decoded = jwtDecode<{ exp: number }>(token);
+        setExpiresAt(decoded.exp * 1000);
+      } catch { /* ignore */ }
       setUser(loggedUser);
       setStatus("authenticated");
     } catch (err) {
@@ -112,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setStatus("unauthenticated");
     setLoginError(null);
+    setExpiresAt(null);
   }, []);
 
   return (
@@ -122,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: status === "authenticated",
         isAdmin: user?.role === "ADMIN",
         loginError,
+        expiresAt,
         login,
         logout,
       }}

@@ -57,7 +57,7 @@ export default function BookDetailPage() {
           </Link>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <CenturySlider value={century} onChange={setCentury} />
@@ -95,7 +95,7 @@ export default function BookDetailPage() {
         {chapterData && (
           <>
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 md:p-6">
                 <Heatmap
                   chapters={chapterData.chapters}
                   bookName={bookName}
@@ -103,7 +103,7 @@ export default function BookDetailPage() {
               </div>
 
               {timelineData && (
-                <div className="rounded-xl border border-border bg-card p-6">
+                <div className="rounded-xl border border-border bg-card p-4 md:p-6">
                   <h3 className="mb-3 text-sm font-semibold">
                     {t("coverageTimeline", { book: translatedBookName })}
                   </h3>
@@ -113,7 +113,7 @@ export default function BookDetailPage() {
             </div>
 
             {missingData && missingData.totalMissing > 0 && (
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 md:p-6">
                 <h3 className="mb-1 text-sm font-semibold">
                   {t("missingVerses", { count: missingData.totalMissing })}
                 </h3>
@@ -133,7 +133,7 @@ export default function BookDetailPage() {
               </div>
             )}
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="mb-4 text-sm font-semibold">
                 {t("verseMapByChapter")}
               </h3>

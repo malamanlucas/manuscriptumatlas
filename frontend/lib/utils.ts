@@ -12,19 +12,19 @@ export function toRoman(n: number): string {
 }
 
 export function coverageColor(percent: number): string {
-  if (percent >= 90) return "bg-emerald-600 text-white";
-  if (percent >= 60) return "bg-emerald-400 text-white";
-  if (percent >= 30) return "bg-amber-400 text-black";
-  if (percent > 0) return "bg-red-400 text-white";
+  if (percent >= 90) return "bg-[#4a7a6a] text-white";
+  if (percent >= 60) return "bg-[#5a8a7a] text-white";
+  if (percent >= 30) return "bg-[#b8976a] text-white";
+  if (percent > 0) return "bg-[#a65d57] text-white";
   return "bg-gray-300 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
 }
 
 export function coverageHeatColor(percent: number): string {
-  if (percent >= 90) return "#059669";
-  if (percent >= 60) return "#34d399";
-  if (percent >= 30) return "#fbbf24";
-  if (percent > 0) return "#f87171";
-  return "#d1d5db";
+  if (percent >= 90) return "#4a7a6a";
+  if (percent >= 60) return "#5a8a7a";
+  if (percent >= 30) return "#b8976a";
+  if (percent > 0) return "#a65d57";
+  return "#c8c8c8";
 }
 
 export const NT_BOOKS = [

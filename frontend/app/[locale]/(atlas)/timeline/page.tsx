@@ -29,7 +29,7 @@ export default function TimelinePage() {
       />
 
       <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -125,7 +125,7 @@ export default function TimelinePage() {
 
         {data && (
           <>
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h2 className="mb-4 text-base font-semibold">
                 {book ? tBooks(book) : "New Testament"} &mdash;{" "}
                 {showDelta ? t("newVersesPerCentury") : t("cumulativeCoverage")}
@@ -134,7 +134,7 @@ export default function TimelinePage() {
               <TimelineChart entries={data.entries} showDelta={showDelta} />
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h2 className="mb-4 text-base font-semibold">
                 {t("centuryByCenturyData")}
               </h2>

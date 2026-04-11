@@ -16,10 +16,10 @@ import {
 import { ScrollText, FileText, BookOpen, PenTool } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {
-  Papyrus: "#f59e0b",
-  Uncial: "#3b82f6",
-  Minuscule: "#10b981",
-  Lectionary: "#8b5cf6",
+  Papyrus: "#b8976a",
+  Uncial: "#4a6fa5",
+  Minuscule: "#5a8a7a",
+  Lectionary: "#7a6e8a",
 };
 
 export default function ManuscriptCountPage() {
@@ -58,7 +58,7 @@ export default function ManuscriptCountPage() {
 
         {data && (
           <>
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <div className="rounded-xl border border-border bg-card p-5 text-center md:p-8">
               <p className="text-sm text-muted-foreground mb-2">
                 {t("totalCatalogued")}
               </p>
@@ -92,7 +92,7 @@ export default function ManuscriptCountPage() {
               />
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4">
                 {t("distributionByType")}
               </h3>
@@ -122,7 +122,7 @@ export default function ManuscriptCountPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6 space-y-4">
               <h3 className="text-lg font-semibold">
                 {t("gregoryAlandSystem")}
               </h3>

@@ -11,8 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RULES = ROOT / ".cursor" / "rules"
-BACKEND = ROOT / "src" / "main" / "kotlin" / "com" / "ntcoverage"
-MIGRATIONS = ROOT / "src" / "main" / "resources" / "db" / "migration"
+BACKEND = ROOT / "backend" / "src" / "main" / "kotlin" / "com" / "ntcoverage"
+MIGRATIONS = ROOT / "backend" / "src" / "main" / "resources" / "db" / "migration"
 FRONTEND = ROOT / "frontend"
 
 
@@ -119,12 +119,15 @@ def collect_components() -> dict[str, list[str]]:
 
 
 def collect_type_count() -> int:
-    """Count exported interfaces and types in frontend/types/index.ts."""
-    types_file = FRONTEND / "types" / "index.ts"
-    if not types_file.exists():
+    """Count exported interfaces and types in frontend/types/*.ts."""
+    types_dir = FRONTEND / "types"
+    if not types_dir.exists():
         return 0
-    text = types_file.read_text()
-    return len(re.findall(r"^export\s+(interface|type)\s+", text, re.MULTILINE))
+    total = 0
+    for f in types_dir.glob("*.ts"):
+        text = f.read_text()
+        total += len(re.findall(r"^export\s+(interface|type)\s+", text, re.MULTILINE))
+    return total
 
 
 # ---------------------------------------------------------------------------

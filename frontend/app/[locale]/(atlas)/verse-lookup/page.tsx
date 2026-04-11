@@ -73,7 +73,7 @@ function VerseLookupContent() {
       />
 
       <div className="mx-auto w-full max-w-7xl p-4 md:p-6 space-y-6">
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
           <p className="text-sm text-muted-foreground mb-4">
             {t("instruction")}
           </p>
@@ -132,7 +132,7 @@ function VerseLookupContent() {
 
         {searched && !loading && !error && result && (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-muted/30">
+            <div className="px-4 py-3 border-b border-border bg-muted/30 md:px-6 md:py-4">
               <h2 className="text-lg font-semibold">
                 {result.book} {result.chapter}:{result.verse}
               </h2>
