@@ -367,14 +367,12 @@ class BibleIngestionService(
     }
 
     private suspend fun seedBooks() = runPhaseTracked("bible_seed_books") {
-        val filters = loadBookFilter()
-        val allEntries = BibleBooksSeedData.entries
-        val entries = if (filters != null) allEntries.filter { shouldProcessBook(it.name, filters) } else allEntries
+        val entries = BibleBooksSeedData.entries
         val totalItems = entries.sumOf { 1 + it.totalChapters + it.totalVerses }
         phaseTracker.markProgress("bible_seed_books", 0, totalItems)
         var processed = 0
 
-        log.info("BIBLE_SEED_BOOKS: processing ${entries.size}/${allEntries.size} books")
+        log.info("BIBLE_SEED_BOOKS: processing ${entries.size} books")
 
         for (entry in entries) {
             val bookId = bookRepository.upsertBook(
@@ -385,7 +383,6 @@ class BibleIngestionService(
 
             for ((chapterIdx, verseCount) in entry.chaptersVerses.withIndex()) {
                 val chapterNumber = chapterIdx + 1
-                if (!shouldProcessChapter(entry.name, chapterNumber, filters)) continue
                 bookRepository.upsertChapter(bookId, chapterNumber, verseCount)
                 processed++
                 for (verseNum in 1..verseCount) {
@@ -438,7 +435,6 @@ class BibleIngestionService(
 
             // Parse JSON format: array of books, each with chapters array, each with verses array
             // Format: [{"abbrev":"gn","chapters":[["verse1","verse2",...],...]},...]
-            val filters = loadBookFilter()
             val books = bookRepository.findAll()
             val booksByOrder = books.associateBy { it.bookOrder }
 
@@ -450,12 +446,10 @@ class BibleIngestionService(
                 val bookOrder = bookIdx + 1
                 val book = booksByOrder[bookOrder]
                 if (book == null) continue
-                if (!shouldProcessBook(book.name, filters)) continue
 
                 val chapters = bookJson.chapters
                 for ((chapterIdx, verses) in chapters.withIndex()) {
                     val chapterNum = chapterIdx + 1
-                    if (!shouldProcessChapter(book.name, chapterNum, filters)) continue
                     for ((verseIdx, verseText) in verses.withIndex()) {
                         val verseNum = verseIdx + 1
                         val verseId = verseRepository.getVerseId(book.id, chapterNum, verseNum)
@@ -479,10 +473,8 @@ class BibleIngestionService(
             val version = versionRepository.findByCode(versionCode)
                 ?: throw IllegalStateException("Version $versionCode not found. Run bible_seed_versions first.")
 
-            val filters = loadBookFilter()
-            val allBooks = bookRepository.findAll()
-            val books = allBooks.filter { shouldProcessBook(it.name, filters) }
-            log.info("BIBLE_INGEST_TEXT_$versionCode: processing ${books.size}/${allBooks.size} books")
+            val books = bookRepository.findAll()
+            log.info("BIBLE_INGEST_TEXT_$versionCode: processing ${books.size} books")
             phaseTracker.markProgress(phaseName, 0, books.size)
             var totalVerses = 0
 
@@ -496,7 +488,6 @@ class BibleIngestionService(
 
                 try {
                     for (chapter in 1..book.totalChapters) {
-                        if (!shouldProcessChapter(book.name, chapter, filters)) continue
                         val verses = bibleOnlineScraper.scrapeChapter(siteVersionSlug, slug, chapter)
                         for ((verseNum, text) in verses) {
                             val verseId = verseRepository.getVerseId(book.id, chapter, verseNum)
@@ -520,8 +511,6 @@ class BibleIngestionService(
     // ── TAGNT Interlinear (NT Greek with English Gloss + Strong's) ──
 
     private suspend fun ingestTAGNT() = runPhaseTracked("bible_ingest_nt_interlinear") {
-        val filters = loadBookFilter()
-
         // Clear existing interlinear data
         log.info("TAGNT: clearing existing interlinear words...")
         interlinearRepository.deleteAllWords()
@@ -535,7 +524,7 @@ class BibleIngestionService(
             log.info("TAGNT: downloading file ${fileIdx + 1}/${TAGNT_URLS.size}...")
             try {
                 val content = downloadText(url)
-                val words = parseTAGNTAndInsert(content, bookIdByName, filters)
+                val words = parseTAGNTAndInsert(content, bookIdByName)
                 totalWords += words
                 log.info("TAGNT: file ${fileIdx + 1} → $words words")
             } catch (e: Exception) {
@@ -546,7 +535,7 @@ class BibleIngestionService(
         log.info("BIBLE_INGEST_NT_INTERLINEAR: ingested $totalWords words from TAGNT")
     }
 
-    private fun parseTAGNTAndInsert(content: String, bookIdByName: Map<String, Int>, filters: List<BookFilter>? = null): Int {
+    private fun parseTAGNTAndInsert(content: String, bookIdByName: Map<String, Int>): Int {
         // TAGNT format (tab-separated):
         // Col 0: Mat.1.1#01=NKO  → reference + word position + manuscript type
         // Col 1: Βίβλος (Biblos) → Greek text (transliteration)
@@ -573,8 +562,6 @@ class BibleIngestionService(
             val wordPos = refMatch.groupValues[4].toIntOrNull() ?: continue
 
             val bookName = TAGNT_BOOK_MAP[bookAbbr] ?: continue
-            if (!shouldProcessBook(bookName, filters)) continue
-            if (!shouldProcessChapter(bookName, chapter, filters)) continue
             val bookId = bookIdByName[bookName] ?: continue
 
             // Parse Greek + transliteration: "Βίβλος (Biblos)"
@@ -960,69 +947,8 @@ Rules:
     // ── Gloss Translation via LLM (batch per chapter) ──
 
     private suspend fun translateGlosses() = runPhaseTracked("bible_translate_glosses") {
-        // Direct LLM removed — gloss translation now uses queue
+        // Direct LLM removed — gloss translation now uses queue (translateGlossesPrepare)
         log.info("BIBLE_TRANSLATE_GLOSSES: direct LLM removed — skipping (use queue)")
-        return@runPhaseTracked
-
-        val filters = loadBookFilter()
-        val allBooks = bookRepository.findAll("NT")
-        val booksToProcess = allBooks.filter { shouldProcessBook(it.name, filters) }
-
-        log.info("TRANSLATE_GLOSSES: books to process: ${booksToProcess.map { it.name }}")
-
-        var totalUpdated = 0
-        var totalProcessed = 0
-
-        for (book in booksToProcess) {
-            for (chapter in 1..book.totalChapters) {
-                if (!shouldProcessChapter(book.name, chapter, filters)) continue
-
-                val wordsWithIds = interlinearRepository.getWordsForChapterWithIds(book.id, chapter)
-                val untranslated = wordsWithIds.filter {
-                    !it.second.transliteration.isNullOrBlank() && it.second.portugueseGloss.isNullOrBlank()
-                }
-
-                if (untranslated.isEmpty()) continue
-
-                log.info("TRANSLATE_GLOSSES: 📖 ${book.name} chapter $chapter | ${untranslated.size} words to translate")
-
-                // Dedup by (transliteration, morphology, englishGloss, lemma) — same Greek form always gets the same translation
-                val uniqueEntries = untranslated
-                    .map { GlossTranslationEntry(
-                        it.second.transliteration!!.trim(),
-                        it.second.morphology?.trim() ?: "",
-                        it.second.englishGloss?.trim()?.removeSurrounding("<", ">") ?: "",
-                        it.second.lemma?.trim() ?: ""
-                    ) }
-                    .distinct()
-
-                log.info("TRANSLATE_GLOSSES: 📖 ${book.name}:$chapter | translating ${uniqueEntries.size} unique entries → Portuguese + Spanish (parallel)")
-                val (ptTranslations, esTranslations) = coroutineScope {
-                    val ptDeferred = async { translateGlossBatch(uniqueEntries, "Portuguese") }
-                    val esDeferred = async { translateGlossBatch(uniqueEntries, "Spanish") }
-                    ptDeferred.await() to esDeferred.await()
-                }
-
-                var chapterUpdated = 0
-                for ((wordId, dto) in untranslated) {
-                    val key = GlossTranslationEntry(dto.transliteration!!.trim(), dto.morphology?.trim() ?: "", dto.englishGloss?.trim()?.removeSurrounding("<", ">") ?: "", dto.lemma?.trim() ?: "")
-                    val ptGloss = deterministicGloss(dto.strongsNumber, dto.morphology, "pt") ?: ptTranslations[key]
-                    val esGloss = deterministicGloss(dto.strongsNumber, dto.morphology, "es") ?: esTranslations[key]
-                    if (ptGloss != null || esGloss != null) {
-                        interlinearRepository.updateGlosses(wordId, ptGloss, esGloss)
-                        chapterUpdated++
-                    }
-                }
-
-                totalUpdated += chapterUpdated
-                totalProcessed += untranslated.size
-                phaseTracker.markProgress("bible_translate_glosses", totalProcessed)
-                log.info("TRANSLATE_GLOSSES: ✅ ${book.name}:$chapter | updated=$chapterUpdated | total=$totalUpdated")
-            }
-        }
-
-        phaseTracker.markProgress("bible_translate_glosses", totalProcessed)
-        log.info("TRANSLATE_GLOSSES: DONE | total_updated=$totalUpdated total_processed=$totalProcessed")
     }
 
     /**
@@ -1531,15 +1457,11 @@ Return in the EXACT same format with translated values:"""
     suspend fun translateGlossesPrepare() = runPhaseTracked("bible_translate_glosses") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_translate_glosses"
-        val filters = loadBookFilter()
-        val allBooks = bookRepository.findAll("NT")
-        val booksToProcess = allBooks.filter { shouldProcessBook(it.name, filters) }
+        val booksToProcess = bookRepository.findAll("NT")
 
         var enqueued = 0
         for (book in booksToProcess) {
             for (chapter in 1..book.totalChapters) {
-                if (!shouldProcessChapter(book.name, chapter, filters)) continue
-
                 val wordsWithIds = interlinearRepository.getWordsForChapterWithIds(book.id, chapter)
                 val untranslated = wordsWithIds.filter {
                     !it.second.transliteration.isNullOrBlank() && it.second.portugueseGloss.isNullOrBlank()

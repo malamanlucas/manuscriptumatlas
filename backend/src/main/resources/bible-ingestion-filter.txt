@@ -17,15 +17,12 @@
 #   Genesis:1          → Gênesis 1
 #   Matthew            → todo Mateus
 #
-# Fases afetadas:
-#   - Seed de livros/versículos/abreviações
-#   - Ingestão de texto (KJV, AA, ACF, ARC69)
-#   - Interlinear NT (TAGNT)
-#   - Tradução de glosses (IA)
+# Fases afetadas (APENAS Camada 4 — Alinhamento):
+#   - bible_align_kjv, bible_align_arc69
+#   - bible_align_hebrew_kjv, bible_align_hebrew_arc69
 #
-# Fases NÃO afetadas (sempre globais):
-#   - Seed de versões
-#   - Léxico grego/hebraico
-#   - Tradução de léxico (IA)
+# Fases NÃO afetadas (processam TODOS os livros):
+#   - Todas as fases das Camadas 1, 2 e 3
+#   - Seed, texto, interlinear, léxico, glosses, enriquecimento
 
 John
