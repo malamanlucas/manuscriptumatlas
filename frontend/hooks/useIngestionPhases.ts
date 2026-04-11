@@ -107,6 +107,10 @@ export function useRunBiblePhase() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bible-ingestion"] });
     },
+    onError: (error: Error) => {
+      console.error("[useRunBiblePhase] failed:", error);
+      alert(`Erro ao executar fase: ${error.message}`);
+    },
   });
 }
 
@@ -116,6 +120,10 @@ export function useRunBibleLayerPhases() {
     mutationFn: (phases: string[]) => runBiblePhases(phases),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bible-ingestion"] });
+    },
+    onError: (error: Error) => {
+      console.error("[useRunBibleLayerPhases] failed:", error);
+      alert(`Erro ao executar fases: ${error.message}`);
     },
   });
 }
@@ -127,6 +135,10 @@ export function useRunAllBiblePhases() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bible-ingestion"] });
     },
+    onError: (error: Error) => {
+      console.error("[useRunAllBiblePhases] failed:", error);
+      alert(`Erro ao executar todas as fases: ${error.message}`);
+    },
   });
 }
 
@@ -136,6 +148,10 @@ export function useClearBibleGlosses() {
     mutationFn: () => clearBibleGlosses(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bible-ingestion"] });
+    },
+    onError: (error: Error) => {
+      console.error("[useClearBibleGlosses] failed:", error);
+      alert(`Erro ao limpar glosses: ${error.message}`);
     },
   });
 }
