@@ -142,4 +142,4 @@ Documentação completa: [`docs/ingestion-pipelines.md`](docs/ingestion-pipeline
 - [`docs/ingestion-pipelines.md`](docs/ingestion-pipelines.md) — Pipelines de ingestão (4 domínios, 49 fases)
 - [`docs/llm-concepts.md`](docs/llm-concepts.md) — Arquitetura LLM: tiers, queue, Kafka
 - [`docs/bible-interlinear-system.md`](docs/bible-interlinear-system.md) — Sistema interlinear grego/hebraico
-- [`docs/ingestion-architecture.md`](docs/ingestion-architecture.md) — Diagramas Mermaid do fluxo de ingestão
+- [`docs/architecture/ingestion-architecture.md`](docs/architecture/ingestion-architecture.md) — Diagramas Mermaid do fluxo de ingestão

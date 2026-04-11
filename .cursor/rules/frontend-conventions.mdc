@@ -23,24 +23,24 @@ alwaysApply: false
 
 ```
 frontend/
-├── app/[locale]/          Páginas (34 rotas) — App Router com i18n
+├── app/[locale]/          Páginas (37 rotas) — App Router com i18n
 ├── components/
 │   ├── bible/              BibleNavigation, BibleReader, BibleSearchBar, BibleSearchResults, InterlinearView, LinkedVerseReader, StrongsConcordance, StrongsEntry, StudySidebar, VerseCompare
 │   ├── charts/             ComparisonChart, CouncilsTimelineChart, FathersTimelineChart, Heatmap, TimelineChart
 │   ├── councils/           CouncilMapView, CouncilTypeBadge, SourceProvenancePanel, SummaryToggle
 │   ├── coverage/           BookCard, CenturySlider, GospelPanel, VerseGrid
 │   ├── filters/            CenturyRangeFilter, YearRangeFilter, YearSliderFilter
-│   ├── ingestion/          BibleIngestionPanel, CouncilIngestionPanel, IngestionPhasePanel, ManuscriptIngestionPanel, PatristicIngestionPanel
+│   ├── ingestion/          BibleIngestionPanel, CouncilIngestionPanel, IngestionPhasePanel, LlmQueuePanel, ManuscriptIngestionPanel, PatristicIngestionPanel
 │   ├── layout/             Header, LanguageSelector, Sidebar, SidebarContext, ThemeToggle
 │   ├── llm/                ErrorDetailModal, LlmProviderCard, LlmRateLimitPanel, LlmUsageTable
 │   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorTracker, VisitorsTab
 │   ├── stats/              StatsOverview
 │   ├── ui/                 ConfidenceDot, DatingBadge
 │   └── providers.tsx       React Query + Theme providers
-├── hooks/                 16 hooks customizados
+├── hooks/                 18 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
-├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
-├── types/                 index.ts (95 interfaces/tipos)
+├── lib/                   api/ (módulos por domínio), utils.ts, verseReference.ts
+├── types/                 index.ts (interfaces/tipos)
 └── messages/              en.json, pt.json, es.json
 ```
 
@@ -93,9 +93,9 @@ frontend/
 4. **Tipos**: TypeScript sem `any`, interfaces nos arquivos de tipos?
 5. **Loading/Error**: estados tratados?
 
-## Páginas (34 rotas)
+## Páginas (37 rotas)
 
-Admin / Users, Bible, Bible / Compare, Bible / Interlinear, Bible / Search, Bible / Strongs / Number, Book / Name, Compare, Councils, Councils / Slug, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, Heresies, Heresies / Slug, History, Home, Ingestion Status, Llm Usage, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Patristic Dashboard, Sources, Timeline, Verse Lookup, Wiki Llm
+**Atlas (cobertura/manuscritos):**
 Dashboard, Book/Name, Compare, Timeline, Metrics, Metrics/Book, Manuscript-Count, Manuscripts, Manuscripts/GaId, Verse-Lookup, History, Sources, Methodology, FAQ
 
 **Patrística:**
@@ -105,7 +105,10 @@ Fathers, Fathers/Id, Fathers/Testimony, Patristic-Dashboard
 Councils, Councils/Slug, Heresies, Heresies/Slug
 
 **Bíblia:**
-Bible (home), Bible/Search, Bible/Compare/{book}/{chapter}/{verse}, Bible/Interlinear/{book}/{chapter}/{verse}, Bible/Strongs/[number]
+Bible (home), Bible/Search, Bible/Compare, Bible/Interlinear, Bible/Strongs/[number]
+
+**Apologética:**
+Apologetics, Apologetics/[slug], Apologetics/New
 
 **Admin:**
 Admin/Users, Ingestion-Status, Observatory, LLM-Usage, Wiki-LLM
@@ -117,4 +120,5 @@ Home (redirect), Manifesto
 
 - `IngestionPhasePanel` — componente genérico (status, progresso, botões run/reset)
 - `ManuscriptIngestionPanel`, `PatristicIngestionPanel`, `CouncilIngestionPanel`, `BibleIngestionPanel` — painéis por domínio que delegam ao genérico
-- Hooks: `useIngestionPhases.ts` (fases por domínio), `useIngestion.ts` (status global)
+- `LlmQueuePanel` — painel de monitoramento da fila LLM (pending, processing, apply)
+- Hooks: `useIngestionPhases.ts` (fases por domínio), `useIngestion.ts` (status global), `useCouncilIngestion.ts` (fases de concílios), `useLlmQueue.ts` (fila LLM)
