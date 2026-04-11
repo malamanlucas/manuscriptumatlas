@@ -127,7 +127,7 @@ export default function TimelinePage() {
           <>
             <div className="rounded-xl border border-border bg-card p-4 md:p-6">
               <h2 className="mb-4 text-base font-semibold">
-                {book ? tBooks(book) : "New Testament"} &mdash;{" "}
+                {book ? tBooks(book) : t("fullNT")} &mdash;{" "}
                 {showDelta ? t("newVersesPerCentury") : t("cumulativeCoverage")}
                 {type && ` (${type})`}
               </h2>

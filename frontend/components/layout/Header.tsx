@@ -5,8 +5,10 @@ import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/hooks/useAuth";
 import { GoogleLogin } from "@react-oauth/google";
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 function SessionCountdown({ expiresAt }: { expiresAt: number }) {
+  const ta = useTranslations("auth");
   const [remaining, setRemaining] = useState(() => Math.max(0, expiresAt - Date.now()));
 
   useEffect(() => {
@@ -43,7 +45,7 @@ function SessionCountdown({ expiresAt }: { expiresAt: number }) {
           ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
           : "bg-muted text-muted-foreground"
       }`}
-      title={`Sessao expira em ${days}d ${hours}h ${minutes}m`}
+      title={ta("sessionExpiresIn", { time: `${days}d ${hours}h ${minutes}m` })}
     >
       <Timer className="h-3 w-3" />
       {label}
@@ -57,6 +59,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle }: HeaderProps) {
+  const ta = useTranslations("auth");
   const { toggle, isCollapsed, toggleCollapse } = useSidebar();
   const { user, isAuthenticated, status, loginError, expiresAt, login, logout } = useAuth();
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -129,7 +132,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             <button
               onClick={logout}
               className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-              title="Sair"
+              title={ta("signOut")}
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -137,7 +140,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         ) : loggingIn ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="hidden sm:inline">Autenticando...</span>
+            <span className="hidden sm:inline">{ta("authenticating")}</span>
           </div>
         ) : (
           <div ref={popupRef}>
@@ -152,7 +155,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Entrar</span>
+              <span className="hidden sm:inline">{ta("signIn")}</span>
             </button>
 
             {showLoginPopup && (

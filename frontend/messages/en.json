@@ -820,7 +820,9 @@
     "signOut": "Sign out",
     "signedInAs": "Signed in as",
     "authenticating": "Authenticating...",
-    "loginSuccess": "Logged in successfully!"
+    "loginSuccess": "Logged in successfully!",
+    "signIn": "Sign in",
+    "sessionExpiresIn": "Session expires in {time}"
   },
   "userManagement": {
     "title": "User Management",

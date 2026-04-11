@@ -820,7 +820,9 @@
     "signOut": "Cerrar sesión",
     "signedInAs": "Conectado como",
     "authenticating": "Autenticando...",
-    "loginSuccess": "¡Sesión iniciada con éxito!"
+    "loginSuccess": "¡Sesión iniciada con éxito!",
+    "signIn": "Iniciar sesión",
+    "sessionExpiresIn": "Sesión expira en {time}"
   },
   "userManagement": {
     "title": "Gestión de Usuarios",

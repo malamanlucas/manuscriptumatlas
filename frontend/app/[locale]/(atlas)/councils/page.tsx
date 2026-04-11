@@ -96,7 +96,7 @@ export default function CouncilsPage() {
                     }}
                     className={`rounded-lg px-3 py-2 text-sm font-medium ${type === entry ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
                   >
-                    {entry === "all" ? tc("all") : entry}
+                    {entry === "all" ? tc("all") : t(`types.${entry.toLowerCase()}`)}
                   </button>
                 ))}
               </div>
