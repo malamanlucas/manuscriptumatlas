@@ -191,6 +191,22 @@ This works because `/claim` uses `SELECT FOR UPDATE SKIP LOCKED`.
 
 ## How To Use
 
+### Aggressive parallel drain (host script)
+
+Cursor subagents (`llm-queue-*`) cannot run `docker`/`psql` in Ask mode; for **high parallelism with minimal orchestration**, use the repo script (same tier/phase → model routing as this skill, **one OpenAI call per queue item**, no temp JSON files):
+
+```bash
+set -a; source deploy/.env; set +a   # OPENAI_API_KEY + model envs
+# Optional: QUEUE_UNSTICK_MINUTES=10  — only stale “processing” rows
+python3 scripts/drain_llm_prompt_queue.py
+```
+
+Default execution policy in the script: **LOW** claim 120 / up to **8** workers; **MEDIUM enrichment** claim 100 / up to **6**; **MEDIUM structured** claim 50 / up to **4**; **HIGH** claim 10 / up to **2**. Priority: LOW → enrichment phases (greek, hebrew) → any remaining MEDIUM → HIGH. Stats are refreshed only when a full claim round finds no work (end-of-scope). Set `STRICT_JSON_VALIDATE=1` only when debugging malformed JSON.
+
+Environment knobs: `DRAIN_MAX_BATCHES`, `OPENAI_MAX_429_RETRIES`, `OPENAI_429_BACKOFF_SEC`, `OPENAI_HTTP_TIMEOUT`.
+
+### Cursor-only (subagents)
+
 Standard full drain:
 
 ```text

@@ -13,6 +13,9 @@ Environment (optional, defaults match backend LlmConfig / docker-compose):
   OPENAI_LOW_MODEL, OPENAI_MEDIUM_MODEL, OPENAI_HIGH_MODEL
   LLM_QUEUE_BASE_URL (default http://localhost:8080)
   LLM_QUEUE_EMAIL (default dev@manuscriptum.local)
+  QUEUE_UNSTICK_MINUTES — if set to a positive integer, POST unstick?staleMinutes=… before draining
+  DRAIN_MAX_BATCHES — stop after N claim/process/apply rounds (0 = unlimited)
+  OPENAI_MAX_429_RETRIES, OPENAI_429_BACKOFF_SEC, OPENAI_HTTP_TIMEOUT
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -198,14 +202,29 @@ def openai_chat(
         with urllib.request.urlopen(rq, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
-    try:
-        r = _post(payload)
-    except urllib.error.HTTPError as e:
-        err = e.read().decode("utf-8", errors="replace")
-        if json_object and ("response_format" in err.lower() or "json_object" in err.lower()):
-            del payload["response_format"]
+    max_429 = int(os.environ.get("OPENAI_MAX_429_RETRIES", "8"))
+    backoff = float(os.environ.get("OPENAI_429_BACKOFF_SEC", "3"))
+    attempt = 0
+    while True:
+        try:
             r = _post(payload)
-        else:
+            break
+        except urllib.error.HTTPError as e:
+            err = e.read().decode("utf-8", errors="replace")
+            if "insufficient_quota" in err:
+                raise RuntimeError(f"OpenAI insufficient_quota: {err[:800]}") from e
+            if e.code == 429:
+                if attempt < max_429:
+                    attempt += 1
+                    ra = e.headers.get("Retry-After") if e.headers else None
+                    wait = float(ra) if ra and ra.isdigit() else backoff * attempt
+                    time.sleep(min(wait, 120.0))
+                    continue
+                raise RuntimeError(f"OpenAI HTTP 429 (exhausted retries): {err[:800]}") from e
+            if json_object and ("response_format" in err.lower() or "json_object" in err.lower()):
+                del payload["response_format"]
+                r = _post(payload)
+                break
             raise RuntimeError(f"OpenAI HTTP {e.code}: {err[:800]}") from e
     choice = r["choices"][0]
     msg = choice.get("message") or {}
@@ -267,29 +286,11 @@ def unique_phases(batch: list[dict[str, Any]]) -> list[str]:
     return out
 
 
-def enrichment_phase_names(stats: dict[str, Any]) -> list[str]:
-    names = []
-    for row in stats.get("byPhase") or []:
-        if row.get("pending", 0) > 0 and "bible_translate_enrichment_" in (row.get("phaseName") or ""):
-            names.append(row["phaseName"])
-    names.sort()
-    return names
-
-
-def structured_phase_names(stats: dict[str, Any]) -> list[str]:
-    skip = {"bible_translate_glosses"}
-    names = []
-    for row in stats.get("byPhase") or []:
-        ph = row.get("phaseName") or ""
-        if row.get("pending", 0) <= 0:
-            continue
-        if ph in skip:
-            continue
-        if "bible_translate_enrichment_" in ph:
-            continue
-        names.append(ph)
-    names.sort()
-    return names
+# Fixed order: no stats round-trip needed to discover enrichment phases.
+ENRICHMENT_PHASES: tuple[str, ...] = (
+    "bible_translate_enrichment_greek",
+    "bible_translate_enrichment_hebrew",
+)
 
 
 def batch_scope(batch: list[dict[str, Any]]) -> str:
@@ -316,38 +317,24 @@ def run_batch_parallel(token: str, api_key: str, batch: list[dict[str, Any]]) ->
 
 
 def try_claim_next(token: str, stats_cache: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
+    """
+    Priority: LOW → MEDIUM enrichment (by fixed phase order) → MEDIUM structured (any MEDIUM tier)
+    → HIGH. Refresh stats only when every claim in this round returned empty (end-of-scope check).
+    """
     b = claim(token, limit=120, tier="LOW")
     if b:
         return b, "LOW"
 
-    stats = get_stats(token)
-    stats_cache.clear()
-    stats_cache.update(stats)
-    if int(stats.get("totalPending") or 0) == 0:
-        return [], None
-
-    for ph in enrichment_phase_names(stats):
+    for ph in ENRICHMENT_PHASES:
         b = claim(token, limit=100, phase=ph)
         if b:
             return b, "MEDIUM_ENRICH"
 
-    stats = get_stats(token)
-    stats_cache.clear()
-    stats_cache.update(stats)
-    if int(stats.get("totalPending") or 0) == 0:
-        return [], None
+    # Any remaining MEDIUM (lexicon, biography, councils, etc.) after enrichment phases are drained.
+    b = claim(token, limit=50, tier="MEDIUM")
+    if b:
+        return b, "MEDIUM_STRUCT"
 
-    for ph in structured_phase_names(stats):
-        b = claim(token, limit=50, tier="MEDIUM", phase=ph)
-        if b:
-            return b, "MEDIUM_STRUCT"
-        b = claim(token, limit=50, phase=ph)
-        if b:
-            return b, "MEDIUM_STRUCT"
-
-    stats = get_stats(token)
-    stats_cache.clear()
-    stats_cache.update(stats)
     b = claim(token, limit=10, tier="HIGH")
     if b:
         return b, "HIGH"
@@ -375,8 +362,9 @@ def main() -> int:
         return 2
 
     token = dev_login()
-    unstuck = os.environ.get("QUEUE_UNSTICK_MINUTES", "15").strip()
-    if unstuck.isdigit():
+    # Optional: QUEUE_UNSTICK_MINUTES=10 — only stale processing rows. Omit or empty = no unstick.
+    unstuck = os.environ.get("QUEUE_UNSTICK_MINUTES", "").strip()
+    if unstuck.isdigit() and int(unstuck) > 0:
         r = http_json(
             "POST",
             f"/admin/llm/queue/unstick?staleMinutes={int(unstuck)}",
