@@ -259,6 +259,7 @@ class BibleIngestionService(
             "bible_lemmatize_kjv",
             "bible_align_kjv",
             "bible_align_arc69",
+            "bible_enrich_semantics_arc69",
             "bible_enrich_greek_lexicon",
             "bible_enrich_hebrew_lexicon",
             "bible_reenrich_greek_lexicon",
@@ -328,6 +329,8 @@ class BibleIngestionService(
             "bible_align_arc69", "bible_align_arc69_prepare" -> alignVersionPrepare("ARC69")
             "bible_align_hebrew_kjv", "bible_align_hebrew_kjv_prepare" -> alignVersionPrepare("KJV")
             "bible_align_hebrew_arc69", "bible_align_hebrew_arc69_prepare" -> alignVersionPrepare("ARC69")
+            // Layer 4 — Semantic enrichment (N4b): attaches contextual_sense + semantic_relation to every alignment
+            "bible_enrich_semantics_arc69", "bible_enrich_semantics_arc69_prepare" -> enrichSemanticsPrepare("ARC69")
             // Non-LLM phases (scrapers, no change)
             "bible_enrich_greek_lexicon" -> enrichGreekLexicon()
             "bible_enrich_hebrew_lexicon" -> enrichHebrewLexicon()
@@ -1487,6 +1490,103 @@ Return in the EXACT same format with translated values:"""
         log.info("ALIGN_PREPARE: enqueued $enqueued verses for $versionCode")
     }
 
+    /**
+     * N4b — Semantic Enrichment.
+     *
+     * For every verse that already has word alignments (from N1-N3 + N4a), enqueues an LLM
+     * prompt that returns:
+     *   - contextual_sense: what each Greek word means specifically in this verse
+     *   - semantic_relation: equivalent | synonymous | related | divergent
+     *
+     * Updates word_alignments.contextual_sense + word_alignments.semantic_relation.
+     * Does NOT modify alignment indices, aligned_text or confidence.
+     */
+    suspend fun enrichSemanticsPrepare(versionCode: String) = runPhaseTracked("bible_enrich_semantics_${versionCode.lowercase()}") {
+        val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
+        val phaseName = "bible_enrich_semantics_${versionCode.lowercase()}"
+
+        val version = versionRepository.findByCode(versionCode)
+            ?: throw IllegalArgumentException("Version not found: $versionCode")
+        val filters = loadBookFilter()
+        val allBooks = bookRepository.findAll("NT")
+        val booksToProcess = allBooks.filter { shouldProcessBook(it.name, filters) }
+
+        val systemPrompt = """You are a biblical Greek-Portuguese semantic analysis expert.
+Given a New Testament verse with each Greek word already aligned to its Portuguese translation (ARC69),
+for EVERY alignment provide:
+  "s": the contextual sense — what the Greek word MEANS in this specific verse (not just the dictionary gloss)
+  "r": semantic relationship between the contextual sense and the Portuguese token:
+       "equivalent"  — translation accurately expresses the contextual sense
+       "synonymous"  — translation uses a near-synonym (valid choice, meaning preserved)
+       "related"     — same semantic field but a freer/interpretive translation choice
+       "divergent"   — translation falls outside the expected semantic field for this word
+
+CRITICAL:
+- For polysemous words (e.g. κρίνω = "judge/condemn"), the contextual sense resolves the ambiguity.
+  Example: κρίνεται in John 3:18 → "s":"condenar", "r":"equivalent" (NOT divergent)
+- Idiomatic renderings are NOT divergent if they convey the same meaning.
+  Example: Οὕτως → "de tal maneira" → "r":"equivalent"
+- Only mark "divergent" for genuine mistranslations outside the semantic field.
+- Include EVERY alignment in the response, even if relation is obvious.
+
+Return ONLY valid JSON: {"e":[{"g":<pos>,"s":"<contextual_sense>","r":"<relation>"},...]}"""
+
+        var enqueued = 0
+        for (book in booksToProcess) {
+            for (chapter in 1..book.totalChapters) {
+                if (!shouldProcessChapter(book.name, chapter, filters)) continue
+
+                val interlinearByVerse = interlinearRepository.getWordsForChapter(book.id, chapter)
+                if (interlinearByVerse.isEmpty()) continue
+
+                val versionTexts = verseRepository.getChapterTexts(version.id, book.id, chapter)
+                val versionTextByVerse = versionTexts.associate { it.verseNumber to it.text }
+
+                val alignmentsByVerse = interlinearRepository.getAlignmentsForChapter(book.id, chapter, versionCode)
+
+                for (verseNumber in interlinearByVerse.keys.sorted()) {
+                    val versionText = versionTextByVerse[verseNumber] ?: continue
+                    val verseId = verseRepository.getVerseId(book.id, chapter, verseNumber) ?: continue
+
+                    // Only enrich verses that already have alignments
+                    val verseAlignments = alignmentsByVerse
+                        .filter { (k, _) -> k.first == verseNumber }
+                        .mapValues { it.value }
+                    if (verseAlignments.isEmpty()) continue
+
+                    val words = interlinearByVerse[verseNumber] ?: continue
+
+                    // Build compact prompt with greek word + gloss + aligned ARC69 text
+                    val alignmentsJson = words.joinToString(",") { w ->
+                        val alignment = verseAlignments[Pair(verseNumber, w.wordPosition)]
+                        val ptGloss = w.portugueseGloss ?: w.englishGloss ?: ""
+                        val aligned = alignment?.alignedText ?: ""
+                        """{"g":${w.wordPosition},"w":"${escapeJsonStr(w.originalWord)}","gloss":"${escapeJsonStr(ptGloss)}","aligned":"${escapeJsonStr(aligned)}"}"""
+                    }
+
+                    val userContent = """Verse: ${book.name} ${chapter}:${verseNumber}
+Portuguese (ARC69): "${escapeJsonStr(versionText)}"
+Greek alignments: [$alignmentsJson]"""
+
+                    val ctx = LlmResponseProcessor.SemanticEnrichContext(verseId, versionCode, book.name, chapter, verseNumber)
+                    repo.enqueue(
+                        phaseName = phaseName,
+                        label = "SEMANTIC_ENRICH_${versionCode}_${book.name}_${chapter}v$verseNumber",
+                        systemPrompt = systemPrompt,
+                        userContent = userContent,
+                        temperature = 0.0,
+                        maxTokens = words.size * 30 + 100,
+                        tier = "HIGH",
+                        callbackContext = queueJson.encodeToString(ctx)
+                    )
+                    enqueued++
+                }
+            }
+        }
+        phaseTracker.markProgress(phaseName, enqueued, enqueued)
+        log.info("SEMANTIC_ENRICH_PREPARE: enqueued $enqueued verses for $versionCode")
+    }
+
     suspend fun translateGlossesPrepare() = runPhaseTracked("bible_translate_glosses") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_translate_glosses"
@@ -1557,6 +1657,9 @@ IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
         phaseTracker.markProgress(phaseName, enqueued, enqueued)
         log.info("GLOSS_PREPARE: enqueued $enqueued gloss items")
     }
+
+    private fun escapeJsonStr(s: String): String =
+        s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
 
     private suspend fun runPhaseTracked(phaseName: String, block: suspend () -> Unit) {
         val phaseStartedAt = System.currentTimeMillis()

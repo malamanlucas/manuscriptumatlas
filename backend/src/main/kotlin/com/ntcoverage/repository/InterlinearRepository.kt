@@ -226,6 +226,24 @@ class InterlinearRepository {
             }
     }
 
+    /** Updates only contextual_sense and semantic_relation without touching alignment/confidence fields. */
+    fun updateSemanticFields(
+        verseId: Int,
+        wordPosition: Short,
+        versionCode: String,
+        contextualSense: String?,
+        semanticRelation: String?
+    ) = transaction(db) {
+        WordAlignments.update({
+            (WordAlignments.verseId eq verseId) and
+            (WordAlignments.wordPosition eq wordPosition) and
+            (WordAlignments.versionCode eq versionCode)
+        }) {
+            if (contextualSense != null) it[WordAlignments.contextualSense] = contextualSense
+            if (semanticRelation != null) it[WordAlignments.semanticRelation] = semanticRelation
+        }
+    }
+
     fun hasAlignmentsForVerse(verseId: Int, versionCode: String): Boolean = transaction(db) {
         WordAlignments.selectAll()
             .where { (WordAlignments.verseId eq verseId) and (WordAlignments.versionCode eq versionCode) }

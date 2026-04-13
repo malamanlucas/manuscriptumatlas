@@ -54,8 +54,13 @@ const LAYER_3_PHASES = [
 ];
 
 const LAYER_4_PHASES = [
+  "bible_tokenize_arc69",
+  "bible_tokenize_kjv",
+  "bible_lemmatize_arc69",
+  "bible_lemmatize_kjv",
   "bible_align_kjv",
   "bible_align_arc69",
+  "bible_enrich_semantics_arc69",
   "bible_align_hebrew_kjv",
   "bible_align_hebrew_arc69",
 ];

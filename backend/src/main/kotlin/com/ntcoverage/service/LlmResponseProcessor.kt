@@ -62,6 +62,7 @@ class LlmResponseProcessor(
                     item.label.startsWith("GLOSS_TRANSLATE_") -> applyGlossTranslation(item)
                     item.label.startsWith("ENRICHMENT_TRANSLATE_") -> applyEnrichmentTranslation(item)
                     item.label.startsWith("WORD_ALIGN_") -> applyWordAlignment(item)
+                    item.label.startsWith("SEMANTIC_ENRICH_") -> applySemanticEnrichment(item)
                     item.label.startsWith("DatingEnrichment:manuscript") -> applyManuscriptDating(item)
                     item.label.startsWith("DatingEnrichment:father") -> applyFatherDating(item)
                     item.label.startsWith("BIO_SUMMARIZE_") -> applyBioSummarization(item)
@@ -477,6 +478,15 @@ class LlmResponseProcessor(
     data class WordAlignContext(val verseId: Int, val versionCode: String, val bookName: String, val chapter: Int, val verseNumber: Int)
 
     @Serializable
+    data class SemanticEnrichContext(
+        val verseId: Int,
+        val versionCode: String,
+        val bookName: String,
+        val chapter: Int,
+        val verseNumber: Int
+    )
+
+    @Serializable
     data class ManuscriptDatingContext(val gaId: String)
 
     @Serializable
@@ -521,6 +531,47 @@ class LlmResponseProcessor(
         val t: String? = null,
         val c: Int? = null
     )
+
+    @Serializable
+    private data class SemanticEnrichResponse(val e: List<SemanticEnrichEntry>)
+
+    @Serializable
+    private data class SemanticEnrichEntry(
+        val g: Int,                        // Greek word position
+        val s: String? = null,             // contextual sense
+        val r: String? = null              // semantic_relation: equivalent|synonymous|related|divergent
+    )
+
+    // ── Semantic Enrichment (N4b) ──
+
+    private fun applySemanticEnrichment(item: com.ntcoverage.model.QueueItemDTO) {
+        val ctx = json.decodeFromString(SemanticEnrichContext.serializer(), item.callbackContext!!)
+        val content = item.responseContent?.trim() ?: return
+
+        val jsonContent = cleanLlmJsonResponse(content)
+        val parsed = try {
+            json.decodeFromString<SemanticEnrichResponse>(jsonContent)
+        } catch (e: Exception) {
+            log.warn("LLM_PROCESSOR: failed to parse semantic enrichment JSON for verse={}: {}", ctx.verseId, e.message)
+            return
+        }
+
+        val validRelations = setOf("equivalent", "synonymous", "related", "divergent")
+        var updated = 0
+        for (entry in parsed.e) {
+            val relation = entry.r?.takeIf { it in validRelations }
+            if (entry.s == null && relation == null) continue
+            interlinearRepository.updateSemanticFields(
+                verseId = ctx.verseId,
+                wordPosition = entry.g.toShort(),
+                versionCode = ctx.versionCode,
+                contextualSense = entry.s,
+                semanticRelation = relation
+            )
+            updated++
+        }
+        log.info("LLM_PROCESSOR: applied semantic enrichment verseId={} version={} count={}", ctx.verseId, ctx.versionCode, updated)
+    }
 
     // ── Apologetics handlers ────────────────────────────────
 
