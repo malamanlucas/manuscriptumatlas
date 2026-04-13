@@ -53,6 +53,23 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/l
 curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=HIGH&limit=10"
 ```
 
+**Sessao dedicada a uma fase especifica (maximo paralelismo com 4+ terminais):**
+```bash
+# Terminal 1 — glosses (LOW)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=LOW&limit=50"
+
+# Terminal 2 — enrichment hebraico (MEDIUM/Haiku, maior volume)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?phase=bible_translate_enrichment_hebrew&limit=50"
+
+# Terminal 3 — enrichment grego (MEDIUM/Haiku)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?phase=bible_translate_enrichment_greek&limit=50"
+
+# Terminal 4 — lexicon (MEDIUM/Sonnet, volume menor)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8080/admin/llm/queue/claim?tier=MEDIUM&phase=bible_translate_lexicon&limit=50"
+```
+
+> Sessoes dedicadas eliminam competicao entre terminais e maximizam throughput.
+
 ### 3. Processar — UM ITEM POR VEZ por Agent
 
 **REGRA CRITICA DE CORRECAO:** Cada Agent deve processar **exatamente 1 item** e retornar **exatamente 1 resposta**. NAO agrupe multiplos itens em um unico Agent — isso causa respostas desalinhadas (o item N recebe a resposta do item N-1).
@@ -110,6 +127,25 @@ Volte ao passo 1. Processe ate a fila esvaziar ou o loop externo parar.
 - **Claims grandes:** Claim 50 de uma vez, depois processe em lotes de 5 paralelos.
 - **Nao espere apply:** Chame apply apos salvar todos os itens de uma fase, nao apos cada item.
 - **Pule stats repetido:** Apos o primeiro check, va direto pro claim.
+- **Sessoes dedicadas:** Com 4+ terminais, use `?phase=` para dedicar cada terminal a uma fase. Elimina competicao.
+
+## Recuperar itens travados (orphaned)
+
+Se o processo foi interrompido, itens podem ficar presos em `processing`. Use:
+
+```bash
+# Reset SOMENTE itens em processing ha mais de 10 minutos (seguro com sessoes ativas)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/admin/llm/queue/unstick?staleMinutes=10"
+
+# Reset de uma fase especifica (mais seguro)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/admin/llm/queue/unstick?phase=bible_translate_glosses&staleMinutes=10"
+
+# Reset total (usar apenas quando NENHUMA sessao estiver rodando)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/admin/llm/queue/unstick"
+```
 
 ## Notas
 

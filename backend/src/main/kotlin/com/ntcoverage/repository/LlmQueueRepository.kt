@@ -6,6 +6,7 @@ import com.ntcoverage.model.QueuePhaseStatsDTO
 import com.ntcoverage.model.QueueStatsDTO
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
@@ -84,26 +85,37 @@ class LlmQueueRepository {
     /**
      * Atomically claims pending items using SELECT FOR UPDATE SKIP LOCKED.
      * Safe for concurrent consumers — each caller gets unique items.
+     * Sets claimed_at to enable timeout-based stale detection.
      */
     fun claimPending(limit: Int = 50, tier: String? = null, phase: String? = null): List<QueueItemDTO> = transaction {
-        // Step 1: SELECT ids with FOR UPDATE SKIP LOCKED (raw SQL for PG-specific locking)
-        val tierFilter = if (tier != null) "AND tier = '${tier.replace("'", "''")}'" else ""
-        val phaseFilter = if (phase != null) "AND phase_name = '${phase.replace("'", "''")}'" else ""
+        // Step 1: SELECT ids with FOR UPDATE SKIP LOCKED — use parameterized args to avoid injection
+        val args = mutableListOf<Pair<IColumnType<*>, Any?>>()
+        val filters = StringBuilder("WHERE status = 'pending'")
+        if (tier != null) {
+            filters.append(" AND tier = ?")
+            args.add(VarCharColumnType() to tier)
+        }
+        if (phase != null) {
+            filters.append(" AND phase_name = ?")
+            args.add(VarCharColumnType() to phase)
+        }
         val selectSql = """
             SELECT id FROM llm_prompt_queue
-            WHERE status = 'pending' $tierFilter $phaseFilter
+            $filters
             ORDER BY id ASC
             LIMIT $limit
             FOR UPDATE SKIP LOCKED
         """.trimIndent()
 
         val ids = mutableListOf<Int>()
-        exec(selectSql) { rs -> while (rs.next()) ids.add(rs.getInt("id")) }
+        exec(selectSql, args) { rs -> while (rs.next()) ids.add(rs.getInt("id")) }
         if (ids.isEmpty()) return@transaction emptyList()
 
-        // Step 2: UPDATE those ids to processing
+        // Step 2: UPDATE those ids to processing, recording claim time
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
         LlmPromptQueue.update({ LlmPromptQueue.id inList ids }) {
             it[status] = "processing"
+            it[claimedAt] = now
         }
 
         // Step 3: Return the full items
@@ -196,17 +208,27 @@ class LlmQueueRepository {
         }
     }
 
-    fun unstickProcessing(phaseName: String? = null): Int = transaction {
-        val condition = if (phaseName != null) {
-            (LlmPromptQueue.status eq "processing") and (LlmPromptQueue.phaseName eq phaseName)
-        } else {
-            LlmPromptQueue.status eq "processing"
+    /**
+     * Resets processing items back to pending.
+     * @param phaseName optional filter by phase
+     * @param staleMinutes if set, only resets items claimed more than N minutes ago
+     *                     (items without claimed_at are always included when staleMinutes is set)
+     */
+    fun unstickProcessing(phaseName: String? = null, staleMinutes: Int? = null): Int = transaction {
+        var condition: Op<Boolean> = LlmPromptQueue.status eq "processing"
+        if (phaseName != null) condition = condition and (LlmPromptQueue.phaseName eq phaseName)
+        if (staleMinutes != null) {
+            val cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(staleMinutes.toLong())
+            val staleOrUntracked = (LlmPromptQueue.claimedAt less cutoff) or
+                LlmPromptQueue.claimedAt.isNull()
+            condition = condition and staleOrUntracked
         }
         LlmPromptQueue.update({ condition }) {
             it[status] = "pending"
             it[processedAt] = null
             it[responseContent] = null
             it[modelUsed] = null
+            it[claimedAt] = null
         }
     }
 
@@ -236,7 +258,8 @@ class LlmQueueRepository {
         callbackContext = this[LlmPromptQueue.callbackContext],
         createdAt = this[LlmPromptQueue.createdAt].toString(),
         processedAt = this[LlmPromptQueue.processedAt]?.toString(),
-        batchId = this[LlmPromptQueue.batchId]
+        batchId = this[LlmPromptQueue.batchId],
+        claimedAt = this[LlmPromptQueue.claimedAt]?.toString()
     )
 }
 

@@ -450,8 +450,10 @@ fun Route.adminRoutes(
 
     post("/admin/llm/queue/unstick") {
         val phase = call.request.queryParameters["phase"]
-        val unstuck = llmQueueRepository.unstickProcessing(phase)
-        call.respond(MessageResponse("$unstuck processing items reset to pending"))
+        val staleMinutes = call.request.queryParameters["staleMinutes"]?.toIntOrNull()
+        val unstuck = llmQueueRepository.unstickProcessing(phase, staleMinutes)
+        val desc = if (staleMinutes != null) "stale >$staleMinutes min" else "all processing"
+        call.respond(MessageResponse("$unstuck $desc items reset to pending"))
     }
 
     post("/admin/llm/queue/apply/{phase}") {

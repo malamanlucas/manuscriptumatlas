@@ -451,6 +451,7 @@ object LlmPromptQueue : IntIdTable("llm_prompt_queue") {
     val createdAt = timestampWithTimeZone("created_at")
     val processedAt = timestampWithTimeZone("processed_at").nullable()
     val batchId = varchar("batch_id", 100).nullable().index()
+    val claimedAt = timestampWithTimeZone("claimed_at").nullable().index()
 }
 
 object VisitorDailyStats : IntIdTable("visitor_daily_stats") {

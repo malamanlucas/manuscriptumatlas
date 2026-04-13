@@ -918,7 +918,8 @@ data class QueueItemDTO(
     val callbackContext: String? = null,
     val createdAt: String,
     val processedAt: String? = null,
-    val batchId: String? = null
+    val batchId: String? = null,
+    val claimedAt: String? = null
 )
 
 @Serializable
