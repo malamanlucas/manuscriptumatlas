@@ -50,6 +50,10 @@ export interface WordAlignmentDTO {
   alignedText: string | null;
   isDivergent: boolean;
   confidence: number;
+  tokenPositions?: number[] | null;
+  method?: string | null;
+  contextualSense?: string | null;
+  semanticRelation?: string | null;
 }
 
 export interface InterlinearWordDTO {

@@ -166,8 +166,31 @@ object WordAlignments : IntIdTable("word_alignments") {
     val alignedText = varchar("aligned_text", 500).nullable()
     val isDivergent = bool("is_divergent").default(false)
     val confidence = integer("confidence").default(0)
+    // Layer 4 columns
+    val tokenPositions = text("token_positions").nullable()                  // JSON int[] — positions in bible_verse_tokens
+    val method = varchar("method", 20).default("legacy")                    // exact, lemma, contraction, enclitic, ai, manual, legacy
+    val contextualSense = text("contextual_sense").nullable()               // meaning in this specific verse (e.g. "condenar")
+    val semanticRelation = varchar("semantic_relation", 20).default("unknown") // equivalent, synonymous, related, divergent, unknown
 
     init {
         uniqueIndex(verseId, wordPosition, versionCode)
+    }
+}
+
+/** Persistent tokenization of bible verse texts (Layer 4) */
+object BibleVerseTokens : IntIdTable("bible_verse_tokens") {
+    val verseId = reference("verse_id", BibleVerses)
+    val versionId = reference("version_id", BibleVersions)
+    val position = integer("position")                                // 0-based word index within verse
+    val token = varchar("token", 200)                                 // normalized: lowercase, punctuation stripped
+    val tokenRaw = varchar("token_raw", 200)                          // original form with punctuation
+    val lemma = varchar("lemma", 100).nullable()                      // dictionary form: "amou"→"amar", "crê"→"crer"
+    val isContraction = bool("is_contraction").default(false)         // e.g. "nele"=em+ele, "do"=de+o
+    val contractionParts = text("contraction_parts").nullable()       // JSON: [{"form":"em","role":"PREP"},{"form":"ele","role":"PRON"}]
+    val isEnclitic = bool("is_enclitic").default(false)               // e.g. "disse-lhe"=disse+lhe
+    val encliticParts = text("enclitic_parts").nullable()             // JSON: [{"form":"disse","role":"VERB"},{"form":"lhe","role":"PRON"}]
+
+    init {
+        uniqueIndex(verseId, versionId, position)
     }
 }

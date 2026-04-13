@@ -43,6 +43,41 @@ function getVersionColor(code: string): string {
   return VERSION_COLORS[code] ?? "bg-muted text-muted-foreground";
 }
 
+/** Maps semanticRelation to gloss link text color */
+function getSemanticGlossColor(relation?: string | null, isDivergentFallback?: boolean): string {
+  if (relation) {
+    switch (relation) {
+      case "equivalent":
+      case "synonymous":
+        return "text-emerald-600 dark:text-emerald-400";
+      case "related":
+        return "text-amber-600 dark:text-amber-400";
+      case "divergent":
+        return "text-red-500 dark:text-red-400";
+      default:
+        break;
+    }
+  }
+  // Fallback for legacy data without semanticRelation
+  return isDivergentFallback
+    ? "text-amber-600 dark:text-amber-400"
+    : "text-blue-500 dark:text-blue-400";
+}
+
+/** Maps semanticRelation to aligned text annotation color */
+function getSemanticAlignedColor(relation?: string | null): string {
+  switch (relation) {
+    case "synonymous":
+      return "text-emerald-600/70 dark:text-emerald-400/70";
+    case "related":
+      return "text-amber-600/70 dark:text-amber-400/70";
+    case "divergent":
+      return "text-red-500/70 dark:text-red-400/70";
+    default:
+      return "text-amber-600/70 dark:text-amber-400/70";
+  }
+}
+
 export function LinkedVerseReader({
   primaryVersion,
   primaryVerses,
@@ -189,16 +224,29 @@ export function LinkedVerseReader({
                           let borderColor = "border-border/40";
                           let bgColor = "bg-muted/15";
                           if (alignment && alignment.alignedText) {
-                            const conf = alignment.confidence ?? 0;
-                            if (conf >= 80) {
-                              borderColor = "border-blue-500/30";
-                              bgColor = "bg-blue-500/5";
-                            } else if (conf >= 60) {
-                              borderColor = "border-blue-400/20";
-                              bgColor = "bg-blue-400/5";
+                            const rel = alignment.semanticRelation ?? "unknown";
+                            if (rel === "equivalent" || rel === "synonymous") {
+                              borderColor = "border-emerald-500/30";
+                              bgColor = "bg-emerald-500/5";
+                            } else if (rel === "related") {
+                              borderColor = "border-amber-500/30";
+                              bgColor = "bg-amber-500/5";
+                            } else if (rel === "divergent") {
+                              borderColor = "border-red-500/30";
+                              bgColor = "bg-red-500/5";
                             } else {
-                              borderColor = "border-amber-500/40";
-                              bgColor = "bg-amber-500/10";
+                              // legacy / unknown — fallback to confidence-based
+                              const conf = alignment.confidence ?? 0;
+                              if (conf >= 80) {
+                                borderColor = "border-blue-500/30";
+                                bgColor = "bg-blue-500/5";
+                              } else if (conf >= 60) {
+                                borderColor = "border-blue-400/20";
+                                bgColor = "bg-blue-400/5";
+                              } else {
+                                borderColor = "border-amber-500/40";
+                                bgColor = "bg-amber-500/10";
+                              }
                             }
                           }
                           if (isHovered) {
@@ -238,9 +286,7 @@ export function LinkedVerseReader({
                                 <Link
                                   href={`/bible/strongs/${w.strongsNumber}`}
                                   className={`mt-1 text-xs font-medium leading-tight hover:underline ${
-                                    alignment?.isDivergent
-                                      ? "text-amber-600 dark:text-amber-400"
-                                      : "text-blue-500 dark:text-blue-400"
+                                    getSemanticGlossColor(alignment?.semanticRelation, alignment?.isDivergent)
                                   }`}
                                 >
                                   {w.englishGloss || "-"}
@@ -251,10 +297,13 @@ export function LinkedVerseReader({
                                 </span>
                               )}
 
-                              {/* Aligned text (shown when different from gloss) */}
-                              {alignment?.alignedText && alignment.isDivergent && (
-                                <span className="mt-0.5 text-[10px] text-amber-600/70 dark:text-amber-400/70 leading-tight">
+                              {/* Aligned text + contextual sense (shown when not equivalent) */}
+                              {alignment?.alignedText && (alignment.semanticRelation ? alignment.semanticRelation !== "equivalent" : alignment.isDivergent) && (
+                                <span className={`mt-0.5 text-[10px] leading-tight ${getSemanticAlignedColor(alignment.semanticRelation)}`}>
                                   {alignVersion}: {alignment.alignedText}
+                                  {alignment.contextualSense && alignment.contextualSense !== alignment.alignedText && (
+                                    <> ({alignment.contextualSense})</>
+                                  )}
                                 </span>
                               )}
 
@@ -376,14 +425,17 @@ function KjvTextWithHighlight({
         const idx = wordIdx++;
         const greekWords = kjvIdxToGreek.get(idx);
         const isHighlighted = highlightedKjvIndices.has(idx);
-        const hasDivergent = greekWords?.some((w) => w.kjvAlignment?.isDivergent);
+        const hasNonEquivalent = greekWords?.some((w) => {
+          const rel = w.kjvAlignment?.semanticRelation;
+          return rel ? rel !== "equivalent" && rel !== "synonymous" : w.kjvAlignment?.isDivergent;
+        });
         const hasMapping = greekWords && greekWords.length > 0;
 
         const strongsNumber = greekWords?.[0]?.strongsNumber;
 
         let className = "transition-colors duration-150";
         if (isHighlighted) {
-          className += hasDivergent
+          className += hasNonEquivalent
             ? " bg-amber-500/25 text-amber-800 dark:text-amber-300 rounded-sm"
             : " bg-primary/20 text-primary rounded-sm";
         } else if (hasMapping) {

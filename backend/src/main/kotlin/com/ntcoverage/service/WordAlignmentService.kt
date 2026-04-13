@@ -307,6 +307,205 @@ $candidateRules
             .trim()
     }
 
+    // ── Layer 4: 4-Level Local Alignment Algorithm ──
+
+    /**
+     * Result of local (non-LLM) alignment for a single verse.
+     * Contains resolved alignments (Levels 1-3) and unresolved Greek positions (for Level 4 / LLM).
+     */
+    data class LocalAlignmentResult(
+        /** Alignments resolved by Levels 1-3 (deterministic) */
+        val resolved: List<ResolvedAlignment>,
+        /** Greek word positions that could not be resolved locally — need LLM (Level 4) */
+        val unresolvedPositions: List<Int>
+    )
+
+    data class ResolvedAlignment(
+        val greekPosition: Int,
+        val tokenPositions: List<Int>,
+        val alignedText: String,
+        val method: String,        // exact, lemma, contraction, enclitic
+        val confidence: Int
+    )
+
+    /**
+     * Runs Levels 1-3 of the 4-level alignment algorithm.
+     *
+     * Level 1: DETERMINISTIC — normalize(gloss_pt) == token (100% correct by definition)
+     * Level 2: LEMMA — token.lemma matches gloss lemma (morphological variation)
+     * Level 3: DECOMPOSITION — contractions (nele→em+ele) and enclitics (disse-lhe→disse+lhe)
+     *
+     * Words not resolved by Levels 1-3 are returned in unresolvedPositions for Level 4 (LLM).
+     *
+     * @param greekWords The interlinear Greek words for this verse
+     * @param tokens The tokenized target text (from bible_verse_tokens)
+     * @param language The target language ("pt", "en", "es")
+     */
+    fun alignVerseLocal(
+        greekWords: List<com.ntcoverage.model.InterlinearWordDTO>,
+        tokens: List<com.ntcoverage.model.BibleVerseTokenDTO>,
+        language: String
+    ): LocalAlignmentResult {
+        val resolved = mutableListOf<ResolvedAlignment>()
+        val consumedTokenPositions = mutableSetOf<Int>()
+        val resolvedGreekPositions = mutableSetOf<Int>()
+
+        // Get gloss based on language
+        fun getGloss(w: com.ntcoverage.model.InterlinearWordDTO): String? = when (language) {
+            "pt" -> w.portugueseGloss
+            "es" -> w.spanishGloss
+            else -> w.englishGloss
+        }
+
+        // ── LEVEL 1: EXACT MATCH ──
+        // normalize(gloss_pt) == token — 100% certain by definition
+        for (w in greekWords) {
+            val gloss = getGloss(w) ?: continue
+            // Handle multi-value glosses separated by "/" (e.g., "crendo/crê")
+            val glossVariants = gloss.split("/").map { normalizeForComparison(it) }.filter { it.isNotBlank() }
+
+            for (variant in glossVariants) {
+                // Find first matching token that isn't consumed
+                val matchIdx = tokens.indexOfFirst { t ->
+                    t.position !in consumedTokenPositions && normalizeForComparison(t.token) == variant
+                }
+                if (matchIdx >= 0) {
+                    val token = tokens[matchIdx]
+                    resolved.add(ResolvedAlignment(
+                        greekPosition = w.wordPosition,
+                        tokenPositions = listOf(token.position),
+                        alignedText = token.tokenRaw,
+                        method = "exact",
+                        confidence = 95
+                    ))
+                    consumedTokenPositions.add(token.position)
+                    resolvedGreekPositions.add(w.wordPosition)
+                    break
+                }
+            }
+        }
+
+        // ── LEVEL 2: LEMMA MATCH ──
+        // token.lemma == gloss lemma — handles morphological variation
+        for (w in greekWords) {
+            if (w.wordPosition in resolvedGreekPositions) continue
+            val gloss = getGloss(w) ?: continue
+            val glossNorms = gloss.split("/").map { normalizeForComparison(it) }.filter { it.isNotBlank() }
+
+            for (token in tokens) {
+                if (token.position in consumedTokenPositions) continue
+                val tokenLemma = token.lemma ?: continue
+
+                // Compare lemmas: the token has a lemma from LLM batch; check if gloss or gloss-lemma matches
+                for (variant in glossNorms) {
+                    if (normalizeForComparison(tokenLemma) == variant ||
+                        normalizeForComparison(token.token) == variant) {
+                        resolved.add(ResolvedAlignment(
+                            greekPosition = w.wordPosition,
+                            tokenPositions = listOf(token.position),
+                            alignedText = token.tokenRaw,
+                            method = "lemma",
+                            confidence = 90
+                        ))
+                        consumedTokenPositions.add(token.position)
+                        resolvedGreekPositions.add(w.wordPosition)
+                        break
+                    }
+                }
+                if (w.wordPosition in resolvedGreekPositions) break
+            }
+        }
+
+        // ── LEVEL 3: DECOMPOSITION (contractions + enclitics) ──
+        // Portuguese contractions and enclitics map to 2+ Greek words
+        for (token in tokens) {
+            if (token.position in consumedTokenPositions) continue
+
+            if (token.isContraction && token.contractionParts != null) {
+                // Parse contraction parts: [{"form":"em","role":"PREP"},{"form":"ele","role":"PRON"}]
+                val parts = parseContractionParts(token.contractionParts)
+                if (parts.isEmpty()) continue
+
+                // Try to match each part with an unresolved Greek word
+                val matchedGreek = mutableListOf<Int>()
+                for (part in parts) {
+                    val partNorm = normalizeForComparison(part.form)
+                    // Find Greek word whose gloss matches this part
+                    val greekMatch = greekWords.firstOrNull { gw ->
+                        gw.wordPosition !in resolvedGreekPositions &&
+                        getGloss(gw)?.split("/")?.any { normalizeForComparison(it) == partNorm } == true
+                    }
+                    if (greekMatch != null) {
+                        matchedGreek.add(greekMatch.wordPosition)
+                    }
+                }
+
+                // If at least one part matched, mark all matched Greeks as resolved
+                if (matchedGreek.isNotEmpty()) {
+                    for (gPos in matchedGreek) {
+                        resolved.add(ResolvedAlignment(
+                            greekPosition = gPos,
+                            tokenPositions = listOf(token.position),
+                            alignedText = token.tokenRaw,
+                            method = "contraction",
+                            confidence = 90
+                        ))
+                        resolvedGreekPositions.add(gPos)
+                    }
+                    consumedTokenPositions.add(token.position)
+                }
+            }
+
+            if (token.isEnclitic && token.encliticParts != null) {
+                // Parse enclitic parts: [{"form":"disse","role":"VERB"},{"form":"lhe","role":"PRON"}]
+                val parts = parseContractionParts(token.encliticParts)
+                if (parts.isEmpty()) continue
+
+                val matchedGreek = mutableListOf<Int>()
+                for (part in parts) {
+                    val partNorm = normalizeForComparison(part.form)
+                    val greekMatch = greekWords.firstOrNull { gw ->
+                        gw.wordPosition !in resolvedGreekPositions &&
+                        getGloss(gw)?.split("/")?.any { normalizeForComparison(it) == partNorm } == true
+                    }
+                    if (greekMatch != null) {
+                        matchedGreek.add(greekMatch.wordPosition)
+                    }
+                }
+
+                if (matchedGreek.isNotEmpty()) {
+                    for (gPos in matchedGreek) {
+                        resolved.add(ResolvedAlignment(
+                            greekPosition = gPos,
+                            tokenPositions = listOf(token.position),
+                            alignedText = token.tokenRaw,
+                            method = "enclitic",
+                            confidence = 90
+                        ))
+                        resolvedGreekPositions.add(gPos)
+                    }
+                    consumedTokenPositions.add(token.position)
+                }
+            }
+        }
+
+        // Unresolved positions → need Level 4 (LLM)
+        val unresolvedPositions = greekWords
+            .map { it.wordPosition }
+            .filter { it !in resolvedGreekPositions }
+
+        return LocalAlignmentResult(resolved, unresolvedPositions)
+    }
+
+    /** Parse JSON contraction/enclitic parts safely */
+    private fun parseContractionParts(jsonStr: String): List<BibleTokenizationService.ContractionPart> {
+        return try {
+            json.decodeFromString<List<BibleTokenizationService.ContractionPart>>(jsonStr)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     internal fun computeSimilarity(gloss: String, kjvWord: String): Int {
         val g = normalizeForComparison(gloss)
         val w = normalizeForComparison(kjvWord)

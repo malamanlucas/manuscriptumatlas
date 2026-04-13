@@ -46,7 +46,8 @@ class BibleIngestionService(
     private val wordAlignmentService: WordAlignmentService,
     private val lexiconEnrichmentService: LexiconEnrichmentService,
     private val llmConfig: LlmConfig = LlmConfig(),
-    private val llmQueueRepository: LlmQueueRepository? = null
+    private val llmQueueRepository: LlmQueueRepository? = null,
+    private val tokenizationService: BibleTokenizationService? = null
 ) {
     private val log = LoggerFactory.getLogger(BibleIngestionService::class.java)
 
@@ -252,6 +253,10 @@ class BibleIngestionService(
             "bible_translate_lexicon",
             "bible_translate_hebrew_lexicon",
             "bible_translate_glosses",
+            "bible_tokenize_arc69",
+            "bible_tokenize_kjv",
+            "bible_lemmatize_arc69",
+            "bible_lemmatize_kjv",
             "bible_align_kjv",
             "bible_align_arc69",
             "bible_enrich_greek_lexicon",
@@ -307,6 +312,12 @@ class BibleIngestionService(
             "bible_ingest_greek_lexicon" -> ingestGreekLexiconFromSTEP()
             "bible_ingest_hebrew_lexicon" -> ingestHebrewLexiconFromSTEP()
             "bible_fill_missing_hebrew" -> fillMissingHebrew()
+            // Layer 4 — Tokenization (deterministic, no LLM)
+            "bible_tokenize_arc69" -> tokenizeVersion("ARC69")
+            "bible_tokenize_kjv" -> tokenizeVersion("KJV")
+            // Layer 4 — Lemmatization (LLM batch, one-time)
+            "bible_lemmatize_arc69" -> lemmatizeVersionPlaceholder("ARC69")
+            "bible_lemmatize_kjv" -> lemmatizeVersionPlaceholder("KJV")
             // LLM phases → redirect to queue-based prepare (enqueue prompts, then run /run-llm)
             "bible_translate_lexicon", "bible_translate_lexicon_prepare" -> translateLexiconPrepare("greek")
             "bible_translate_hebrew_lexicon", "bible_translate_hebrew_lexicon_prepare" -> translateLexiconPrepare("hebrew")
@@ -1211,6 +1222,28 @@ Return in the EXACT same format with translated values:"""
 
     private suspend fun fillMissingHebrew() = runPhaseTracked("bible_fill_missing_hebrew") {
         lexiconEnrichmentService.fillMissingHebrewEntries(phaseTracker)
+    }
+
+    // ── Layer 4: Tokenization ──
+
+    private suspend fun tokenizeVersion(versionCode: String) {
+        val svc = tokenizationService
+            ?: throw IllegalStateException("tokenizationService not configured — cannot tokenize $versionCode")
+        val phaseName = "bible_tokenize_${versionCode.lowercase()}"
+        runPhaseTracked(phaseName) {
+            val count = svc.tokenizeVersion(versionCode, phaseTracker, phaseName)
+            log.info("TOKENIZE_$versionCode: completed with $count tokens")
+        }
+    }
+
+    private suspend fun lemmatizeVersionPlaceholder(versionCode: String) {
+        val phaseName = "bible_lemmatize_${versionCode.lowercase()}"
+        runPhaseTracked(phaseName) {
+            // Lemmatization is LLM-powered and will be enqueued to llm_prompt_queue.
+            // For now, this is a placeholder — tokens are created without lemmas,
+            // and the lemmatization phase will populate them via batch LLM calls.
+            log.info("LEMMATIZE_$versionCode: placeholder — lemmatization requires LLM batch processing")
+        }
     }
 
     private suspend fun reEnrichGreekLexicon() = runPhaseTracked("bible_reenrich_greek_lexicon") {
