@@ -14,7 +14,7 @@ alwaysApply: false
 
 `V{N}__{descricao_snake_case}.sql` (dois underscores após o número)
 
-## Migrações existentes (V1–V19)
+## Migrações existentes (V1–V22)
 
 - `V1__create_tables.sql` — Tabelas base (books, verses, manuscripts, manuscript_verses, coverage_by_century)
 - `V2__add_indexes_for_type_filter.sql` — Índices para filtro por tipo
@@ -35,6 +35,9 @@ alwaysApply: false
 - `V17__create_council_heretic_participants.sql` — Tabela council_heretic_participants para hereges em concílios
 - `V18__create_llm_usage_logs.sql` — Tabela llm_usage_logs para rastreamento de chamadas LLM (provider, tokens, custo, latência)
 - `V19__create_bible_db_schema.sql` — Schema separado para módulo bíblico (bible_db)
+- `V20__create_apologetics.sql` — Módulo de apologética: tópicos, respostas e traduções com índices de busca
+- `V21__create_llm_prompt_queue.sql` — Tabela `llm_prompt_queue` para processamento assíncrono de prompts LLM por fase/tier
+- `V22__add_claimed_at_to_llm_prompt_queue.sql` — Coluna `claimed_at` + índice para detectar e resetar itens `processing` travados
 
 ## Regras
 
@@ -42,7 +45,7 @@ alwaysApply: false
 - Incluir índices relevantes na mesma migração
 - PostgreSQL 16 — pode usar features modernas (JSONB, generated columns, pg_trgm, etc.)
 - Usar CHECK constraints para validar enums e ranges no nível do banco
-- Próxima migração: **V20**
+- Próxima migração: **V23**
 
 ## IMPORTANTE — Flyway não executa migrations
 

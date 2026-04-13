@@ -17,6 +17,7 @@ Antes de implementar, identificar o tipo de solicitação e aplicar as skills ne
 | Layout/UI/responsividade | frontend |
 | Tradução/i18n | i18n |
 | Ingestão/pipeline | ingestion |
+| Fila LLM / prompt queue | ingestion -> run-llm-cursor |
 | Docker/infra | docker |
 | Bug backend | backend |
 | Bug banco | banco -> backend |
@@ -33,8 +34,14 @@ Regra: features que atravessam camadas — seguir ordem arquitetura -> banco -> 
 | Componente, React, hook, página, layout, responsividade | frontend |
 | Tradução, locale, i18n, mensagens, idioma | i18n |
 | Ingestão, ingestion, pipeline, scraper, fases, enriquecimento | ingestion |
+| Fila LLM, llm queue, prompt queue, claim, apply, retry, unstick, run-llm | run-llm-cursor |
 | Docker, compose, infra, deploy, variável de ambiente | docker |
 | Testes, test, E2E, Playwright, Vitest, Testing Library | testing |
+
+## Worker assíncrono LLM
+
+- Ao processar a `llm_prompt_queue`, carregar `ingestion-pipeline` para contexto de fases e `run-llm-cursor` para execução operacional.
+- Regra crítica: `1 item claimed = 1 subagente = 1 resposta`.
 
 ## Não carregar skills para
 

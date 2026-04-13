@@ -11,7 +11,7 @@ Sistema de análise de cobertura textual do Novo Testamento grego — manuscrito
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
 - **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / Recharts / Leaflet + react-leaflet / TanStack Query / next-intl
-- **LLM:** Anthropic Claude Opus 4.6 (primário) + OpenAI GPT-5.4 (fallback) + DeepSeek + OpenRouter via `LlmOrchestrator`
+- **LLM:** Anthropic Claude Opus 4.6 (primário) + OpenAI GPT-5.4 (fallback) + DeepSeek + OpenRouter via `LlmOrchestrator`; a fila assíncrona `llm_prompt_queue` pode ser processada por `.claude/skills/run-llm` ou `.cursor/skills/run-llm-cursor` com subagentes por tier
 - **Infra:** Docker Compose (postgres + init + app + frontend + prometheus + grafana + loki + promtail)
 - **Observability:** Prometheus + Grafana (porta 3001) + Loki + Micrometer + structured JSON logging
 
@@ -25,11 +25,11 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 
 | Pacote | Responsabilidade |
 |--------|------------------|
-| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 8 arquivos |
-| `model` | Tables (28 tabelas Exposed) e DTOs (113 `@Serializable`) |
-| `repository` | Acesso a dados via `transaction {}` (24 repositórios) |
-| `service` | Lógica de negócio e orquestração (26 serviços) |
-| `routes` | Endpoints HTTP — Ktor routing (11 arquivos de rotas, 100 endpoints) |
+| `config` | Configuração (DB, Flyway com fallback SchemaUtils, Ingestão, Locale) — 9 arquivos |
+| `model` | Tables (33 tabelas Exposed) e DTOs (127 `@Serializable`) |
+| `repository` | Acesso a dados via `transaction {}` (27 repositórios) |
+| `service` | Lógica de negócio e orquestração (30 serviços) |
+| `routes` | Endpoints HTTP — Ktor routing (12 arquivos de rotas, 121 endpoints) |
 | `scraper` | Clientes NTVMR, parsers TEI/XML, Wikipedia |
 | `seed` | Dados canônicos (27 livros, 7.956 versículos), manuscritos, pais da igreja (35), declarações textuais (36), traduções (pt, es) — 17 arquivos |
 | `util` | Utilitários (NtvmrUrl) |
@@ -38,6 +38,7 @@ Routes → Service → Repository → Database (Exposed/PostgreSQL)
 
 ```
 manuscriptumatlas/
+  .cursor/         <- rules, skills e subagentes compartilhados do Cursor
   backend/         <- Kotlin/Ktor (src/, build.gradle.kts, Dockerfile)
   frontend/        <- Next.js/React (app/, components/, hooks/, lib/, types/)
   deploy/          <- Docker Compose, nginx, setup scripts
@@ -90,6 +91,7 @@ manuscriptumatlas/
 - **Church Councils**: concílios até 1000 d.C., heresias, cânones, vínculos patrísticos
 - **Source Consensus Engine**: consolidação de claims por peso/score/fallback determinístico
 - **LlmOrchestrator**: abstração multi-provider (Anthropic primário, OpenAI/DeepSeek/OpenRouter fallback) com rate limiting
+- **LLM Prompt Queue Worker**: processamento assíncrono via loop `claim -> 1 item = 1 agent -> complete/fail -> apply`, com recuperação por `unstick`
 - **LlmUsageLogs**: rastreamento de chamadas LLM (provider, tokens, custo, latência)
 - **IngestionPhaseTracker**: rastreamento persistente de fases de ingestão com recuperação de fases stuck
 - **Bible module**: leitor bíblico com busca, comparação, interlinear grego-português e concordância Strong's (DB separado: `bible_db`). Interlinear usa TAGNT + tradução de glosses via LLM (JSON-first parsing) + alinhamento grego→tradução via LLM. `processGlossResponse()` com guard contra gap-filling em JSON.
@@ -115,6 +117,7 @@ Seeds → texto (KJV/AA/ACF/ARC69) → interlinear TAGNT → léxico grego/hebra
 - Rotas literais (`/fathers/statements`) ANTES de dinâmicas (`/fathers/{id}`) no Ktor
 - Seed idempotente (chaves lógicas por domínio)
 - Queries paginadas com ORDER BY determinístico
+- `llm_prompt_queue`: respeitar `claim -> 1 item = 1 agent -> complete/fail -> apply`; nunca agrupar múltiplos itens no mesmo worker
 
 ## Checklist obrigatório por feature
 

@@ -35,12 +35,12 @@ frontend/
 │   ├── llm/                ErrorDetailModal, LlmProviderCard, LlmRateLimitPanel, LlmUsageTable
 │   ├── observatory/        AuthGate, ExplorerTab, OverviewTab, SessionDrawer, TimelineTab, VisitorTracker, VisitorsTab
 │   ├── stats/              StatsOverview
-│   ├── ui/                 ConfidenceDot, DatingBadge
+│   ├── ui/                 ConfidenceDot, DatingBadge, EmptyState, ErrorCard, FilterToggle, LoadingCard, PageContainer, Pagination
 │   └── providers.tsx       React Query + Theme providers
 ├── hooks/                 18 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
-├── lib/                   api/ (módulos por domínio), utils.ts, verseReference.ts
-├── types/                 index.ts (interfaces/tipos)
+├── lib/                   api/ (módulos por domínio + client.ts + index.ts), utils.ts, verseReference.ts
+├── types/                 101 interfaces/tipos
 └── messages/              en.json, pt.json, es.json
 ```
 
@@ -95,26 +95,15 @@ frontend/
 
 ## Páginas (37 rotas)
 
-**Atlas (cobertura/manuscritos):**
-Dashboard, Book/Name, Compare, Timeline, Metrics, Metrics/Book, Manuscript-Count, Manuscripts, Manuscripts/GaId, Verse-Lookup, History, Sources, Methodology, FAQ
+Principais grupos de rotas em `frontend/app/`:
 
-**Patrística:**
-Fathers, Fathers/Id, Fathers/Testimony, Patristic-Dashboard
-
-**Concílios:**
-Councils, Councils/Slug, Heresies, Heresies/Slug
-
-**Bíblia:**
-Bible (home), Bible/Search, Bible/Compare, Bible/Interlinear, Bible/Strongs/[number]
-
-**Apologética:**
-Apologetics, Apologetics/[slug], Apologetics/New
-
-**Admin:**
-Admin/Users, Ingestion-Status, Observatory, LLM-Usage, Wiki-LLM
-
-**Outros:**
-Home (redirect), Manifesto
+- **Atlas (cobertura/manuscritos):** Dashboard, Home, Book/[name], Compare, Timeline, Metrics, Metrics/[book], Manuscript-Count, Manuscripts, Manuscripts/[gaId], Verse-Lookup, History, Sources, Methodology, FAQ
+- **Patrística:** Fathers, Fathers/[id], Fathers/Testimony, Patristic-Dashboard
+- **Concílios:** Councils, Councils/[slug], Heresies, Heresies/[slug]
+- **Bíblia:** Bible, Bible/Search, Bible/Compare, Bible/Interlinear, Bible/Strongs/[number]
+- **Apologética:** Apologetics, Apologetics/[slug], Apologetics/New
+- **Admin e observabilidade:** Admin/Users, Ingestion-Status, Observatory, LLM-Usage, Wiki-LLM
+- **Infra de navegação:** `frontend/app/page.tsx` (entrypoint) e `[locale]/(manifesto)/page.tsx`
 
 ## Componentes de ingestão (padrão reutilizável)
 
