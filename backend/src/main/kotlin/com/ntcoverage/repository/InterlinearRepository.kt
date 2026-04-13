@@ -138,7 +138,11 @@ class InterlinearRepository {
     fun upsertAlignment(
         verseId: Int, wordPosition: Short, versionCode: String,
         kjvIndices: String?, alignedText: String?, isDivergent: Boolean,
-        confidence: Int = 0
+        confidence: Int = 0,
+        tokenPositions: String? = null,
+        method: String? = null,
+        contextualSense: String? = null,
+        semanticRelation: String? = null
     ) = transaction(db) {
         val existing = WordAlignments.selectAll()
             .where {
@@ -156,6 +160,10 @@ class InterlinearRepository {
                 it[WordAlignments.alignedText] = alignedText
                 it[WordAlignments.isDivergent] = isDivergent
                 it[WordAlignments.confidence] = confidence
+                if (tokenPositions != null) it[WordAlignments.tokenPositions] = tokenPositions
+                if (method != null) it[WordAlignments.method] = method
+                if (contextualSense != null) it[WordAlignments.contextualSense] = contextualSense
+                if (semanticRelation != null) it[WordAlignments.semanticRelation] = semanticRelation
             }
         } else {
             WordAlignments.update({
@@ -167,6 +175,10 @@ class InterlinearRepository {
                 it[WordAlignments.alignedText] = alignedText
                 it[WordAlignments.isDivergent] = isDivergent
                 it[WordAlignments.confidence] = confidence
+                if (tokenPositions != null) it[WordAlignments.tokenPositions] = tokenPositions
+                if (method != null) it[WordAlignments.method] = method
+                if (contextualSense != null) it[WordAlignments.contextualSense] = contextualSense
+                if (semanticRelation != null) it[WordAlignments.semanticRelation] = semanticRelation
             }
         }
     }
@@ -192,12 +204,24 @@ class InterlinearRepository {
                             .map { it.trim().toInt() }
                     } catch (_: Exception) { null }
                 }
+                val tokenPosJson = row[WordAlignments.tokenPositions]
+                val tokenPositions = tokenPosJson?.let { json ->
+                    try {
+                        json.trim('[', ']').split(",")
+                            .filter { it.isNotBlank() }
+                            .map { it.trim().toInt() }
+                    } catch (_: Exception) { null }
+                }
                 Pair(verseNumber, pos) to WordAlignmentDTO(
                     wordPosition = pos,
                     kjvIndices = indices,
                     alignedText = row[WordAlignments.alignedText],
                     isDivergent = row[WordAlignments.isDivergent],
-                    confidence = row[WordAlignments.confidence]
+                    confidence = row[WordAlignments.confidence],
+                    tokenPositions = tokenPositions,
+                    method = row[WordAlignments.method],
+                    contextualSense = row[WordAlignments.contextualSense],
+                    semanticRelation = row[WordAlignments.semanticRelation]
                 )
             }
     }

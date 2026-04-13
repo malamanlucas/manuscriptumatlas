@@ -154,16 +154,21 @@ class IngestionOrchestrator(
     }
 
     fun resetBibleLayer4(): Int {
-        log.warn("RESET_BIBLE_LAYER4 (word alignments) requested")
+        log.warn("RESET_BIBLE_LAYER4 (tokenization + word alignments) requested")
         val db = com.ntcoverage.config.BibleDatabaseConfig.database
         val deleted = org.jetbrains.exposed.sql.transactions.transaction(db) {
-            com.ntcoverage.model.WordAlignments.deleteAll()
+            com.ntcoverage.model.WordAlignments.deleteAll() +
+                com.ntcoverage.model.BibleVerseTokens.deleteAll()
         }
-        val layer4Phases = listOf("bible_align_kjv", "bible_align_arc69",
-            "bible_align_hebrew_kjv", "bible_align_hebrew_arc69")
+        val layer4Phases = listOf(
+            "bible_tokenize_arc69", "bible_tokenize_kjv",
+            "bible_lemmatize_arc69", "bible_lemmatize_kjv",
+            "bible_align_kjv", "bible_align_arc69",
+            "bible_align_hebrew_kjv", "bible_align_hebrew_arc69"
+        )
         layer4Phases.forEach { phaseTracker.deleteByPrefix(it) }
         clearLlmQueueForPhases(layer4Phases)
-        log.info("RESET_BIBLE_LAYER4 complete: $deleted rows deleted")
+        log.info("RESET_BIBLE_LAYER4 complete: $deleted rows deleted (tokens + alignments)")
         return deleted.toInt()
     }
 
@@ -171,7 +176,8 @@ class IngestionOrchestrator(
         log.warn("RESET_BIBLE requested")
         val db = com.ntcoverage.config.BibleDatabaseConfig.database
         val deleted = org.jetbrains.exposed.sql.transactions.transaction(db) {
-            com.ntcoverage.model.WordAlignments.deleteAll() +
+            com.ntcoverage.model.BibleVerseTokens.deleteAll() +
+                com.ntcoverage.model.WordAlignments.deleteAll() +
                 com.ntcoverage.model.GreekLexiconTranslations.deleteAll() +
                 com.ntcoverage.model.InterlinearWords.deleteAll() +
                 com.ntcoverage.model.GreekLexicon.deleteAll() +

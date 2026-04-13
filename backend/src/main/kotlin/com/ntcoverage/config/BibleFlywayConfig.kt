@@ -24,7 +24,8 @@ object BibleFlywayConfig {
                 GreekLexiconTranslations,
                 HebrewLexicon,
                 HebrewLexiconTranslations,
-                WordAlignments
+                WordAlignments,
+                BibleVerseTokens
             )
             log.info("Bible tables created/verified via Exposed SchemaUtils.")
         }
@@ -107,6 +108,12 @@ object BibleFlywayConfig {
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_wa_verse_version') THEN
                         CREATE INDEX idx_wa_verse_version ON word_alignments(verse_id, version_code);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_bvtk_verse_version') THEN
+                        CREATE INDEX idx_bvtk_verse_version ON bible_verse_tokens(verse_id, version_id);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_bvtk_contraction') THEN
+                        CREATE INDEX idx_bvtk_contraction ON bible_verse_tokens(is_contraction) WHERE is_contraction = true;
                     END IF;
                 END
                 ${'$'}${'$'};

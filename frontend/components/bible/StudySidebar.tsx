@@ -95,7 +95,7 @@ export function StudySidebar({
           <p className="text-xs font-medium text-muted-foreground">{t("colorLegend")}</p>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500/30 border border-blue-500/50" />
+              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500/30 border border-emerald-500/50" />
               <span className="text-xs text-foreground/70">{t("matchingGloss")}</span>
             </div>
             <div className="flex items-center gap-2">

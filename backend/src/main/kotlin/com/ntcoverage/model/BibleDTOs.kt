@@ -64,7 +64,23 @@ data class WordAlignmentDTO(
     val kjvIndices: List<Int>? = null,
     val alignedText: String? = null,
     val isDivergent: Boolean = false,
-    val confidence: Int = 0
+    val confidence: Int = 0,
+    val tokenPositions: List<Int>? = null,
+    val method: String? = null,
+    val contextualSense: String? = null,
+    val semanticRelation: String? = null
+)
+
+@Serializable
+data class BibleVerseTokenDTO(
+    val position: Int,
+    val token: String,
+    val tokenRaw: String,
+    val lemma: String? = null,
+    val isContraction: Boolean = false,
+    val contractionParts: String? = null,
+    val isEnclitic: Boolean = false,
+    val encliticParts: String? = null
 )
 
 @Serializable
