@@ -39,8 +39,8 @@ frontend/
 │   └── providers.tsx       React Query + Theme providers
 ├── hooks/                 18 hooks customizados
 ├── i18n/                  routing.ts, navigation.ts, request.ts (config next-intl)
-├── lib/                   api/ (módulos por domínio + client.ts + index.ts), utils.ts, verseReference.ts
-├── types/                 101 interfaces/tipos
+├── lib/                   api.ts (funções fetch), utils.ts, verseReference.ts
+├── types/                 index.ts (101 interfaces/tipos)
 └── messages/              en.json, pt.json, es.json
 ```
 
@@ -95,7 +95,7 @@ frontend/
 
 ## Páginas (37 rotas)
 
-Principais grupos de rotas em `frontend/app/`:
+Admin / Users, Apologetics, Apologetics / New, Apologetics / Slug, Bible, Bible / Compare, Bible / Interlinear, Bible / Search, Bible / Strongs / Number, Book / Name, Compare, Councils, Councils / Slug, Dashboard, Faq, Fathers, Fathers / Id, Fathers / Testimony, Heresies, Heresies / Slug, History, Home, Ingestion Status, Llm Usage, Manuscript Count, Manuscripts, Manuscripts / Gaid, Methodology, Metrics, Metrics / Book, Observatory, Patristic Dashboard, Sources, Timeline, Verse Lookup, Wiki Llm
 
 - **Atlas (cobertura/manuscritos):** Dashboard, Home, Book/[name], Compare, Timeline, Metrics, Metrics/[book], Manuscript-Count, Manuscripts, Manuscripts/[gaId], Verse-Lookup, History, Sources, Methodology, FAQ
 - **Patrística:** Fathers, Fathers/[id], Fathers/Testimony, Patristic-Dashboard
