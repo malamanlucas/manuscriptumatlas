@@ -6,7 +6,6 @@ import com.ntcoverage.model.QueuePhaseStatsDTO
 import com.ntcoverage.model.QueueStatsDTO
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
@@ -219,9 +218,9 @@ class LlmQueueRepository {
         if (phaseName != null) condition = condition and (LlmPromptQueue.phaseName eq phaseName)
         if (staleMinutes != null) {
             val cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(staleMinutes.toLong())
-            val staleOrUntracked = (LlmPromptQueue.claimedAt less cutoff) or
-                LlmPromptQueue.claimedAt.isNull()
-            condition = condition and staleOrUntracked
+            condition = condition and Op.build {
+                (LlmPromptQueue.claimedAt less cutoff) or LlmPromptQueue.claimedAt.isNull()
+            }
         }
         LlmPromptQueue.update({ condition }) {
             it[status] = "pending"
