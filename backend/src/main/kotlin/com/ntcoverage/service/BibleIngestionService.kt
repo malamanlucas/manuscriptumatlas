@@ -1366,7 +1366,7 @@ Rules:
                     systemPrompt = systemPrompt,
                     userContent = entriesBlock,
                     temperature = 0.1,
-                    maxTokens = 4000,
+                    maxTokens = 8000,
                     tier = "MEDIUM",
                     callbackContext = queueJson.encodeToString(ctx)
                 )

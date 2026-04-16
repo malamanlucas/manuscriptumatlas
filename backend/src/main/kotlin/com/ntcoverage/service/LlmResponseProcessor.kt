@@ -127,14 +127,15 @@ class LlmResponseProcessor(
 
     private fun applyLexiconTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(LexiconTranslateContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for lexicon translation id=${item.id}")
 
         val shortMatch = Regex("SHORT:\\s*(.+?)(?=\\nFULL:|$)", RegexOption.DOT_MATCHES_ALL).find(content)
         val fullMatch = Regex("FULL:\\s*(.+)", RegexOption.DOT_MATCHES_ALL).find(content)
         val shortDef = shortMatch?.groupValues?.get(1)?.trim()
         val fullDef = fullMatch?.groupValues?.get(1)?.trim()
 
-        if (shortDef == null && fullDef == null) return
+        if (shortDef == null && fullDef == null) throw IllegalStateException("No SHORT/FULL parsed for lexicon id=${item.id}")
 
         if (ctx.lexiconType == "greek") {
             lexiconRepository.upsertGreekTranslation(ctx.entryId, ctx.locale, shortDef, fullDef)
@@ -148,7 +149,8 @@ class LlmResponseProcessor(
 
     private fun applyLexiconBatch(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(LexiconBatchContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for lexicon batch id=${item.id}")
 
         val blockPattern = Regex("""\[([GH]\d+)\]\s*\n\s*SHORT:\s*(.+?)(?=\nFULL:)?\nFULL:\s*(.+?)(?=\n\[|$)""", RegexOption.DOT_MATCHES_ALL)
         val matches = blockPattern.findAll(content)
@@ -162,6 +164,13 @@ class LlmResponseProcessor(
             val fullDef = match.groupValues[3].trim().takeIf { it.isNotBlank() }
             val id = strongsToId[strongsNumber] ?: continue
             translations.add(Triple(id, shortDef, fullDef))
+        }
+
+        if (translations.isEmpty()) {
+            throw IllegalStateException("Batch parsed 0/${ctx.entries.size} entries for id=${item.id}")
+        }
+        if (translations.size < ctx.entries.size / 2) {
+            log.warn("LLM_PROCESSOR: partial batch ${translations.size}/${ctx.entries.size} for id=${item.id}, applying available")
         }
 
         if (ctx.lexiconType == "greek") {
@@ -178,10 +187,11 @@ class LlmResponseProcessor(
 
     private fun applyGlossTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(GlossTranslateContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for gloss translation id=${item.id}")
 
         val glossMap = parseGlossJson(content, ctx.keys)
-        if (glossMap.isEmpty()) return
+        if (glossMap.isEmpty()) throw IllegalStateException("No glosses parsed for id=${item.id}")
 
         var applied = 0
         for ((key, translation) in glossMap) {
@@ -221,7 +231,8 @@ class LlmResponseProcessor(
 
     private fun applyEnrichmentTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(EnrichmentTranslateContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent ?: return
+        val content = item.responseContent
+            ?: throw IllegalStateException("Empty responseContent for enrichment id=${item.id}")
 
         val kjvTrans = extractFieldValue(content, "KJV_TRANSLATION")
         val originTrans = extractFieldValue(content, "WORD_ORIGIN")
@@ -232,8 +243,7 @@ class LlmResponseProcessor(
 
         val allNull = listOf(kjvTrans, originTrans, exhaustiveTrans, nasOriginTrans, nasDefTrans, nasTransTrans).all { it == null }
         if (allNull) {
-            log.warn("LLM_PROCESSOR: enrichment translation has no extractable fields, entry={} locale={}, skipping. responsePreview='{}'", ctx.entryId, ctx.locale, content.take(200))
-            return
+            throw IllegalStateException("No extractable enrichment fields for entry=${ctx.entryId} locale=${ctx.locale}, preview='${content.take(200)}'")
         }
 
         if (ctx.lexiconType == "greek") {
@@ -253,14 +263,15 @@ class LlmResponseProcessor(
 
     private fun applyWordAlignment(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(WordAlignContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for alignment id=${item.id}")
 
-        val jsonContent = extractJson(content) ?: return
+        val jsonContent = extractJson(content)
+            ?: throw IllegalStateException("No JSON found in alignment response id=${item.id}")
         val parsed = try {
             json.decodeFromString(AlignmentResponse.serializer(), jsonContent)
         } catch (e: Exception) {
-            log.warn("LLM_PROCESSOR: failed to parse alignment JSON for verse={}: {}", ctx.verseId, e.message)
-            return
+            throw IllegalStateException("Failed to parse alignment JSON for verse=${ctx.verseId}: ${e.message}", e)
         }
 
         for (wa in parsed.a) {
@@ -284,13 +295,14 @@ class LlmResponseProcessor(
 
     private fun applyManuscriptDating(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(ManuscriptDatingContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
-        val jsonContent = extractJson(content) ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for manuscript dating id=${item.id}")
+        val jsonContent = extractJson(content)
+            ?: throw IllegalStateException("No JSON found in manuscript dating response id=${item.id}")
 
         val parsed = json.decodeFromString(DatingResponse.serializer(), jsonContent)
         if (parsed.yearMin <= 0 || parsed.yearMax <= 0 || parsed.yearMax < parsed.yearMin) {
-            log.warn("LLM_PROCESSOR: invalid dating range for manuscript {}: {}-{}", ctx.gaId, parsed.yearMin, parsed.yearMax)
-            return
+            throw IllegalStateException("Invalid dating range for manuscript ${ctx.gaId}: ${parsed.yearMin}-${parsed.yearMax}")
         }
 
         manuscriptRepository.updateDating(
@@ -309,13 +321,14 @@ class LlmResponseProcessor(
 
     private fun applyFatherDating(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(FatherDatingContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
-        val jsonContent = extractJson(content) ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for father dating id=${item.id}")
+        val jsonContent = extractJson(content)
+            ?: throw IllegalStateException("No JSON found in father dating response id=${item.id}")
 
         val parsed = json.decodeFromString(DatingResponse.serializer(), jsonContent)
         if (parsed.yearMin <= 0 || parsed.yearMax <= 0 || parsed.yearMax < parsed.yearMin) {
-            log.warn("LLM_PROCESSOR: invalid dating range for father {}: {}-{}", ctx.fatherId, parsed.yearMin, parsed.yearMax)
-            return
+            throw IllegalStateException("Invalid dating range for father ${ctx.fatherId}: ${parsed.yearMin}-${parsed.yearMax}")
         }
 
         churchFatherRepository.updateDating(
@@ -334,7 +347,8 @@ class LlmResponseProcessor(
 
     private fun applyBioSummarization(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(BioSummarizeContext.serializer(), item.callbackContext!!)
-        val summary = item.responseContent?.trim() ?: return
+        val summary = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for bio summarization id=${item.id}")
 
         churchFatherRepository.updateBiographySummary(ctx.fatherId, summary)
         log.info("LLM_PROCESSOR: applied bio summarization fatherId={}", ctx.fatherId)
@@ -344,7 +358,8 @@ class LlmResponseProcessor(
 
     private fun applyBioTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(BioTranslateContext.serializer(), item.callbackContext!!)
-        val translated = item.responseContent?.trim() ?: return
+        val translated = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for bio translation id=${item.id}")
 
         churchFatherRepository.insertTranslation(
             fatherId = ctx.fatherId,
@@ -363,18 +378,19 @@ class LlmResponseProcessor(
 
     private fun applyCouncilTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(CouncilTranslateContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for council translation id=${item.id}")
 
         val clean = cleanLlmJsonResponse(content)
         val obj = try {
             json.parseToJsonElement(clean).jsonObject
         } catch (e: Exception) {
-            log.warn("LLM_PROCESSOR: failed to parse council translation JSON: {}", e.message)
-            return
+            throw IllegalStateException("Failed to parse council translation JSON id=${item.id}: ${e.message}", e)
         }
         val parsed = obj.mapValues { (_, v) -> v.jsonPrimitive.content }
 
-        val displayName = parsed["displayName"] ?: return
+        val displayName = parsed["displayName"]
+            ?: throw IllegalStateException("Missing displayName in council translation id=${item.id}")
         councilRepository.insertOrUpdateTranslation(
             councilId = ctx.councilId,
             locale = ctx.locale,
@@ -392,18 +408,19 @@ class LlmResponseProcessor(
 
     private fun applyHeresyTranslation(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(HeresyTranslateContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for heresy translation id=${item.id}")
 
         val clean = cleanLlmJsonResponse(content)
         val obj = try {
             json.parseToJsonElement(clean).jsonObject
         } catch (e: Exception) {
-            log.warn("LLM_PROCESSOR: failed to parse heresy translation JSON: {}", e.message)
-            return
+            throw IllegalStateException("Failed to parse heresy translation JSON id=${item.id}: ${e.message}", e)
         }
         val parsed = obj.mapValues { (_, v) -> v.jsonPrimitive.content }
 
-        val name = parsed["name"] ?: return
+        val name = parsed["name"]
+            ?: throw IllegalStateException("Missing name in heresy translation id=${item.id}")
         heresyRepository.insertOrUpdateTranslation(
             heresyId = ctx.heresyId,
             locale = ctx.locale,
@@ -418,7 +435,8 @@ class LlmResponseProcessor(
 
     private fun applyCouncilOverview(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(CouncilOverviewContext.serializer(), item.callbackContext!!)
-        val overview = item.responseContent?.trim() ?: return
+        val overview = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for council overview id=${item.id}")
 
         councilRepository.updateSummary(ctx.councilId, overview, reviewed = false)
         log.info("LLM_PROCESSOR: applied council overview councilId={}", ctx.councilId)
@@ -546,14 +564,14 @@ class LlmResponseProcessor(
 
     private fun applySemanticEnrichment(item: com.ntcoverage.model.QueueItemDTO) {
         val ctx = json.decodeFromString(SemanticEnrichContext.serializer(), item.callbackContext!!)
-        val content = item.responseContent?.trim() ?: return
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for semantic enrichment id=${item.id}")
 
         val jsonContent = cleanLlmJsonResponse(content)
         val parsed = try {
             json.decodeFromString<SemanticEnrichResponse>(jsonContent)
         } catch (e: Exception) {
-            log.warn("LLM_PROCESSOR: failed to parse semantic enrichment JSON for verse={}: {}", ctx.verseId, e.message)
-            return
+            throw IllegalStateException("Failed to parse semantic enrichment JSON for verse=${ctx.verseId}: ${e.message}", e)
         }
 
         val validRelations = setOf("equivalent", "synonymous", "related", "divergent")
@@ -592,7 +610,8 @@ class LlmResponseProcessor(
         val repo = apologeticResponseRepository
             ?: throw IllegalStateException("ApologeticResponseRepository not configured in LlmResponseProcessor")
         val ctx = json.decodeFromString<ApologeticsResponseContext>(item.callbackContext ?: "{}")
-        val enrichedBody = item.responseContent ?: return
+        val enrichedBody = item.responseContent
+            ?: throw IllegalStateException("Empty responseContent for apologetics response id=${item.id}")
         val updated = repo.update(ctx.responseId, body = enrichedBody, bodyReviewed = null)
         if (updated) {
             log.info("LLM_PROCESSOR: apologetics response applied, responseId={}", ctx.responseId)

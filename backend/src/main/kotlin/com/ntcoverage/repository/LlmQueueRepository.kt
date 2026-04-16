@@ -194,6 +194,16 @@ class LlmQueueRepository {
         } > 0
     }
 
+    fun resetAppliedToPending(phaseName: String): Int = transaction {
+        LlmPromptQueue.update({
+            (LlmPromptQueue.status eq "applied") and (LlmPromptQueue.phaseName eq phaseName)
+        }) {
+            it[status] = "pending"
+            it[responseContent] = null
+            it[processedAt] = null
+        }
+    }
+
     fun retryFailed(phaseName: String? = null): Int = transaction {
         val condition = if (phaseName != null) {
             (LlmPromptQueue.status eq "failed") and (LlmPromptQueue.phaseName eq phaseName)

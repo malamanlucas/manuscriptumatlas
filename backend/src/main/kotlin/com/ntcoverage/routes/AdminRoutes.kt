@@ -456,6 +456,13 @@ fun Route.adminRoutes(
         call.respond(MessageResponse("$unstuck $desc items reset to pending"))
     }
 
+    post("/admin/llm/queue/reset-applied") {
+        val phase = call.request.queryParameters["phase"]
+            ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing phase"))
+        val count = llmQueueRepository.resetAppliedToPending(phase)
+        call.respond(MessageResponse("$count applied items reset to pending for $phase"))
+    }
+
     post("/admin/llm/queue/apply/{phase}") {
         val phase = call.parameters["phase"]
             ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing phase"))

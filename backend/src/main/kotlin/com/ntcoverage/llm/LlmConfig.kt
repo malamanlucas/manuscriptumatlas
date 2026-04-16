@@ -18,7 +18,7 @@ class LlmConfig {
 
     // Per-tier batch sizes
     val lowBatchSize: Int = System.getenv("LLM_LOW_BATCH_SIZE")?.toIntOrNull() ?: 150
-    val mediumBatchSize: Int = System.getenv("LLM_MEDIUM_BATCH_SIZE")?.toIntOrNull() ?: 80
+    val mediumBatchSize: Int = System.getenv("LLM_MEDIUM_BATCH_SIZE")?.toIntOrNull() ?: 10
     val highBatchSize: Int = System.getenv("LLM_HIGH_BATCH_SIZE")?.toIntOrNull() ?: 20
 
     // Per-tier timeouts (ms)

@@ -200,7 +200,11 @@ class LexiconRepository {
 
     fun hasTranslation(lexiconId: Int, locale: String): Boolean = transaction(db) {
         GreekLexiconTranslations.selectAll()
-            .where { (GreekLexiconTranslations.lexiconId eq lexiconId) and (GreekLexiconTranslations.locale eq locale) }
+            .where {
+                (GreekLexiconTranslations.lexiconId eq lexiconId) and
+                (GreekLexiconTranslations.locale eq locale) and
+                (GreekLexiconTranslations.shortDefinition.isNotNull())
+            }
             .count() > 0
     }
 
@@ -296,7 +300,11 @@ class LexiconRepository {
 
     fun hasHebrewTranslation(lexiconId: Int, locale: String): Boolean = transaction(db) {
         HebrewLexiconTranslations.selectAll()
-            .where { (HebrewLexiconTranslations.lexiconId eq lexiconId) and (HebrewLexiconTranslations.locale eq locale) }
+            .where {
+                (HebrewLexiconTranslations.lexiconId eq lexiconId) and
+                (HebrewLexiconTranslations.locale eq locale) and
+                (HebrewLexiconTranslations.shortDefinition.isNotNull())
+            }
             .count() > 0
     }
 

@@ -85,7 +85,7 @@ services:
       LLM_HIGH_CONCURRENCY: "15"
       # Per-tier batch sizes
       LLM_LOW_BATCH_SIZE: "150"
-      LLM_MEDIUM_BATCH_SIZE: "80"
+      LLM_MEDIUM_BATCH_SIZE: "10"
       LLM_HIGH_BATCH_SIZE: "20"
       # Per-tier timeouts (ms)
       LLM_LOW_TIMEOUT_MS: "30000"
