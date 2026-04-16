@@ -188,6 +188,13 @@ class LexiconRepository {
                 it[GreekLexiconTranslations.shortDefinition] = shortDef
                 it[GreekLexiconTranslations.fullDefinition] = fullDef
             }
+        } else {
+            GreekLexiconTranslations.update({
+                (GreekLexiconTranslations.lexiconId eq lexiconId) and (GreekLexiconTranslations.locale eq locale)
+            }) {
+                if (shortDef != null) it[GreekLexiconTranslations.shortDefinition] = shortDef
+                if (fullDef != null) it[GreekLexiconTranslations.fullDefinition] = fullDef
+            }
         }
     }
 
@@ -304,6 +311,13 @@ class LexiconRepository {
                 it[HebrewLexiconTranslations.shortDefinition] = shortDef
                 it[HebrewLexiconTranslations.fullDefinition] = fullDef
             }
+        } else {
+            HebrewLexiconTranslations.update({
+                (HebrewLexiconTranslations.lexiconId eq lexiconId) and (HebrewLexiconTranslations.locale eq locale)
+            }) {
+                if (shortDef != null) it[HebrewLexiconTranslations.shortDefinition] = shortDef
+                if (fullDef != null) it[HebrewLexiconTranslations.fullDefinition] = fullDef
+            }
         }
     }
 
@@ -318,6 +332,13 @@ class LexiconRepository {
                     it[HebrewLexiconTranslations.locale] = locale
                     it[HebrewLexiconTranslations.shortDefinition] = shortDef
                     it[HebrewLexiconTranslations.fullDefinition] = fullDef
+                }
+            } else {
+                HebrewLexiconTranslations.update({
+                    (HebrewLexiconTranslations.lexiconId eq lexiconId) and (HebrewLexiconTranslations.locale eq locale)
+                }) {
+                    if (shortDef != null) it[HebrewLexiconTranslations.shortDefinition] = shortDef
+                    if (fullDef != null) it[HebrewLexiconTranslations.fullDefinition] = fullDef
                 }
             }
         }
