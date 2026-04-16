@@ -273,8 +273,9 @@ O prompt precisa ser atualizado para pedir todos os campos.
 
 ## 7. Recomendações
 
-1. **Corrigir enqueue de bio_translate_prepare** — popular `displayName`, `shortDescription` e `primaryLocation` no `BioTranslateContext` a partir dos dados do `church_fathers`
-2. **Corrigir prompt de council_translate_prepare** — incluir `shortDescription`, `mainTopics` e `summary` originais no user_content e solicitar tradução no response
-3. **Triggerar apply dos 62 items completed** — chamar `POST /admin/llm/queue/apply/{phase}` para as 3 fases pendentes
-4. **Priorizar bible_translate_lexicon (es)** — o hebraico espanhol está com apenas 16% de definições preenchidas
-5. **Considerar tornar year_best obrigatório** no prompt de datação — instruir o LLM a sempre fornecer sua melhor estimativa
+1. ~~**Corrigir upserts de léxico**~~ — **CORRIGIDO** em 2026-04-16. Branch `else` com UPDATE adicionado em `upsertGreekTranslation`, `upsertHebrewTranslation` e `batchUpsertHebrewTranslations`. Repair executado: 1.611 registros corrigidos sem custo LLM.
+2. **Corrigir enqueue de bio_translate_prepare** — popular `displayName`, `shortDescription` e `primaryLocation` no `BioTranslateContext` a partir dos dados do `church_fathers`
+3. **Corrigir prompt de council_translate_prepare** — incluir `shortDescription`, `mainTopics` e `summary` originais no user_content e solicitar tradução no response
+4. **Triggerar apply dos 62 items completed** — chamar `POST /admin/llm/queue/apply/{phase}` para as 3 fases pendentes
+5. **Re-enfileirar léxico com definições vazias** — ~2.718 registros criados por enrichment nunca foram enfileirados no léxico (filtro `hasTranslation` retorna true). Ajustar filtro no `translateLexiconPrepare` para verificar se `short_definition` está preenchido.
+6. **Considerar tornar year_best obrigatório** no prompt de datação — instruir o LLM a sempre fornecer sua melhor estimativa
