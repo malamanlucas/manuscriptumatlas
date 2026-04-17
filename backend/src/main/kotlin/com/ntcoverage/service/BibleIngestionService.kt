@@ -1328,7 +1328,7 @@ Return in the EXACT same format with translated values:"""
                 !hasTranslation && (!entry.shortDefinition.isNullOrBlank() || !entry.fullDefinition.isNullOrBlank())
             }
 
-            val batchSize = llmConfig.mediumBatchSize
+            val batchSize = if (lexiconType == "hebrew" && locale == "pt") 10 else llmConfig.mediumBatchSize
             val batches = untranslated.chunked(batchSize)
 
             for (batch in batches) {
@@ -1366,7 +1366,7 @@ Rules:
                     systemPrompt = systemPrompt,
                     userContent = entriesBlock,
                     temperature = 0.1,
-                    maxTokens = 8000,
+                    maxTokens = if (lexiconType == "hebrew" && locale == "pt") 5000 else 8000,
                     tier = "MEDIUM",
                     callbackContext = queueJson.encodeToString(ctx)
                 )
@@ -1612,7 +1612,7 @@ Greek alignments: [$alignmentsJson]"""
 
                 for (locale in listOf("pt", "es")) {
                     val language = if (locale == "pt") "Portuguese" else "Spanish"
-                    val chunks = uniqueEntries.chunked(80)
+                    val chunks = uniqueEntries.chunked(20)
 
                     for ((chunkIdx, chunk) in chunks.withIndex()) {
                         val input = chunk.joinToString("\n") { "${it.transliteration} | ${it.morphology} | ${it.englishGloss} | ${it.lemma}" }
@@ -1645,7 +1645,7 @@ IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
                             systemPrompt = systemPrompt,
                             userContent = input,
                             temperature = 0.0,
-                            maxTokens = chunk.size * 20,
+                            maxTokens = chunk.size * 40,
                             tier = "LOW",
                             callbackContext = queueJson.encodeToString(ctx)
                         )

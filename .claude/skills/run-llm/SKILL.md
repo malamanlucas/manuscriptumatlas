@@ -95,12 +95,17 @@ Cada Agent retorna a resposta, e voce salva com o ID correto do item que foi env
 
 ### 4. Salvar resultados
 
-Para cada resposta de Agent, salve imediatamente:
+Para cada resposta de Agent, salve imediatamente com **estimativa de tokens** (aprox. `ceil(len(texto) / 4)` — padrao da industria quando nao ha metadata de API).
+
 ```bash
+IN=$(( (${#SYSTEM_PROMPT} + ${#USER_CONTENT} + 3) / 4 ))
+OUT=$(( (${#RESPONSE} + 3) / 4 ))
 curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   http://localhost:8080/admin/llm/queue/{id}/complete \
-  -d '{"id":<id>,"responseContent":"<resposta>","modelUsed":"<model_id>","inputTokens":0,"outputTokens":0}'
+  -d "{\"id\":<id>,\"responseContent\":\"<resposta>\",\"modelUsed\":\"<model_id>\",\"inputTokens\":$IN,\"outputTokens\":$OUT}"
 ```
+
+**Por que estimativa e nao zero?** Observabilidade de custo/volume. `input_tokens=0`/`output_tokens=0` inviabiliza dashboards de uso. A estimativa char/4 erra ~15% mas da ordem de grandeza correta para graficos.
 
 Se falhar:
 ```bash
