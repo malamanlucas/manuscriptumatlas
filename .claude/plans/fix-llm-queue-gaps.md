@@ -102,22 +102,29 @@ O endpoint `POST /admin/llm/queue/{id}/complete` já aceita esses campos (ver `L
 
 Efeito: todos os items re-enfileirados nos próximos passos terão uso real. Histórico antigo (33.478 items) continua com zero — OK, não perdemos nada, só não temos o dado retroativo.
 
-### Passo 2 — Reduzir janela de truncamento (P1 + P2)
+### Passo 2 — Reduzir chunk size (P1 + P2)
 
-Antes de re-enfileirar, ajustar os prepares para evitar o mesmo truncamento.
+Antes de re-enfileirar, ajustar os prepares para **chunks pequenos**. Três ganhos simultâneos alinhados com o skill `/run-llm`:
+
+1. **Qualidade** — remove risco de truncamento do Haiku (75 batches PT truncados no histórico).
+2. **Velocidade** — `/run-llm` usa regra "1 item = 1 Agent". Chunks menores = output menor por Agent = retorno mais rápido. Com 3-5 Agents em paralelo processando items curtos, throughput total sobe vs. poucos Agents esperando chunks grandes.
+3. **Progresso observável** — cada chunk vira 1 row na `llm_prompt_queue`. Chunks menores geram mais rows, e o dashboard `/pt/ingestion-status` (aba Fila LLM) incrementa os contadores `Concluídos` / `Aplicados` de forma granular a cada rodada.
 
 **Arquivo**: `backend/src/main/kotlin/com/ntcoverage/service/BibleIngestionService.kt`
 
 **P1 — `translateLexiconPrepare` (linhas 1317-1378)**:
-- Atual: `llmConfig.mediumBatchSize` (10–80) + `maxTokens = 8000`, tier `MEDIUM`.
-- Ajuste: reduzir `chunked(...)` para **máx 25 entries por batch** quando `locale='pt'` E `lexiconType='hebrew'`. Manter 80 para ES (sem problema histórico).
-- Justificativa: 25 × (~320 tokens/entry PT média) ≈ 8.000 tokens, deixa margem.
+- Atual: `llmConfig.mediumBatchSize` (10–80), `maxTokens = 8000`, tier `MEDIUM`.
+- Ajuste: forçar `chunked(10)` quando `locale='pt'` E `lexiconType='hebrew'`. Reduzir `maxTokens` para `5000` (10 × ~320 tokens PT ≈ 3.200, margem 1.5×). Manter 80 para ES (0 truncamento histórico).
+- Volume no re-run: 1.241 entries PT / 10 = **≈125 items** na fila (vs. ~50 com chunk 25 e ~16 com chunk 80).
 
-**P2 — `translateGlossesPrepare` (linha 1615, 1648)**:
+**P2 — `translateGlossesPrepare` (linhas 1615, 1648)**:
 - Atual: `chunked(80)`, `maxTokens = chunk.size * 20`.
-- Ajuste: `chunked(50)`, `maxTokens = chunk.size * 30`. Total 50 × 30 = 1.500 tokens — margem para glosses PT longas.
+- Ajuste: `chunked(20)`, `maxTokens = chunk.size * 40`. Total 20 × 40 = 800 tokens — glosses PT têm 1-3 palavras, 40 tok/gloss é folga generosa.
+- Volume no re-run: ~17k transliterations únicas × 2 locales / 20 ≈ **≈1.700 items** (vs. ~680 com chunk 50 e ~425 com chunk 80).
 
 Essas mudanças são aditivas; nenhuma assinatura pública muda.
+
+**Trade-off considerado**: overhead de muitos items. Não é crítico aqui porque (a) `/claim?limit=50` já absorve em lote, (b) Haiku é barato e rápido por item, (c) o ganho em observabilidade/paralelismo supera o overhead HTTP por item.
 
 ### Passo 3 — Rodar `bible_translate_hebrew_lexicon` (re-enfileirar 1.241 faltantes)
 
@@ -130,9 +137,11 @@ curl -X POST http://localhost:8080/admin/bible/ingestion/run/bible_translate_heb
 Efeito do prepare (idempotente):
 - Filtra entries hebraicas com base (short/full_definition) **sem** tradução PT (via `hasHebrewTranslation` que já checa `shortDefinition IS NOT NULL`, linha 301-307 `LexiconRepository.kt`).
 - ES não será re-enfileirado (já 100% traduzido).
-- Enfileira ~1.241 entries em batches de 25 = ~50 novos items na fila.
+- Enfileira 1.241 entries em batches de 10 = **~125 novos items** na fila.
 
-Aguardar `/run-llm` processar (tier MEDIUM) → fila pending → processing → completed.
+Aguardar `/run-llm` processar (tier MEDIUM, Sonnet → ver skill tabela tier→modelo).
+
+Dashboard (`/pt/ingestion-status` → aba **Fila LLM** → linha `bible_translate_hebrew_lexicon`): vai ver o contador `Pendentes` subir ~125, depois migrar para `Processando` → `Concluídos` → `Aplicados` em rodadas visíveis.
 
 Aplicar:
 ```bash
@@ -146,7 +155,7 @@ Verificação parcial:
 SELECT COUNT(*) FROM hebrew_lexicon_translations WHERE locale='pt' AND short_definition IS NOT NULL;
 ```
 
-Se algum batch truncar de novo: reduzir para `chunked(10)` e repetir (é idempotente).
+Se algum item truncar de novo (improvável com chunk=10): basta rodar o prepare de novo (idempotente).
 
 ### Passo 4 — Rodar `bible_translate_glosses` (re-enfileirar 59k faltantes)
 
@@ -156,9 +165,11 @@ curl -X POST http://localhost:8080/admin/bible/ingestion/run/bible_translate_glo
 ```
 
 Efeito:
-- Itera livros NT + capítulos; para cada, seleciona palavras com `portuguese_gloss IS NULL` (linha 1600) → enfileira chunks de 50 para ambos locales.
+- Itera livros NT + capítulos; para cada, seleciona palavras com `portuguese_gloss IS NULL` (linha 1600) → enfileira chunks de 20 para ambos locales.
 - Itens já traduzidos não são re-enfileirados.
-- Volume esperado: ~59k palavras / ~17k transliterations únicas → algumas centenas de chunks por locale.
+- Volume esperado: ~1.700 items na fila (pt+es combinados). Dashboard vai mostrar `bible_translate_glosses` subindo de 2.624 aplicados para ~4.300+ ao final.
+
+Com chunks de 20, cada Agent Haiku processa em ~2-3s. Com 3-5 Agents em paralelo no `/run-llm`, throughput esperado: ~60-100 items/minuto → ~20-30 minutos para fechar o gap.
 
 Aguardar processamento → aplicar:
 ```bash
@@ -235,7 +246,7 @@ Nenhum passo é destrutivo. Se algo sair errado:
 
 1. Passo 0 — snapshot de baseline (SELECT)
 2. Passo 1 — fix skill `/run-llm` para tokens
-3. Passo 2 — ajustar `chunked(25)` para hebrew PT e `chunked(50)` + `*30` para glosses no backend
-4. Passo 3 — rodar `bible_translate_hebrew_lexicon` + aplicar
-5. Passo 4 — rodar `bible_translate_glosses` + aplicar
+3. Passo 2 — backend: `chunked(10)` + `maxTokens=5000` para hebrew PT; `chunked(20)` + `maxTokens=chunk.size*40` para glosses
+4. Passo 3 — rodar `bible_translate_hebrew_lexicon` + aplicar (~125 items)
+5. Passo 4 — rodar `bible_translate_glosses` + aplicar (~1.700 items)
 6. Passo 5 — verificação final
