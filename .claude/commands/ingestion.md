@@ -23,7 +23,7 @@ Filtro opcional: `?filter=normalized_name` (ex: `?filter=clement_of_rome`)
 PRIMARY 1.0 (Schaff, Hefele, Fordham) > ACADEMIC 0.8 (Catholic Enc, Seed) > STRUCTURED 0.7 (Wikidata) > AGGREGATOR 0.5 (Wikipedia)
 
 ## LlmOrchestrator
-Anthropic Claude Opus 4.6 (primário) → OpenAI GPT-5.4 (fallback). Rate limiting por provider. Configuração via env vars.
+Anthropic Claude Opus 4.7 (primário) → OpenAI GPT-5.4 (fallback). Rate limiting por provider. Configuração via env vars.
 
 ## IngestionPhaseTracker
 Rastreamento persistente via `IngestionPhaseRepository`. Recupera fases stuck no restart do servidor.

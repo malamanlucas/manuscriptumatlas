@@ -28,7 +28,7 @@ TOKEN=$(curl -s -X POST http://localhost:8080/auth/token \
 | **LOW** | `bible_translate_glosses` | **Haiku** | `claude-haiku-4-5` |
 | **MEDIUM** | `bible_translate_enrichment_*` | **Haiku** | `claude-haiku-4-5` |
 | **MEDIUM** | `bible_translate_lexicon`, `bible_translate_hebrew_lexicon`, `council_*`, `heresy_*`, `bio_*` | **Sonnet** | `claude-sonnet-4-6` |
-| **HIGH** | `bible_align_*`, `dating_*`, `apologetics_*` | **Opus** | `claude-opus-4-6` |
+| **HIGH** | `bible_align_*`, `dating_*`, `apologetics_*` | **Opus** | `claude-opus-4-7` |
 
 **Regra rapida:** `enrichment` no nome → Haiku. `tier=LOW` → Haiku. `tier=MEDIUM` (resto) → Sonnet. `tier=HIGH` → Opus direto.
 

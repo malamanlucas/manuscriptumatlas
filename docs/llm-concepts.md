@@ -14,7 +14,7 @@ O projeto usa um sistema de 3 tiers para rotear invocações LLM ao modelo adequ
 |------|----------------|-------------------|--------|-------------|------------|---------|-----|
 | **LOW** | `gpt-4.1-mini` | `claude-haiku-4-5` | Minimo | 80 | 150 | 30s | Glosses, traduções simples 1:1 |
 | **MEDIUM** | `gpt-4.1` | `claude-haiku-4-5` (enrichment) / `claude-sonnet-4-6` (lexicon, bios, councils) | Minimo/Medio | 40 | 80 | 60s | Batches de léxico, enrichment, biografias, traduções, extração, conflitos |
-| **HIGH** | `gpt-5.4` | `claude-opus-4-6` | Alto | 15 | 20 | 120s | Dating acadêmico, alignment interlinear, apologética |
+| **HIGH** | `gpt-5.4` | `claude-opus-4-7` | Alto | 15 | 20 | 120s | Dating acadêmico, alignment interlinear, apologética |
 
 Configurável via env vars: `OPENAI_LOW_MODEL`, `OPENAI_MEDIUM_MODEL`, `OPENAI_HIGH_MODEL`, `LLM_{TIER}_CONCURRENCY`, `LLM_{TIER}_BATCH_SIZE`, `LLM_{TIER}_TIMEOUT_MS`.
 

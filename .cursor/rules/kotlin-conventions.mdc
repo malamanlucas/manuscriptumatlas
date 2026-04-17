@@ -58,7 +58,7 @@ Rotas literais devem ser declaradas antes de rotas com parâmetros dinâmicos pa
 Abstração multi-provider com fallback automático:
 
 - `LlmProvider` (interface) — contrato para todos os providers
-- `AnthropicProvider` — Claude Opus 4.6 (primário)
+- `AnthropicProvider` — Claude Opus 4.7 (primário)
 - `OpenAiProvider` — GPT-5.4 (primeiro fallback)
 - `DeepSeekProvider` — DeepSeek via local/cloud
 - `OpenRouterProvider` — OpenRouter proxy (BYOK)

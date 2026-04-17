@@ -6,7 +6,7 @@ Sistema de cobertura textual do Novo Testamento grego — manuscritos, testemunh
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
 - **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / TanStack Query / next-intl
-- **LLM:** Anthropic Claude Opus 4.6 (primário) + OpenAI GPT-5.4 / DeepSeek / OpenRouter (fallback) via `LlmOrchestrator` + LLM Queue (Claude Code `/run-llm`)
+- **LLM:** Anthropic Claude Opus 4.7 (primário) + OpenAI GPT-5.4 / DeepSeek / OpenRouter (fallback) via `LlmOrchestrator` + LLM Queue (Claude Code `/run-llm`)
 - **Messaging:** Apache Kafka (KRaft mode) — notificacao de resultados LLM processados
 - **Infra:** Docker Compose (postgres + kafka + init + app + frontend + prometheus + grafana + loki + promtail)
 - **Observability:** Prometheus (metrics) + Grafana (dashboards, porta 3001) + Loki (logs) + Micrometer + structured JSON logging

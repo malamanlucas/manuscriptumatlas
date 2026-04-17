@@ -11,7 +11,7 @@ Sistema de análise de cobertura textual do Novo Testamento grego — manuscrito
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
 - **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / Recharts / Leaflet + react-leaflet / TanStack Query / next-intl
-- **LLM:** Anthropic Claude Opus 4.6 (primário) + OpenAI GPT-5.4 (fallback) + DeepSeek + OpenRouter via `LlmOrchestrator`; a fila assíncrona `llm_prompt_queue` pode ser processada por `.claude/skills/run-llm` ou `.cursor/skills/run-llm-cursor` com subagentes por tier; drenagem não interativa com a mesma política de claim/paralelismo/apply está em `scripts/drain_llm_prompt_queue.py` (OpenAI Chat Completions + `OPENAI_API_KEY`)
+- **LLM:** Anthropic Claude Opus 4.7 (primário) + OpenAI GPT-5.4 (fallback) + DeepSeek + OpenRouter via `LlmOrchestrator`; a fila assíncrona `llm_prompt_queue` pode ser processada por `.claude/skills/run-llm` ou `.cursor/skills/run-llm-cursor` com subagentes por tier; drenagem não interativa com a mesma política de claim/paralelismo/apply está em `scripts/drain_llm_prompt_queue.py` (OpenAI Chat Completions + `OPENAI_API_KEY`)
 - **Infra:** Docker Compose (postgres + init + app + frontend + prometheus + grafana + loki + promtail)
 - **Observability:** Prometheus + Grafana (porta 3001) + Loki + Micrometer + structured JSON logging
 

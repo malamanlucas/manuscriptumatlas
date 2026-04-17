@@ -133,7 +133,7 @@ export default function WikiLlmPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">Anthropic</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    <Code>claude-opus-4-6</Code>
+                    <Code>claude-opus-4-7</Code>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {t("providerRolePrimary")}
