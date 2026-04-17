@@ -142,16 +142,19 @@ class BibleTokenizationService(
     /**
      * Tokenizes all verses for a given bible version.
      * Idempotent: skips verses that already have tokens.
+     * When `scope` is provided, limits processing to the scoped book/chapter/verse.
      */
     suspend fun tokenizeVersion(
         versionCode: String,
         tracker: IngestionPhaseTracker? = null,
-        phaseName: String? = null
+        phaseName: String? = null,
+        scope: IngestionScope? = null
     ): Int {
         val version = versionRepository.findByCode(versionCode)
             ?: throw IllegalArgumentException("Version not found: $versionCode")
 
         val books = bookRepository.findAll()
+            .filter { scope?.bookName == null || it.name == scope.bookName }
         var totalTokenized = 0
         var totalVerses = 0
 
@@ -161,8 +164,10 @@ class BibleTokenizationService(
             if (version.testamentScope == "OT" && book.testament == "NT") continue
 
             for (chapter in 1..book.totalChapters) {
+                if (scope?.chapter != null && chapter != scope.chapter) continue
                 val texts = verseRepository.getChapterTexts(version.id, book.id, chapter)
                 for (verseText in texts) {
+                    if (scope?.verse != null && verseText.verseNumber != scope.verse) continue
                     val verseId = verseRepository.getVerseId(book.id, chapter, verseText.verseNumber) ?: continue
 
                     // Skip if already tokenized (idempotent)

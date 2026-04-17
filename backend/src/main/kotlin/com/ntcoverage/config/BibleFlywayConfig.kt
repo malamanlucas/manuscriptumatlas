@@ -25,7 +25,8 @@ object BibleFlywayConfig {
                 HebrewLexicon,
                 HebrewLexiconTranslations,
                 WordAlignments,
-                BibleVerseTokens
+                BibleVerseTokens,
+                BibleLayer4Applications
             )
             log.info("Bible tables created/verified via Exposed SchemaUtils.")
         }

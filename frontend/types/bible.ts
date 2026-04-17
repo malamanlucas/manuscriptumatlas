@@ -156,3 +156,47 @@ export interface BibleSearchResponse {
   isReference: boolean;
   resolvedReference?: ResolvedReferenceDTO | null;
 }
+
+// ── Layer 4 scope/coverage/history ──
+
+export interface RunScopedRequest {
+  phases: string[];
+  bookName?: string | null;
+  chapter?: number | null;
+  verse?: number | null;
+}
+
+export interface RunScopedResponse {
+  message: string;
+  applicationIds: number[];
+}
+
+export interface BibleLayer4VerseCoverageDTO {
+  verse: number;
+  tokenizeArc69: boolean;
+  tokenizeKjv: boolean;
+  alignKjv: boolean;
+  alignArc69: boolean;
+  enrichSemanticsArc69: boolean;
+}
+
+export interface BibleLayer4CoverageDTO {
+  book: string;
+  chapter: number;
+  totalVerses: number;
+  verses: BibleLayer4VerseCoverageDTO[];
+}
+
+export interface BibleLayer4ApplicationDTO {
+  id: number;
+  phaseName: string;
+  bookName: string | null;
+  chapter: number | null;
+  verse: number | null;
+  status: string;
+  itemsProcessed: number;
+  enqueuedCount: number;
+  errorMessage: string | null;
+  requestedAt: string;
+  finishedAt: string | null;
+}

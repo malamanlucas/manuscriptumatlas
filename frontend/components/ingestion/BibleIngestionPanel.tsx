@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { IngestionPhasePanel } from "./IngestionPhasePanel";
+import { BibleLayer4ScopePanel } from "./BibleLayer4ScopePanel";
 import {
   useBibleIngestionPhases,
   useRunBiblePhase,
@@ -154,6 +155,9 @@ export function BibleIngestionPanel() {
             expanded={expanded.has(layer.key)}
             onToggle={() => toggle(layer.key)}
           >
+            {layer.key === "layer4" && (
+              <BibleLayer4ScopePanel phases={layer.phases} phaseLabels={phaseLabels} />
+            )}
             <IngestionPhasePanel
               phasesOrder={layer.phases}
               phasesData={layerPhases}

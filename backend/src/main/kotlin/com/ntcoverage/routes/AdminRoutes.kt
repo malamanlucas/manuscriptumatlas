@@ -4,8 +4,13 @@ import com.ntcoverage.config.IngestionConfig
 import com.ntcoverage.ErrorResponse
 import com.ntcoverage.model.QueueCompleteRequest
 import com.ntcoverage.model.RunPhasesRequest
+import com.ntcoverage.model.RunScopedRequest
+import com.ntcoverage.model.RunScopedResponse
+import com.ntcoverage.repository.BibleLayer4ApplicationRepository
 import com.ntcoverage.repository.IngestionMetadataRepository
 import com.ntcoverage.repository.LlmQueueRepository
+import com.ntcoverage.service.BibleLayer4CoverageService
+import com.ntcoverage.service.IngestionScope
 import com.ntcoverage.service.CouncilIngestionService
 import com.ntcoverage.service.IngestionPhaseTracker
 import com.ntcoverage.service.CouncilService
@@ -37,7 +42,9 @@ fun Route.adminRoutes(
     bibleIngestionService: com.ntcoverage.service.BibleIngestionService,
     llmQueueRepository: LlmQueueRepository,
     kafkaProducer: com.ntcoverage.service.KafkaProducerService,
-    llmResponseProcessor: com.ntcoverage.service.LlmResponseProcessor
+    llmResponseProcessor: com.ntcoverage.service.LlmResponseProcessor,
+    bibleLayer4ApplicationRepository: BibleLayer4ApplicationRepository,
+    bibleLayer4CoverageService: BibleLayer4CoverageService
 ) {
     get("/admin/ingestion/status") {
         val status = metadataRepository.getStatus()
@@ -342,6 +349,62 @@ fun Route.adminRoutes(
             bibleIngestionService.runPhases(phases)
         }
         call.respond(HttpStatusCode.Accepted, MessageResponse("Phases started: ${phases.joinToString(", ")}"))
+    }
+
+    post("/admin/bible/ingestion/run-scoped") {
+        val request = call.receive<RunScopedRequest>()
+        val phases = request.phases.distinct()
+        if (phases.isEmpty()) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one phase is required"))
+        }
+        val invalid = phases.filter { it !in com.ntcoverage.service.BibleIngestionService.ALL_PHASES }
+        if (invalid.isNotEmpty()) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid phases: $invalid"))
+        }
+        val nonLayer4 = phases.filter { it !in com.ntcoverage.service.BibleIngestionService.LAYER_4_PHASES }
+        if (nonLayer4.isNotEmpty() && (request.bookName != null || request.chapter != null || request.verse != null)) {
+            return@post call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse("Scope filter (book/chapter/verse) supports only Layer 4 phases. Non-L4: $nonLayer4")
+            )
+        }
+        if (request.verse != null && request.chapter == null) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("verse requires chapter"))
+        }
+        if (request.chapter != null && request.bookName == null) {
+            return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("chapter requires bookName"))
+        }
+        val alreadyRunning = phases.filter { phaseTracker.isPhaseRunning(it) }
+        if (alreadyRunning.isNotEmpty()) {
+            return@post call.respond(
+                HttpStatusCode.Conflict,
+                MessageResponse("Phases already running: ${alreadyRunning.joinToString(", ")}")
+            )
+        }
+        val scope = request.bookName?.let { IngestionScope(it, request.chapter, request.verse) }
+        ingestionScope.launch {
+            bibleIngestionService.runPhases(phases, scope)
+        }
+        call.respond(
+            HttpStatusCode.Accepted,
+            RunScopedResponse("Phases started: ${phases.joinToString(", ")}", emptyList())
+        )
+    }
+
+    get("/admin/bible/layer4/coverage") {
+        val book = call.request.queryParameters["book"]
+            ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing book"))
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+            ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing or invalid chapter"))
+        call.respond(bibleLayer4CoverageService.getCoverage(book, chapter))
+    }
+
+    get("/admin/bible/layer4/applications") {
+        val book = call.request.queryParameters["book"]
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+        val verse = call.request.queryParameters["verse"]?.toIntOrNull()
+        val limit = (call.request.queryParameters["limit"]?.toIntOrNull() ?: 100).coerceIn(1, 500)
+        call.respond(bibleLayer4ApplicationRepository.list(book, chapter, verse, limit))
     }
 
     post("/admin/bible/glosses/clear") {

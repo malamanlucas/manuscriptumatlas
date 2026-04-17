@@ -1,6 +1,7 @@
 package com.ntcoverage.service
 
 import com.ntcoverage.repository.BibleBookRepository
+import com.ntcoverage.repository.BibleLayer4ApplicationRepository
 import com.ntcoverage.repository.BibleVersionRepository
 import com.ntcoverage.repository.BibleVerseRepository
 import com.ntcoverage.repository.InterlinearRepository
@@ -35,6 +36,21 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 
+/**
+ * Runtime scope filter for Layer 4 phases — selects a single book, chapter, or verse.
+ * Replaces the former `bible-ingestion-filter.txt` approach (deleted 2026-04-17).
+ *
+ * - `bookName == null` → todos os livros
+ * - `bookName != null, chapter == null` → livro inteiro
+ * - `bookName != null, chapter != null, verse == null` → capítulo inteiro
+ * - `bookName != null, chapter != null, verse != null` → único versículo
+ */
+data class IngestionScope(val bookName: String, val chapter: Int?, val verse: Int?) {
+    init {
+        require(verse == null || chapter != null) { "verse scope requires chapter" }
+    }
+}
+
 class BibleIngestionService(
     private val versionRepository: BibleVersionRepository,
     private val bookRepository: BibleBookRepository,
@@ -47,60 +63,10 @@ class BibleIngestionService(
     private val lexiconEnrichmentService: LexiconEnrichmentService,
     private val llmConfig: LlmConfig = LlmConfig(),
     private val llmQueueRepository: LlmQueueRepository? = null,
-    private val tokenizationService: BibleTokenizationService? = null
+    private val tokenizationService: BibleTokenizationService? = null,
+    private val applicationRepository: BibleLayer4ApplicationRepository? = null
 ) {
     private val log = LoggerFactory.getLogger(BibleIngestionService::class.java)
-
-    data class BookFilter(val bookName: String, val chapters: Set<Int>?)
-
-    private fun loadBookFilter(): List<BookFilter>? {
-        return try {
-            val stream = javaClass.classLoader.getResourceAsStream("bible-ingestion-filter.txt")
-                ?: return null
-            val lines = stream.bufferedReader().readLines()
-                .map { it.trim() }
-                .filter { it.isNotBlank() && !it.startsWith("#") }
-            if (lines.isEmpty() || lines.any { it.equals("ALL", ignoreCase = true) }) {
-                null // null = all books, all chapters
-            } else {
-                val filters = lines.map { line ->
-                    if (":" in line) {
-                        val parts = line.split(":", limit = 2)
-                        val bookName = parts[0].trim()
-                        val chapterSpec = parts[1].trim()
-                        val chapters = if ("-" in chapterSpec) {
-                            val range = chapterSpec.split("-", limit = 2)
-                            val start = range[0].trim().toIntOrNull() ?: 1
-                            val end = range[1].trim().toIntOrNull() ?: start
-                            (start..end).toSet()
-                        } else {
-                            setOf(chapterSpec.toIntOrNull() ?: 1)
-                        }
-                        BookFilter(bookName, chapters)
-                    } else {
-                        BookFilter(line, null) // all chapters
-                    }
-                }
-                log.info("BIBLE_FILTER: loaded ${filters.size} entries: ${filters.map { f -> "${f.bookName}${f.chapters?.let { ":${it.joinToString(",")}" } ?: ""}" }}")
-                filters
-            }
-        } catch (e: Exception) {
-            log.warn("BIBLE_FILTER: failed to read filter file: ${e.message}")
-            null
-        }
-    }
-
-    private fun shouldProcessBook(bookName: String, filters: List<BookFilter>?): Boolean {
-        if (filters == null) return true
-        return filters.any { it.bookName == bookName }
-    }
-
-    private fun shouldProcessChapter(bookName: String, chapter: Int, filters: List<BookFilter>?): Boolean {
-        if (filters == null) return true
-        val bookFilter = filters.find { it.bookName == bookName } ?: return false
-        if (bookFilter.chapters == null) return true
-        return chapter in bookFilter.chapters
-    }
 
     private val httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
@@ -270,6 +236,24 @@ class BibleIngestionService(
             "bible_align_hebrew_arc69"
         )
 
+        /** Phases that accept IngestionScope filtering (book/chapter/verse). */
+        val LAYER_4_PHASES = setOf(
+            "bible_tokenize_arc69",
+            "bible_tokenize_kjv",
+            "bible_lemmatize_arc69",
+            "bible_lemmatize_kjv",
+            "bible_align_kjv",
+            "bible_align_kjv_prepare",
+            "bible_align_arc69",
+            "bible_align_arc69_prepare",
+            "bible_align_hebrew_kjv",
+            "bible_align_hebrew_kjv_prepare",
+            "bible_align_hebrew_arc69",
+            "bible_align_hebrew_arc69_prepare",
+            "bible_enrich_semantics_arc69",
+            "bible_enrich_semantics_arc69_prepare"
+        )
+
         // GitHub raw URLs for Bible text datasets
         // KJV from public domain repository (JSON format with book/chapter/verse structure)
         private const val KJV_BASE = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json"
@@ -299,50 +283,66 @@ class BibleIngestionService(
     /** Key for deduplicating Greek words before LLM translation */
     private data class GlossTranslationEntry(val transliteration: String, val morphology: String, val englishGloss: String, val lemma: String)
 
-    suspend fun runPhase(phase: String) {
-        when (phase) {
-            "bible_seed_versions" -> seedVersions()
-            "bible_seed_books" -> seedBooks()
-            "bible_seed_abbreviations" -> seedAbbreviations()
-            "bible_ingest_text_kjv" -> ingestTextFromUrl("KJV", KJV_BASE)
-            "bible_ingest_text_aa" -> ingestTextFromUrl("AA", ARC_BASE)
-            "bible_ingest_text_acf" -> ingestTextFromUrl("ACF", ACF_BASE)
-            "bible_ingest_text_arc69" -> ingestTextFromUrl("ARC69", ARC69_BASE)
-            "bible_ingest_nt_interlinear" -> ingestTAGNT()
-            "bible_ingest_ot_interlinear" -> ingestOTInterlinearPlaceholder()
-            "bible_ingest_greek_lexicon" -> ingestGreekLexiconFromSTEP()
-            "bible_ingest_hebrew_lexicon" -> ingestHebrewLexiconFromSTEP()
-            "bible_fill_missing_hebrew" -> fillMissingHebrew()
-            // Layer 4 — Tokenization (deterministic, no LLM)
-            "bible_tokenize_arc69" -> tokenizeVersion("ARC69")
-            "bible_tokenize_kjv" -> tokenizeVersion("KJV")
-            // Layer 4 — Lemmatization (LLM batch, one-time)
-            "bible_lemmatize_arc69" -> lemmatizeVersionPlaceholder("ARC69")
-            "bible_lemmatize_kjv" -> lemmatizeVersionPlaceholder("KJV")
-            // LLM phases → redirect to queue-based prepare (enqueue prompts, then run /run-llm)
-            "bible_translate_lexicon", "bible_translate_lexicon_prepare" -> translateLexiconPrepare("greek")
-            "bible_translate_hebrew_lexicon", "bible_translate_hebrew_lexicon_prepare" -> translateLexiconPrepare("hebrew")
-            "bible_translate_glosses", "bible_translate_glosses_prepare" -> translateGlossesPrepare()
-            "bible_translate_enrichment_greek", "bible_translate_enrichment_greek_prepare" -> translateEnrichmentPrepare("greek")
-            "bible_translate_enrichment_hebrew", "bible_translate_enrichment_hebrew_prepare" -> translateEnrichmentPrepare("hebrew")
-            "bible_align_kjv", "bible_align_kjv_prepare" -> alignVersionPrepare("KJV")
-            "bible_align_arc69", "bible_align_arc69_prepare" -> alignVersionPrepare("ARC69")
-            "bible_align_hebrew_kjv", "bible_align_hebrew_kjv_prepare" -> alignVersionPrepare("KJV")
-            "bible_align_hebrew_arc69", "bible_align_hebrew_arc69_prepare" -> alignVersionPrepare("ARC69")
-            // Layer 4 — Semantic enrichment (N4b): attaches contextual_sense + semantic_relation to every alignment
-            "bible_enrich_semantics_arc69", "bible_enrich_semantics_arc69_prepare" -> enrichSemanticsPrepare("ARC69")
-            // Non-LLM phases (scrapers, no change)
-            "bible_enrich_greek_lexicon" -> enrichGreekLexicon()
-            "bible_enrich_hebrew_lexicon" -> enrichHebrewLexicon()
-            "bible_reenrich_greek_lexicon" -> reEnrichGreekLexicon()
-            "bible_reenrich_hebrew_lexicon" -> reEnrichHebrewLexicon()
-            else -> throw IllegalArgumentException("Unknown phase: $phase")
+    suspend fun runPhase(phase: String, scope: IngestionScope? = null) {
+        val applicationId = if (scope != null && phase in LAYER_4_PHASES) {
+            applicationRepository?.insert(phase, scope.bookName, scope.chapter, scope.verse)
+        } else null
+
+        try {
+            when (phase) {
+                "bible_seed_versions" -> seedVersions()
+                "bible_seed_books" -> seedBooks()
+                "bible_seed_abbreviations" -> seedAbbreviations()
+                "bible_ingest_text_kjv" -> ingestTextFromUrl("KJV", KJV_BASE)
+                "bible_ingest_text_aa" -> ingestTextFromUrl("AA", ARC_BASE)
+                "bible_ingest_text_acf" -> ingestTextFromUrl("ACF", ACF_BASE)
+                "bible_ingest_text_arc69" -> ingestTextFromUrl("ARC69", ARC69_BASE)
+                "bible_ingest_nt_interlinear" -> ingestTAGNT()
+                "bible_ingest_ot_interlinear" -> ingestOTInterlinearPlaceholder()
+                "bible_ingest_greek_lexicon" -> ingestGreekLexiconFromSTEP()
+                "bible_ingest_hebrew_lexicon" -> ingestHebrewLexiconFromSTEP()
+                "bible_fill_missing_hebrew" -> fillMissingHebrew()
+                // Layer 4 — Tokenization (deterministic, no LLM)
+                "bible_tokenize_arc69" -> tokenizeVersion("ARC69", scope)
+                "bible_tokenize_kjv" -> tokenizeVersion("KJV", scope)
+                // Layer 4 — Lemmatization (LLM batch, one-time)
+                "bible_lemmatize_arc69" -> lemmatizeVersionPlaceholder("ARC69")
+                "bible_lemmatize_kjv" -> lemmatizeVersionPlaceholder("KJV")
+                // LLM phases → redirect to queue-based prepare (enqueue prompts, then run /run-llm)
+                "bible_translate_lexicon", "bible_translate_lexicon_prepare" -> translateLexiconPrepare("greek")
+                "bible_translate_hebrew_lexicon", "bible_translate_hebrew_lexicon_prepare" -> translateLexiconPrepare("hebrew")
+                "bible_translate_glosses", "bible_translate_glosses_prepare" -> translateGlossesPrepare()
+                "bible_translate_enrichment_greek", "bible_translate_enrichment_greek_prepare" -> translateEnrichmentPrepare("greek")
+                "bible_translate_enrichment_hebrew", "bible_translate_enrichment_hebrew_prepare" -> translateEnrichmentPrepare("hebrew")
+                "bible_align_kjv", "bible_align_kjv_prepare" -> alignVersionPrepare("KJV", scope)
+                "bible_align_arc69", "bible_align_arc69_prepare" -> alignVersionPrepare("ARC69", scope)
+                "bible_align_hebrew_kjv", "bible_align_hebrew_kjv_prepare" -> alignVersionPrepare("KJV", scope)
+                "bible_align_hebrew_arc69", "bible_align_hebrew_arc69_prepare" -> alignVersionPrepare("ARC69", scope)
+                // Layer 4 — Semantic enrichment (N4b): attaches contextual_sense + semantic_relation to every alignment
+                "bible_enrich_semantics_arc69", "bible_enrich_semantics_arc69_prepare" -> enrichSemanticsPrepare("ARC69", scope)
+                // Non-LLM phases (scrapers, no change)
+                "bible_enrich_greek_lexicon" -> enrichGreekLexicon()
+                "bible_enrich_hebrew_lexicon" -> enrichHebrewLexicon()
+                "bible_reenrich_greek_lexicon" -> reEnrichGreekLexicon()
+                "bible_reenrich_hebrew_lexicon" -> reEnrichHebrewLexicon()
+                else -> throw IllegalArgumentException("Unknown phase: $phase")
+            }
+            if (applicationId != null) {
+                val status = phaseTracker.getPhaseStatus(phase)
+                val items = status?.itemsProcessed ?: 0
+                applicationRepository?.markSuccess(applicationId, items, items)
+            }
+        } catch (e: Throwable) {
+            if (applicationId != null) {
+                applicationRepository?.markFailed(applicationId, e.message ?: "Unknown error")
+            }
+            throw e
         }
     }
 
-    suspend fun runPhases(phases: List<String>) {
+    suspend fun runPhases(phases: List<String>, scope: IngestionScope? = null) {
         for (phase in phases) {
-            runPhase(phase)
+            runPhase(phase, scope)
         }
     }
 
@@ -1229,13 +1229,13 @@ Return in the EXACT same format with translated values:"""
 
     // ── Layer 4: Tokenization ──
 
-    private suspend fun tokenizeVersion(versionCode: String) {
+    private suspend fun tokenizeVersion(versionCode: String, scope: IngestionScope? = null) {
         val svc = tokenizationService
             ?: throw IllegalStateException("tokenizationService not configured — cannot tokenize $versionCode")
         val phaseName = "bible_tokenize_${versionCode.lowercase()}"
         runPhaseTracked(phaseName) {
-            val count = svc.tokenizeVersion(versionCode, phaseTracker, phaseName)
-            log.info("TOKENIZE_$versionCode: completed with $count tokens")
+            val count = svc.tokenizeVersion(versionCode, phaseTracker, phaseName, scope)
+            log.info("TOKENIZE_$versionCode: completed with $count tokens${scope?.let { " (scope=${it.bookName}${it.chapter?.let { c -> " $c" } ?: ""}${it.verse?.let { v -> ":$v" } ?: ""})" } ?: ""}")
         }
     }
 
@@ -1257,15 +1257,14 @@ Return in the EXACT same format with translated values:"""
         lexiconEnrichmentService.reEnrichHebrewLexicon(phaseTracker)
     }
 
-    private suspend fun alignForVersion(versionCode: String, testament: String = "NT", overridePhaseName: String? = null) {
+    private suspend fun alignForVersion(versionCode: String, testament: String = "NT", overridePhaseName: String? = null, scope: IngestionScope? = null) {
         val phaseName = overridePhaseName ?: "bible_align_${versionCode.lowercase()}"
         runPhaseTracked(phaseName) {
-            val filters = loadBookFilter()
             val ntBooks = bookRepository.findAll(testament)
-                .filter { shouldProcessBook(it.name, filters) }
+                .filter { scope?.bookName == null || it.name == scope.bookName }
             val bookChapters = ntBooks.map { it.name to it.totalChapters }
-            val totalExpected = bookChapters.sumOf { (name, chapters) ->
-                (1..chapters).count { ch -> shouldProcessChapter(name, ch, filters) }
+            val totalExpected = bookChapters.sumOf { (_, chapters) ->
+                (1..chapters).count { ch -> scope?.chapter == null || ch == scope.chapter }
             }
             phaseTracker.markProgress(phaseName, 0, totalExpected)
 
@@ -1275,7 +1274,7 @@ Return in the EXACT same format with translated values:"""
             var visited = 0
             for ((bookName, chapters) in bookChapters) {
                 for (chapter in 1..chapters) {
-                    if (!shouldProcessChapter(bookName, chapter, filters)) continue
+                    if (scope?.chapter != null && chapter != scope.chapter) continue
                     visited++
                     try {
                         when (wordAlignmentService.alignChapter(bookName, chapter, versionCode)) {
@@ -1429,21 +1428,20 @@ Return in the EXACT same format with translated values:"""
         log.info("ENRICHMENT_PREPARE: enqueued $enqueued items for $lexiconType")
     }
 
-    suspend fun alignVersionPrepare(versionCode: String) = runPhaseTracked("bible_align_${versionCode.lowercase()}") {
+    suspend fun alignVersionPrepare(versionCode: String, scope: IngestionScope? = null) = runPhaseTracked("bible_align_${versionCode.lowercase()}") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_align_${versionCode.lowercase()}"
 
         val version = versionRepository.findByCode(versionCode)
             ?: throw IllegalArgumentException("Version not found: $versionCode")
         val language = version.language
-        val filters = loadBookFilter()
         val allBooks = bookRepository.findAll("NT")
-        val booksToProcess = allBooks.filter { shouldProcessBook(it.name, filters) }
+        val booksToProcess = allBooks.filter { scope?.bookName == null || it.name == scope.bookName }
 
         var enqueued = 0
         for (book in booksToProcess) {
             for (chapter in 1..book.totalChapters) {
-                if (!shouldProcessChapter(book.name, chapter, filters)) continue
+                if (scope?.chapter != null && chapter != scope.chapter) continue
 
                 val interlinearByVerse = interlinearRepository.getWordsForChapter(book.id, chapter)
                 if (interlinearByVerse.isEmpty()) continue
@@ -1454,6 +1452,7 @@ Return in the EXACT same format with translated values:"""
                 val versionTextByVerse = versionTexts.associate { it.verseNumber to it.text }
 
                 for (verseNumber in interlinearByVerse.keys.sorted()) {
+                    if (scope?.verse != null && verseNumber != scope.verse) continue
                     val versionText = versionTextByVerse[verseNumber] ?: continue
                     val verseId = verseRepository.getVerseId(book.id, chapter, verseNumber) ?: continue
                     if (interlinearRepository.hasAlignmentsForVerse(verseId, versionCode)) continue
@@ -1501,15 +1500,14 @@ Return in the EXACT same format with translated values:"""
      * Updates word_alignments.contextual_sense + word_alignments.semantic_relation.
      * Does NOT modify alignment indices, aligned_text or confidence.
      */
-    suspend fun enrichSemanticsPrepare(versionCode: String) = runPhaseTracked("bible_enrich_semantics_${versionCode.lowercase()}") {
+    suspend fun enrichSemanticsPrepare(versionCode: String, scope: IngestionScope? = null) = runPhaseTracked("bible_enrich_semantics_${versionCode.lowercase()}") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_enrich_semantics_${versionCode.lowercase()}"
 
         val version = versionRepository.findByCode(versionCode)
             ?: throw IllegalArgumentException("Version not found: $versionCode")
-        val filters = loadBookFilter()
         val allBooks = bookRepository.findAll("NT")
-        val booksToProcess = allBooks.filter { shouldProcessBook(it.name, filters) }
+        val booksToProcess = allBooks.filter { scope?.bookName == null || it.name == scope.bookName }
 
         val systemPrompt = """You are a biblical Greek-Portuguese semantic analysis expert.
 Given a New Testament verse with each Greek word already aligned to its Portuguese translation (ARC69),
@@ -1534,7 +1532,7 @@ Return ONLY valid JSON: {"e":[{"g":<pos>,"s":"<contextual_sense>","r":"<relation
         var enqueued = 0
         for (book in booksToProcess) {
             for (chapter in 1..book.totalChapters) {
-                if (!shouldProcessChapter(book.name, chapter, filters)) continue
+                if (scope?.chapter != null && chapter != scope.chapter) continue
 
                 val interlinearByVerse = interlinearRepository.getWordsForChapter(book.id, chapter)
                 if (interlinearByVerse.isEmpty()) continue
@@ -1545,6 +1543,7 @@ Return ONLY valid JSON: {"e":[{"g":<pos>,"s":"<contextual_sense>","r":"<relation
                 val alignmentsByVerse = interlinearRepository.getAlignmentsForChapter(book.id, chapter, versionCode)
 
                 for (verseNumber in interlinearByVerse.keys.sorted()) {
+                    if (scope?.verse != null && verseNumber != scope.verse) continue
                     val versionText = versionTextByVerse[verseNumber] ?: continue
                     val verseId = verseRepository.getVerseId(book.id, chapter, verseNumber) ?: continue
 

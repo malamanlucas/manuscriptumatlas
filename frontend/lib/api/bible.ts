@@ -11,6 +11,10 @@ import type {
   LexiconEntryDTO,
   BibleCompareResponse,
   BibleSearchResponse,
+  RunScopedRequest,
+  RunScopedResponse,
+  BibleLayer4CoverageDTO,
+  BibleLayer4ApplicationDTO,
 } from "@/types";
 import { BASE_URL, fetchJson, fetchJsonAuth } from "./client";
 
@@ -86,6 +90,34 @@ export function compareBibleChapter(book: string, chapter: number, versions: str
 
 export function compareBibleVerse(book: string, chapter: number, verse: number, versions: string[]): Promise<BibleCompareResponse> {
   return fetchJson(`${BASE}/bible/compare/${encodeURIComponent(book)}/${chapter}/${verse}?versions=${versions.join(",")}`);
+}
+
+export function runBibleScopedPhases(request: RunScopedRequest): Promise<RunScopedResponse> {
+  return fetchJsonAuth(`${BASE}/admin/bible/ingestion/run-scoped`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+}
+
+export function getBibleLayer4Coverage(book: string, chapter: number): Promise<BibleLayer4CoverageDTO> {
+  const params = new URLSearchParams({ book, chapter: String(chapter) });
+  return fetchJsonAuth(`${BASE}/admin/bible/layer4/coverage?${params}`);
+}
+
+export function getBibleLayer4Applications(options?: {
+  book?: string;
+  chapter?: number;
+  verse?: number;
+  limit?: number;
+}): Promise<BibleLayer4ApplicationDTO[]> {
+  const params = new URLSearchParams();
+  if (options?.book) params.set("book", options.book);
+  if (options?.chapter != null) params.set("chapter", String(options.chapter));
+  if (options?.verse != null) params.set("verse", String(options.verse));
+  if (options?.limit != null) params.set("limit", String(options.limit));
+  const query = params.toString();
+  return fetchJsonAuth(`${BASE}/admin/bible/layer4/applications${query ? `?${query}` : ""}`);
 }
 
 export function searchBible(query: string, options?: { version?: string; testament?: string; book?: string; locale?: string; page?: number; limit?: number }): Promise<BibleSearchResponse> {
