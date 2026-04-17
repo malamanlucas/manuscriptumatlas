@@ -62,6 +62,22 @@ Para maximizar performance, usar subagents em paralelo quando possível:
 
 Playwright: usar automaticamente após mudanças visuais. Não usar para lógica sem impacto visual.
 
+## LLM Queue Processing
+
+- Default batch size = **10 items** (menor = mais visibilidade no dashboard `/pt/ingestion-status`).
+- Parallelism **MAX = 5 sub-agents simultâneos**. Nunca spawn 30+.
+- Antes de spawn > 5 agents: pare e pergunte.
+- Temp files devem ser **PID-scoped**: `/tmp/llm_item_$$_*.json` — nunca caminho compartilhado tipo `/tmp/llm_item_*.json`.
+- Caracteres especiais (ex: "pagaré", "João", "עִבְרִית") → usar Python `json.dumps` + `curl -d @/tmp/body_$$.json`, nunca inline bash strings.
+- Esperar **format drift** de Haiku (array vs object, text vs JSON fence) — normalize (`jq empty`) antes de `POST /complete`.
+
+## Rate Limits (Claude plan: America/Sao_Paulo)
+
+- Usage limit reseta às **17:00 America/Sao_Paulo** (20:00 UTC).
+- Antes de iniciar cron longo, chequear `/tmp/claude_rate_limit_until` — se timestamp futuro, abortar silencioso.
+- Se `/run-llm` bloqueia por usage limit: **não retry em loop apertado** — escreva timestamp do próximo reset em `/tmp/claude_rate_limit_until`, cancele o cron, avise o usuário.
+- Graceful shutdown: cancelar cron + `curl -X POST /admin/llm/queue/unstick?staleMinutes=0` para liberar items em `processing`.
+
 ## Idioma
 
 - Código-fonte, variáveis e classes: **inglês**

@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """
-Drain llm_prompt_queue via backend admin API + OpenAI chat completions.
+Drain llm_prompt_queue via backend admin API + OpenAI / Anthropic chat completions.
+
+Backends supported:
+  - OpenAI (OPENAI_API_KEY)         — original
+  - Anthropic (ANTHROPIC_API_KEY)   — default quando presente
+  LLM_BACKEND=auto|anthropic|openai (default auto: prefere Anthropic se ANTHROPIC_API_KEY, senao OpenAI)
+
+Rate-limit awareness (cross-session):
+  - Le /tmp/claude_rate_limit_until no start. Se timestamp futuro → exit 0 silencioso.
+  - Em 429/insufficient_quota/usage_limit, escreve proximo 17:00 America/Sao_Paulo (20:00 UTC) e aborta.
 
 Uses the same tier/phase → model routing as .cursor/skills/run-llm-cursor/SKILL.md.
-Requires OPENAI_API_KEY (e.g. from deploy/.env). One HTTP LLM call per queue item.
 
 Usage:
   set -a; source deploy/.env; set +a
@@ -11,11 +19,14 @@ Usage:
 
 Environment (optional, defaults match backend LlmConfig / docker-compose):
   OPENAI_LOW_MODEL, OPENAI_MEDIUM_MODEL, OPENAI_HIGH_MODEL
+  ANTHROPIC_LOW_MODEL=claude-haiku-4-5, ANTHROPIC_MEDIUM_MODEL=claude-sonnet-4-6, ANTHROPIC_HIGH_MODEL=claude-opus-4-7
+  LLM_BACKEND=auto|anthropic|openai
   LLM_QUEUE_BASE_URL (default http://localhost:8080)
   LLM_QUEUE_EMAIL (default dev@manuscriptum.local)
-  QUEUE_UNSTICK_MINUTES — if set to a positive integer, POST unstick?staleMinutes=… before draining
+  QUEUE_UNSTICK_MINUTES — default 10 (lease reaper built-in). Set 0 para desligar.
   DRAIN_MAX_BATCHES — stop after N claim/process/apply rounds (0 = unlimited)
   OPENAI_MAX_429_RETRIES, OPENAI_429_BACKOFF_SEC, OPENAI_HTTP_TIMEOUT
+  RATE_LIMIT_FILE (default /tmp/claude_rate_limit_until)
 """
 
 from __future__ import annotations
@@ -239,31 +250,164 @@ class OpenAiQuotaExceeded(RuntimeError):
     pass
 
 
+class AnthropicQuotaExceeded(RuntimeError):
+    pass
+
+
+RATE_LIMIT_FILE = os.environ.get("RATE_LIMIT_FILE", "/tmp/claude_rate_limit_until")
+
+
+def _next_sp_reset_epoch() -> int:
+    """Proximo 17:00 America/Sao_Paulo = 20:00 UTC."""
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc)
+    target = now.replace(hour=20, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += datetime.timedelta(days=1)
+    return int(target.timestamp())
+
+
+def _write_rate_limit_stop() -> None:
+    try:
+        with open(RATE_LIMIT_FILE, "w") as f:
+            f.write(str(_next_sp_reset_epoch()))
+    except Exception:
+        pass
+
+
+def _rate_limit_active() -> int:
+    """Retorna epoch futuro se rate-limit ativo, 0 se nao."""
+    try:
+        raw = open(RATE_LIMIT_FILE).read().strip()
+        if not raw:
+            return 0
+        until = int(raw)
+        if until > int(time.time()):
+            return until
+    except Exception:
+        pass
+    return 0
+
+
+def _jsonl(**kwargs) -> None:
+    """Structured JSON log em uma linha para stdout."""
+    print(json.dumps(kwargs, ensure_ascii=False), flush=True)
+
+
+def anthropic_low_model() -> str:
+    return os.environ.get("ANTHROPIC_LOW_MODEL", "claude-haiku-4-5")
+
+
+def anthropic_medium_model() -> str:
+    return os.environ.get("ANTHROPIC_MEDIUM_MODEL", "claude-sonnet-4-6")
+
+
+def anthropic_high_model() -> str:
+    return os.environ.get("ANTHROPIC_HIGH_MODEL", "claude-opus-4-7")
+
+
+def anthropic_model_for_scope(scope: str) -> str:
+    if scope == "LOW":
+        return anthropic_low_model()
+    if scope == "MEDIUM_ENRICH":
+        return anthropic_low_model()  # enrichment = Haiku
+    if scope == "HIGH":
+        return anthropic_high_model()
+    return anthropic_medium_model()
+
+
+def anthropic_chat(
+    api_key: str,
+    model: str,
+    system: str,
+    user: str,
+    max_tokens: int,
+) -> tuple[str, int, int]:
+    payload = {
+        "model": model,
+        "max_tokens": min(max(256, max_tokens), 16384),
+        "temperature": 0,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    }
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    timeout = int(os.environ.get("OPENAI_HTTP_TIMEOUT", "300"))
+    max_429 = int(os.environ.get("OPENAI_MAX_429_RETRIES", "8"))
+    backoff = float(os.environ.get("OPENAI_429_BACKOFF_SEC", "3"))
+    attempt = 0
+    while True:
+        try:
+            rq = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+                method="POST",
+            )
+            with urllib.request.urlopen(rq, timeout=timeout) as resp:
+                r = json.loads(resp.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as e:
+            err = e.read().decode("utf-8", errors="replace")
+            low = err.lower()
+            if e.code == 401 or "invalid_api_key" in low:
+                raise RuntimeError(f"Anthropic auth failure: {err[:400]}") from e
+            if e.code in (429, 529) or "rate_limit" in low or "overloaded" in low or "quota" in low:
+                if "quota" in low or "billing" in low:
+                    raise AnthropicQuotaExceeded(f"Anthropic quota: {err[:400]}") from e
+                if attempt < max_429:
+                    attempt += 1
+                    ra = e.headers.get("retry-after") if e.headers else None
+                    wait = float(ra) if ra and ra.replace(".", "", 1).isdigit() else backoff * attempt
+                    time.sleep(min(wait, 120.0))
+                    continue
+                raise RuntimeError(f"Anthropic HTTP {e.code} (exhausted retries): {err[:400]}") from e
+            raise RuntimeError(f"Anthropic HTTP {e.code}: {err[:400]}") from e
+    blocks = r.get("content") or []
+    text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip()
+    usage = r.get("usage") or {}
+    inp = int(usage.get("input_tokens") or 0)
+    out = int(usage.get("output_tokens") or 0)
+    return text, inp, out
+
+
 def process_one_item(token: str, api_key: str, item: dict[str, Any]) -> None:
     item_id = item["id"]
     phase = item["phaseName"]
-    scope, model = route_scope_and_model(item)
+    scope, openai_model = route_scope_and_model(item)
     system = item["systemPrompt"]
     user = item["userContent"]
     max_tok = int(item.get("maxTokens") or 1024)
     want_json = expects_json_object(system)
+    backend = LLM_BACKEND
     try:
-        try:
-            raw, inp, out = openai_chat(
-                api_key, model, system, user, max_tok, json_object=want_json
-            )
-        except RuntimeError as rexc:
-            if "insufficient_quota" in str(rexc):
-                raise OpenAiQuotaExceeded(str(rexc)) from rexc
-            raise
+        if backend == "anthropic":
+            model_used = anthropic_model_for_scope(scope)
+            try:
+                raw, inp, out = anthropic_chat(ANTHROPIC_API_KEY, model_used, system, user, max_tok)
+            except AnthropicQuotaExceeded:
+                raise
+        else:
+            model_used = openai_model
+            try:
+                raw, inp, out = openai_chat(
+                    api_key, model_used, system, user, max_tok, json_object=want_json
+                )
+            except RuntimeError as rexc:
+                if "insufficient_quota" in str(rexc):
+                    raise OpenAiQuotaExceeded(str(rexc)) from rexc
+                raise
         text = normalize_llm_text(raw)
         if not text:
             raise ValueError("empty model output")
         if os.environ.get("STRICT_JSON_VALIDATE") == "1" and want_json:
             json.loads(text)
-        complete_item(token, item_id, text, model, inp, out)
+        complete_item(token, item_id, text, model_used, inp, out)
         report.items_completed += 1
-    except OpenAiQuotaExceeded:
+    except (OpenAiQuotaExceeded, AnthropicQuotaExceeded):
         raise
     except Exception as e:
         msg = f"{type(e).__name__}: {e}"
@@ -310,7 +454,7 @@ def run_batch_parallel(token: str, api_key: str, batch: list[dict[str, Any]]) ->
         for fu in as_completed(futs):
             try:
                 fu.result()
-            except OpenAiQuotaExceeded:
+            except (OpenAiQuotaExceeded, AnthropicQuotaExceeded):
                 for f2 in futs:
                     f2.cancel()
                 raise
@@ -353,24 +497,53 @@ def try_claim_next(token: str, stats_cache: dict[str, Any]) -> tuple[list[dict[s
     return [], None
 
 
+LLM_BACKEND = "openai"
+ANTHROPIC_API_KEY = ""
+
+
+def _resolve_backend() -> str:
+    choice = os.environ.get("LLM_BACKEND", "auto").strip().lower()
+    a = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    o = os.environ.get("OPENAI_API_KEY", "").strip()
+    if choice == "anthropic":
+        return "anthropic" if a else "openai"
+    if choice == "openai":
+        return "openai"
+    # auto
+    return "anthropic" if a else "openai"
+
+
 def main() -> int:
     import urllib.parse # noqa: F401 — used in dev_login via quote
 
+    # Pre-flight: rate-limit ativo?
+    ra = _rate_limit_active()
+    if ra:
+        _jsonl(event="skip", reason="rate_limit_active", until_epoch=ra, remaining_s=ra - int(time.time()))
+        return 0
+
+    global LLM_BACKEND, ANTHROPIC_API_KEY
+    LLM_BACKEND = _resolve_backend()
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
+    if LLM_BACKEND == "anthropic" and not ANTHROPIC_API_KEY:
+        print("LLM_BACKEND=anthropic but ANTHROPIC_API_KEY not set", file=sys.stderr)
+        return 2
+    if LLM_BACKEND == "openai" and not api_key:
         print("OPENAI_API_KEY is not set. Source deploy/.env or export the key.", file=sys.stderr)
         return 2
+    _jsonl(event="start", backend=LLM_BACKEND)
 
     token = dev_login()
-    # Optional: QUEUE_UNSTICK_MINUTES=10 — only stale processing rows. Omit or empty = no unstick.
-    unstuck = os.environ.get("QUEUE_UNSTICK_MINUTES", "").strip()
-    if unstuck.isdigit() and int(unstuck) > 0:
+    # Default QUEUE_UNSTICK_MINUTES=10 (lease reaper automatic). Set 0 to disable.
+    unstuck_env = os.environ.get("QUEUE_UNSTICK_MINUTES", "10").strip() or "10"
+    if unstuck_env.isdigit() and int(unstuck_env) > 0:
         r = http_json(
             "POST",
-            f"/admin/llm/queue/unstick?staleMinutes={int(unstuck)}",
+            f"/admin/llm/queue/unstick?staleMinutes={int(unstuck_env)}",
             token=token,
         )
-        print(json.dumps({"unstick": r}, indent=2))
+        _jsonl(event="unstick", result=r)
 
     initial = get_stats(token)
     print(
@@ -403,27 +576,28 @@ def main() -> int:
         report.batches += 1
         fails_before = len(report.failures)
         done_before = report.items_completed
-        print(f"batch {report.batches} scope={scope} size={len(batch)}", flush=True)
+        _jsonl(event="batch_start", n=report.batches, scope=scope, size=len(batch))
         try:
             run_batch_parallel(token, api_key, batch)
         except OpenAiQuotaExceeded as qe:
-            print(f"ABORT: OpenAI quota / billing: {qe}", flush=True)
-            print(
-                "Re-queue failed items with: POST /admin/llm/queue/retry?phase=<phase> "
-                "after fixing billing, or set a different OPENAI_API_KEY.",
-                flush=True,
-            )
+            _write_rate_limit_stop()
+            _jsonl(event="abort", reason="openai_quota", detail=str(qe)[:400])
             return 3
-        print(
-            f"  completed +{report.items_completed - done_before}, "
-            f"failed +{len(report.failures) - fails_before}",
-            flush=True,
+        except AnthropicQuotaExceeded as qe:
+            _write_rate_limit_stop()
+            _jsonl(event="abort", reason="anthropic_quota", detail=str(qe)[:400])
+            return 3
+        _jsonl(
+            event="batch_done",
+            n=report.batches,
+            completed_delta=report.items_completed - done_before,
+            failed_delta=len(report.failures) - fails_before,
         )
 
         for ph in unique_phases(batch):
             msg = apply_phase(token, ph)
             report.phases_applied.add(ph)
-            print(f"  apply {ph}: {msg}", flush=True)
+            _jsonl(event="apply", phase=ph, result=msg)
 
     final = get_stats(token)
     summary = {

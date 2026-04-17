@@ -34,6 +34,25 @@ TOKEN=$(curl -s -X POST http://localhost:8080/auth/token \
 
 ## Fluxo
 
+### 0. Pre-flight rate-limit check
+
+Antes de qualquer coisa, verificar se já sabemos que o usage limit esta ativo:
+
+```bash
+RATE_FILE=/tmp/claude_rate_limit_until
+if [ -f "$RATE_FILE" ]; then
+  UNTIL=$(cat "$RATE_FILE" 2>/dev/null | tr -d '[:space:]')
+  NOW=$(date +%s)
+  if [ -n "$UNTIL" ] && [ "$NOW" -lt "$UNTIL" ]; then
+    REMAIN=$((UNTIL - NOW))
+    echo "SKIP /run-llm: usage limit until $(date -r "$UNTIL" 2>/dev/null || date -d @"$UNTIL") (${REMAIN}s restantes)" >&2
+    exit 0
+  fi
+fi
+```
+
+**Regra:** se o arquivo existe com timestamp futuro, SAIR silencioso (exit 0). Nunca retry em loop. Quando 17:00 America/Sao_Paulo passar e o cron rodar de novo, `NOW >= UNTIL` e o fluxo segue.
+
 ### 1. Stats — ver o que tem na fila
 
 ```bash
@@ -112,6 +131,22 @@ Se falhar:
 curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   http://localhost:8080/admin/llm/queue/{id}/fail \
   -d '{"message":"<erro>"}'
+```
+
+**Se detectar `usage limit` / `rate_limit` na resposta:** escreva o proximo reset (17:00 America/Sao_Paulo = 20:00 UTC) em `/tmp/claude_rate_limit_until` e **aborte o /run-llm**:
+
+```bash
+# proximo 17:00 America/Sao_Paulo (20:00 UTC) em epoch
+NEXT_RESET=$(python3 -c "
+import datetime, time
+now = datetime.datetime.now(datetime.timezone.utc)
+target = now.replace(hour=20, minute=0, second=0, microsecond=0)
+if target <= now: target += datetime.timedelta(days=1)
+print(int(target.timestamp()))
+")
+echo "$NEXT_RESET" > /tmp/claude_rate_limit_until
+echo "ABORT: usage limit hit; next reset epoch $NEXT_RESET" >&2
+exit 2
 ```
 
 ### 5. Apply ao banco
