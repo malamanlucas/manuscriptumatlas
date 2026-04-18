@@ -7,6 +7,7 @@ import com.ntcoverage.model.GlossAuditVerdict
 import com.ntcoverage.model.InterlinearGlossAudits
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 
@@ -75,7 +76,7 @@ class GlossAuditRepository {
         var unknown = 0
         var pending = 0
 
-        exec(statsSql) { rs ->
+        exec(statsSql, explicitStatementType = StatementType.SELECT) { rs ->
             if (rs.next()) {
                 total = rs.getInt("total")
                 ok = rs.getInt("ok")
@@ -186,12 +187,12 @@ class GlossAuditRepository {
         """.trimIndent()
 
         var count = 0
-        exec(countSql) { rs ->
+        exec(countSql, explicitStatementType = StatementType.SELECT) { rs ->
             if (rs.next()) count = rs.getInt("c")
         }
         if (count > 0) {
-            exec(nullifyWords)
-            exec(markResolved)
+            exec(nullifyWords, explicitStatementType = StatementType.UPDATE)
+            exec(markResolved, explicitStatementType = StatementType.UPDATE)
         }
         count
     }
