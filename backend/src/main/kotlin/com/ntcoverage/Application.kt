@@ -214,6 +214,7 @@ fun Application.module() {
     val lexiconRepository = LexiconRepository()
     val apologeticTopicRepository = ApologeticTopicRepository()
     val apologeticResponseRepository = ApologeticResponseRepository()
+    val glossAuditRepository = GlossAuditRepository()
     val llmResponseProcessor = LlmResponseProcessor(
         queueRepository = llmQueueRepository,
         councilRepository = councilRepository,
@@ -223,7 +224,8 @@ fun Application.module() {
         churchFatherRepository = churchFatherRepository,
         heresyRepository = heresyRepository,
         apologeticTopicRepository = apologeticTopicRepository,
-        apologeticResponseRepository = apologeticResponseRepository
+        apologeticResponseRepository = apologeticResponseRepository,
+        glossAuditRepository = glossAuditRepository
     )
     val kafkaProducer = KafkaProducerService()
     val llmResultsConsumer = LlmResultsConsumer(llmResponseProcessor)
@@ -378,7 +380,8 @@ fun Application.module() {
                 kafkaProducer,
                 llmResponseProcessor,
                 bibleLayer4ApplicationRepository,
-                bibleLayer4CoverageService
+                bibleLayer4CoverageService,
+                glossAuditRepository
             )
         }
     }

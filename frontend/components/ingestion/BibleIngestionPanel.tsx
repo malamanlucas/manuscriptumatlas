@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { IngestionPhasePanel } from "./IngestionPhasePanel";
 import { BibleLayer4ScopePanel } from "./BibleLayer4ScopePanel";
+import { BibleGlossQualityPanel } from "./BibleGlossQualityPanel";
 import {
   useBibleIngestionPhases,
   useRunBiblePhase,
@@ -108,16 +109,18 @@ export function BibleIngestionPanel() {
       phases: LAYER_2_PHASES,
       resetDomain: "bible-layer2",
       footer: (
-        <button
-          onClick={() => {
-            if (window.confirm(t("confirmClearGlosses"))) clearGlosses.mutate();
-          }}
-          disabled={clearGlosses.isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/50 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
-        >
-          {clearGlosses.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eraser className="h-3.5 w-3.5" />}
-          {t("clearGlosses")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              if (window.confirm(t("confirmClearGlosses"))) clearGlosses.mutate();
+            }}
+            disabled={clearGlosses.isPending}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/50 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
+          >
+            {clearGlosses.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eraser className="h-3.5 w-3.5" />}
+            {t("clearGlosses")}
+          </button>
+        </div>
       ),
     },
     {
@@ -158,6 +161,7 @@ export function BibleIngestionPanel() {
             {layer.key === "layer4" && (
               <BibleLayer4ScopePanel phases={layer.phases} phaseLabels={phaseLabels} />
             )}
+            {layer.key === "layer2" && <BibleGlossQualityPanel />}
             <IngestionPhasePanel
               phasesOrder={layer.phases}
               phasesData={layerPhases}

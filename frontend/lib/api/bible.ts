@@ -15,6 +15,7 @@ import type {
   RunScopedResponse,
   BibleLayer4CoverageDTO,
   BibleLayer4ApplicationDTO,
+  GlossAuditStatsDTO,
 } from "@/types";
 import { BASE_URL, fetchJson, fetchJsonAuth } from "./client";
 
@@ -64,6 +65,30 @@ export function runAllBiblePhases(): Promise<{ message: string }> {
 
 export function clearBibleGlosses(): Promise<{ message: string }> {
   return fetchJsonAuth(`${BASE}/admin/bible/glosses/clear`, { method: "POST" });
+}
+
+export function auditBibleGlosses(book?: string, chapter?: number): Promise<{ message: string }> {
+  const params = new URLSearchParams();
+  if (book) params.set("book", book);
+  if (chapter != null) params.set("chapter", String(chapter));
+  const q = params.toString();
+  return fetchJsonAuth(`${BASE}/admin/bible/glosses/audit${q ? `?${q}` : ""}`, { method: "POST" });
+}
+
+export function getBibleGlossAuditStats(book?: string, chapter?: number): Promise<GlossAuditStatsDTO> {
+  const params = new URLSearchParams();
+  if (book) params.set("book", book);
+  if (chapter != null) params.set("chapter", String(chapter));
+  const q = params.toString();
+  return fetchJsonAuth(`${BASE}/admin/bible/glosses/audit-stats${q ? `?${q}` : ""}`);
+}
+
+export function fixFlaggedBibleGlosses(book?: string, chapter?: number): Promise<{ message: string }> {
+  const params = new URLSearchParams();
+  if (book) params.set("book", book);
+  if (chapter != null) params.set("chapter", String(chapter));
+  const q = params.toString();
+  return fetchJsonAuth(`${BASE}/admin/bible/glosses/fix-flagged${q ? `?${q}` : ""}`, { method: "POST" });
 }
 
 export function getBibleInterlinearChapter(book: string, chapter: number, alignVersion?: string): Promise<InterlinearChapterDTO> {

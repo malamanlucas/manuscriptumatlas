@@ -26,7 +26,8 @@ object BibleFlywayConfig {
                 HebrewLexiconTranslations,
                 WordAlignments,
                 BibleVerseTokens,
-                BibleLayer4Applications
+                BibleLayer4Applications,
+                InterlinearGlossAudits
             )
             log.info("Bible tables created/verified via Exposed SchemaUtils.")
         }
@@ -115,6 +116,12 @@ object BibleFlywayConfig {
                     END IF;
                     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_bvtk_contraction') THEN
                         CREATE INDEX idx_bvtk_contraction ON bible_verse_tokens(is_contraction) WHERE is_contraction = true;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_iga_word_judged') THEN
+                        CREATE INDEX idx_iga_word_judged ON interlinear_gloss_audits(word_id, judged_at DESC);
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_iga_verdict_unresolved') THEN
+                        CREATE INDEX idx_iga_verdict_unresolved ON interlinear_gloss_audits(verdict) WHERE resolved_at IS NULL;
                     END IF;
                 END
                 ${'$'}${'$'};

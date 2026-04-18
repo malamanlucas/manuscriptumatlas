@@ -1,5 +1,6 @@
 package com.ntcoverage.service
 
+import com.ntcoverage.model.GlossAuditVerdict
 import com.ntcoverage.repository.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -35,7 +36,8 @@ class LlmResponseProcessor(
     private val churchFatherRepository: ChurchFatherRepository,
     private val heresyRepository: HeresyRepository,
     private val apologeticTopicRepository: ApologeticTopicRepository? = null,
-    private val apologeticResponseRepository: ApologeticResponseRepository? = null
+    private val apologeticResponseRepository: ApologeticResponseRepository? = null,
+    private val glossAuditRepository: GlossAuditRepository? = null
 ) {
     private val log = LoggerFactory.getLogger(LlmResponseProcessor::class.java)
     private val json = Json { ignoreUnknownKeys = true }
@@ -60,6 +62,7 @@ class LlmResponseProcessor(
                     item.label.startsWith("LEXICON_TRANSLATE_") -> applyLexiconTranslation(item)
                     item.label.startsWith("LEXICON_BATCH_") -> applyLexiconBatch(item)
                     item.label.startsWith("GLOSS_TRANSLATE_") -> applyGlossTranslation(item)
+                    item.label.startsWith("GLOSS_AUDIT_PT_") -> applyGlossAudit(item)
                     item.label.startsWith("ENRICHMENT_TRANSLATE_") -> applyEnrichmentTranslation(item)
                     item.label.startsWith("WORD_ALIGN_") -> applyWordAlignment(item)
                     item.label.startsWith("SEMANTIC_ENRICH_") -> applySemanticEnrichment(item)
@@ -194,16 +197,93 @@ class LlmResponseProcessor(
         if (glossMap.isEmpty()) throw IllegalStateException("No glosses parsed for id=${item.id}")
 
         var applied = 0
+        var rejected = 0
         for ((key, translation) in glossMap) {
             val entryCtx = ctx.entries.find { it.transliteration == key } ?: continue
             if (ctx.locale == "pt") {
+                if (isLikelyNonPortuguese(translation)) {
+                    log.warn("LLM_PROCESSOR: rejected gloss PT (non-portuguese) wordId={} value='{}'", entryCtx.wordId, translation)
+                    rejected++
+                    continue
+                }
                 interlinearRepository.updateGlosses(entryCtx.wordId, translation, null)
             } else if (ctx.locale == "es") {
                 interlinearRepository.updateGlosses(entryCtx.wordId, null, translation)
             }
             applied++
         }
-        log.info("LLM_PROCESSOR: applied gloss translations locale={} count={}", ctx.locale, applied)
+        log.info("LLM_PROCESSOR: applied gloss translations locale={} count={} rejected={}", ctx.locale, applied, rejected)
+    }
+
+    /** Heuristic: returns true if token is clearly in English or Spanish (not Portuguese). */
+    private fun isLikelyNonPortuguese(value: String): Boolean {
+        val normalized = value.trim().lowercase()
+        if (normalized.isBlank()) return false
+        if (normalized in NON_PT_TOKENS) return true
+        val words = normalized.split(Regex("\\s+|[/,;|]"))
+        return words.any { it.isNotBlank() && it in NON_PT_TOKENS }
+    }
+
+    companion object {
+        private val NON_PT_TOKENS = setOf(
+            // English function words and common biblical glosses
+            "the", "was", "is", "are", "were", "be", "been", "has", "had", "have",
+            "of", "in", "on", "at", "to", "from", "by", "for", "with",
+            "and", "or", "but", "if", "then",
+            "word", "god", "lord", "jesus", "christ", "spirit", "holy",
+            "this", "that", "these", "those", "him", "her", "them", "they",
+            // Spanish function words and common biblical glosses
+            "el", "la", "los", "las", "ese", "esa", "eso", "esto", "este",
+            "palabra", "dios", "señor", "santo", "espíritu", "espiritu",
+            "fue", "era", "eran", "está", "esta", "están", "estaba",
+            "y", "o", "pero", "si", "que",
+            "del", "al", "por", "para", "con", "sin",
+            "él", "ella", "ellos", "ellas"
+        )
+    }
+
+    // ── Gloss Audit (PT via LLM-as-judge) ──
+
+    private fun applyGlossAudit(item: com.ntcoverage.model.QueueItemDTO) {
+        val repo = glossAuditRepository
+            ?: throw IllegalStateException("GlossAuditRepository not configured in LlmResponseProcessor")
+        val ctx = json.decodeFromString(GlossAuditContext.serializer(), item.callbackContext!!)
+        val content = item.responseContent?.trim()
+            ?: throw IllegalStateException("Empty responseContent for gloss audit id=${item.id}")
+
+        val lineRegex = Regex("""^\s*(\d+)\s*:\s*(ok|bad:(?:en|es|other))(?:\s*:\s*(.+))?\s*$""")
+        val byTempId = ctx.entries.associateBy { it.tempId }
+        val judge = item.modelUsed
+
+        var applied = 0
+        var skipped = 0
+        for (rawLine in content.lines()) {
+            val line = rawLine.trim().trim('`')
+            if (line.isBlank()) continue
+            val m = lineRegex.find(line) ?: run { skipped++; continue }
+            val tempId = m.groupValues[1].toIntOrNull() ?: run { skipped++; continue }
+            val statusRaw = m.groupValues[2]
+            val suggestion = m.groupValues.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+            val entry = byTempId[tempId] ?: run { skipped++; continue }
+
+            val verdict = when (statusRaw) {
+                "ok" -> GlossAuditVerdict.OK
+                "bad:en" -> GlossAuditVerdict.BAD_EN
+                "bad:es" -> GlossAuditVerdict.BAD_ES
+                "bad:other" -> GlossAuditVerdict.BAD_OTHER
+                else -> GlossAuditVerdict.UNKNOWN
+            }
+            repo.insertVerdict(
+                wordId = entry.wordId,
+                glossSnapshot = entry.gloss,
+                verdict = verdict,
+                suggestedPt = if (verdict in GlossAuditVerdict.BAD) suggestion else null,
+                reason = null,
+                judgeModel = judge
+            )
+            applied++
+        }
+        log.info("LLM_PROCESSOR: applied gloss audit book={} ch={} applied={} skipped={}", ctx.bookName, ctx.chapter, applied, skipped)
     }
 
     private fun parseGlossJson(content: String, keys: List<String>): Map<String, String> {
@@ -488,6 +568,23 @@ class LlmResponseProcessor(
 
     @Serializable
     data class GlossEntryContext(val transliteration: String, val wordId: Int)
+
+    @Serializable
+    data class GlossAuditContext(
+        val locale: String,
+        val bookName: String,
+        val chapter: Int,
+        val entries: List<GlossAuditEntry>
+    )
+
+    @Serializable
+    data class GlossAuditEntry(
+        val tempId: Int,
+        val wordId: Int,
+        val gloss: String,
+        val transliteration: String,
+        val englishGloss: String
+    )
 
     @Serializable
     data class EnrichmentTranslateContext(val entryId: Int, val locale: String, val lexiconType: String)

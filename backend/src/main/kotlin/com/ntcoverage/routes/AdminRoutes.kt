@@ -7,6 +7,7 @@ import com.ntcoverage.model.RunPhasesRequest
 import com.ntcoverage.model.RunScopedRequest
 import com.ntcoverage.model.RunScopedResponse
 import com.ntcoverage.repository.BibleLayer4ApplicationRepository
+import com.ntcoverage.repository.GlossAuditRepository
 import com.ntcoverage.repository.IngestionMetadataRepository
 import com.ntcoverage.repository.LlmQueueRepository
 import com.ntcoverage.service.BibleLayer4CoverageService
@@ -44,7 +45,8 @@ fun Route.adminRoutes(
     kafkaProducer: com.ntcoverage.service.KafkaProducerService,
     llmResponseProcessor: com.ntcoverage.service.LlmResponseProcessor,
     bibleLayer4ApplicationRepository: BibleLayer4ApplicationRepository,
-    bibleLayer4CoverageService: BibleLayer4CoverageService
+    bibleLayer4CoverageService: BibleLayer4CoverageService,
+    glossAuditRepository: GlossAuditRepository
 ) {
     get("/admin/ingestion/status") {
         val status = metadataRepository.getStatus()
@@ -416,6 +418,39 @@ fun Route.adminRoutes(
     post("/admin/bible/glosses/fix-corrupted") {
         val cleared = bibleIngestionService.fixCorruptedPortugueseGlosses()
         call.respond(MessageResponse("Fixed $cleared corrupted Portuguese glosses (set to NULL for re-translation)"))
+    }
+
+    post("/admin/bible/glosses/audit") {
+        val book = call.request.queryParameters["book"]
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+        val scope = book?.let { IngestionScope(it, chapter, null) }
+        if (phaseTracker.isPhaseRunning("bible_audit_glosses_pt")) {
+            return@post call.respond(HttpStatusCode.Conflict, MessageResponse("bible_audit_glosses_pt is already running"))
+        }
+        ingestionScope.launch {
+            bibleIngestionService.auditGlossesPrepare(scope)
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Gloss audit enqueued (scope=${scope ?: "all NT"})"))
+    }
+
+    get("/admin/bible/glosses/audit-stats") {
+        val book = call.request.queryParameters["book"]
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+        call.respond(glossAuditRepository.getStats(book, chapter))
+    }
+
+    post("/admin/bible/glosses/fix-flagged") {
+        val book = call.request.queryParameters["book"]
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+        val nullified = glossAuditRepository.nullifyFlaggedAndResolve(book, chapter)
+        if (nullified == 0) {
+            return@post call.respond(MessageResponse("No flagged glosses to fix (scope=${book ?: "all"}${chapter?.let { "/$it" } ?: ""})"))
+        }
+        val scope = book?.let { IngestionScope(it, chapter, null) }
+        ingestionScope.launch {
+            bibleIngestionService.translateGlossesPrepare(scope)
+        }
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Nullified $nullified flagged glosses, re-enqueued translation (scope=${scope ?: "all NT"})"))
     }
 
     post("/admin/bible/ingestion/run-all") {

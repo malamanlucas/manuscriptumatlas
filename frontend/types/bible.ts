@@ -200,3 +200,29 @@ export interface BibleLayer4ApplicationDTO {
   requestedAt: string;
   finishedAt: string | null;
 }
+
+export interface GlossAuditExampleDTO {
+  wordId: number;
+  book: string;
+  chapter: number;
+  verse: number;
+  wordPosition: number;
+  originalWord: string;
+  transliteration: string | null;
+  englishGloss: string | null;
+  currentGloss: string;
+  verdict: string;
+  suggestedPt: string | null;
+  reason: string | null;
+}
+
+export interface GlossAuditStatsDTO {
+  total: number;
+  ok: number;
+  badEn: number;
+  badEs: number;
+  badOther: number;
+  unknown: number;
+  pending: number;
+  examples: GlossAuditExampleDTO[];
+}

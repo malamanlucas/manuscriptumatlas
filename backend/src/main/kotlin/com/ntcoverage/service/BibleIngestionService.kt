@@ -233,7 +233,8 @@ class BibleIngestionService(
             "bible_translate_enrichment_greek",
             "bible_translate_enrichment_hebrew",
             "bible_align_hebrew_kjv",
-            "bible_align_hebrew_arc69"
+            "bible_align_hebrew_arc69",
+            "bible_audit_glosses_pt"
         )
 
         /** Phases that accept IngestionScope filtering (book/chapter/verse). */
@@ -251,7 +252,11 @@ class BibleIngestionService(
             "bible_align_hebrew_arc69",
             "bible_align_hebrew_arc69_prepare",
             "bible_enrich_semantics_arc69",
-            "bible_enrich_semantics_arc69_prepare"
+            "bible_enrich_semantics_arc69_prepare",
+            "bible_translate_glosses",
+            "bible_translate_glosses_prepare",
+            "bible_audit_glosses_pt",
+            "bible_audit_glosses_pt_prepare"
         )
 
         // GitHub raw URLs for Bible text datasets
@@ -311,7 +316,8 @@ class BibleIngestionService(
                 // LLM phases → redirect to queue-based prepare (enqueue prompts, then run /run-llm)
                 "bible_translate_lexicon", "bible_translate_lexicon_prepare" -> translateLexiconPrepare("greek")
                 "bible_translate_hebrew_lexicon", "bible_translate_hebrew_lexicon_prepare" -> translateLexiconPrepare("hebrew")
-                "bible_translate_glosses", "bible_translate_glosses_prepare" -> translateGlossesPrepare()
+                "bible_translate_glosses", "bible_translate_glosses_prepare" -> translateGlossesPrepare(scope)
+                "bible_audit_glosses_pt", "bible_audit_glosses_pt_prepare" -> auditGlossesPrepare(scope)
                 "bible_translate_enrichment_greek", "bible_translate_enrichment_greek_prepare" -> translateEnrichmentPrepare("greek")
                 "bible_translate_enrichment_hebrew", "bible_translate_enrichment_hebrew_prepare" -> translateEnrichmentPrepare("hebrew")
                 "bible_align_kjv", "bible_align_kjv_prepare" -> alignVersionPrepare("KJV", scope)
@@ -1586,14 +1592,19 @@ Greek alignments: [$alignmentsJson]"""
         log.info("SEMANTIC_ENRICH_PREPARE: enqueued $enqueued verses for $versionCode")
     }
 
-    suspend fun translateGlossesPrepare() = runPhaseTracked("bible_translate_glosses") {
+    suspend fun translateGlossesPrepare(scope: IngestionScope? = null) = runPhaseTracked("bible_translate_glosses") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_translate_glosses"
-        val booksToProcess = bookRepository.findAll("NT")
+        val booksToProcess = if (scope != null) {
+            listOfNotNull(bookRepository.findByName(scope.bookName))
+        } else {
+            bookRepository.findAll("NT")
+        }
 
         var enqueued = 0
         for (book in booksToProcess) {
-            for (chapter in 1..book.totalChapters) {
+            val chapterRange = if (scope?.chapter != null) scope.chapter..scope.chapter else 1..book.totalChapters
+            for (chapter in chapterRange) {
                 val wordsWithIds = interlinearRepository.getWordsForChapterWithIds(book.id, chapter)
                 val untranslated = wordsWithIds.filter {
                     !it.second.transliteration.isNullOrBlank() && it.second.portugueseGloss.isNullOrBlank()
@@ -1628,6 +1639,20 @@ Rules:
 - For pronouns, translate the grammatical function (dative=to/a, genitive=of/de, accusative=direct object)
 - Prefer the contextual meaning of the english_gloss over the primary dictionary meaning of the lemma
 
+LANGUAGE LOCK — CRITICAL:
+- Every value MUST be in $language only. NEVER output English (the, was, and, of, word, god, is, be, were, has, had).
+- NEVER mix languages across values. If target is Portuguese, do NOT emit Spanish (el, la, los, palabra, y, fue, era, ese); if target is Spanish, do NOT emit Portuguese (o, a, os, palavra, e, foi, verbo).
+- If you do not know the equivalent in $language, copy the transliteration verbatim.
+
+Few-shot (target=$language):
+${if (language == "Portuguese") """- "en" → "em"
+- "logos" → "Palavra"
+- "theos" → "Deus"
+- "ho" → "o"""" else """- "en" → "en"
+- "logos" → "Palabra"
+- "theos" → "Dios"
+- "ho" → "el""""}
+
 Return a JSON object mapping each transliteration to its $language translation.
 IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
 
@@ -1654,7 +1679,92 @@ IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
             }
         }
         phaseTracker.markProgress(phaseName, enqueued, enqueued)
-        log.info("GLOSS_PREPARE: enqueued $enqueued gloss items")
+        log.info("GLOSS_PREPARE: enqueued $enqueued gloss items (scope=${scope ?: "all"})")
+    }
+
+    // ── Gloss Audit (PT via LLM-as-judge) ──
+
+    suspend fun auditGlossesPrepare(scope: IngestionScope? = null) = runPhaseTracked("bible_audit_glosses_pt") {
+        val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
+        val phaseName = "bible_audit_glosses_pt"
+        val booksToProcess = if (scope != null) {
+            listOfNotNull(bookRepository.findByName(scope.bookName))
+        } else {
+            bookRepository.findAll("NT")
+        }
+
+        var enqueued = 0
+        for (book in booksToProcess) {
+            val chapterRange = if (scope?.chapter != null) scope.chapter..scope.chapter else 1..book.totalChapters
+            for (chapter in chapterRange) {
+                val wordsWithIds = interlinearRepository.getWordsForChapterWithIds(book.id, chapter)
+                val auditable = wordsWithIds.filter {
+                    val gloss = it.second.portugueseGloss
+                    gloss != null && gloss.isNotBlank()
+                }
+                if (auditable.isEmpty()) continue
+
+                val chunks = auditable.chunked(25)
+                for ((chunkIdx, chunk) in chunks.withIndex()) {
+                    val entries = chunk.mapIndexed { idx, (wordId, dto) ->
+                        LlmResponseProcessor.GlossAuditEntry(
+                            tempId = idx + 1,
+                            wordId = wordId,
+                            gloss = dto.portugueseGloss ?: "",
+                            transliteration = dto.transliteration ?: "",
+                            englishGloss = dto.englishGloss ?: ""
+                        )
+                    }
+
+                    val inputJson = entries.joinToString(",\n", prefix = "[", postfix = "]") { e ->
+                        """{"id":${e.tempId},"gloss":"${escapeJsonStr(e.gloss)}","english_gloss":"${escapeJsonStr(e.englishGloss)}","transliteration":"${escapeJsonStr(e.transliteration)}"}"""
+                    }
+
+                    val systemPrompt = """You audit interlinear Greek→Portuguese (ARC69) Bible glosses for language correctness.
+For each entry {id, gloss, english_gloss, transliteration}, output ONE line per id in this exact format:
+- id:ok                        — gloss is correct natural Portuguese and consistent with english_gloss+transliteration
+- id:bad:en:<pt_suggestion>    — gloss is in English
+- id:bad:es:<pt_suggestion>    — gloss is in Spanish
+- id:bad:other:<pt_suggestion_or_null> — unreadable, JSON leak, empty, or other language
+
+Examples:
+Input [{"id":1,"gloss":"em","english_gloss":"in","transliteration":"en"},
+       {"id":2,"gloss":"the","english_gloss":"the","transliteration":"ho"},
+       {"id":3,"gloss":"palabra","english_gloss":"word","transliteration":"logos"}]
+Output:
+1:ok
+2:bad:en:o
+3:bad:es:Palavra
+
+Rules:
+- Portuguese diacritics (ã, ç, ó) are REQUIRED where applicable ("Deus" ok, "Deus" ok; "Espiritu" is Spanish → bad).
+- Short function words like "o", "a", "e", "em" are valid Portuguese (not Spanish).
+- Contractions ("no"="em+o", "do"="de+o") are valid.
+- Answer ONE line per id. Nothing else. No preamble, no trailing text, no JSON."""
+
+                    val ctx = LlmResponseProcessor.GlossAuditContext(
+                        locale = "pt",
+                        bookName = book.name,
+                        chapter = chapter,
+                        entries = entries
+                    )
+
+                    repo.enqueue(
+                        phaseName = phaseName,
+                        label = "GLOSS_AUDIT_PT_${book.name}_${chapter}_chunk$chunkIdx",
+                        systemPrompt = systemPrompt,
+                        userContent = inputJson,
+                        temperature = 0.0,
+                        maxTokens = chunk.size * 30,
+                        tier = "LOW",
+                        callbackContext = queueJson.encodeToString(ctx)
+                    )
+                    enqueued += chunk.size
+                }
+            }
+        }
+        phaseTracker.markProgress(phaseName, enqueued, enqueued)
+        log.info("GLOSS_AUDIT_PREPARE: enqueued $enqueued audit items (scope=${scope ?: "all"})")
     }
 
     private fun escapeJsonStr(s: String): String =
