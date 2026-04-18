@@ -9,6 +9,19 @@ Fases: `manuscript_load_catalog`, `manuscript_fetch_content`, `manuscript_link_v
 
 Filtro opcional: `?filter=normalized_name` (ex: `?filter=clement_of_rome`)
 
+## Bíblia — Layer 1..4 (via LLM Queue)
+- **L1 tokenization** — `bible_tokenize_*`, tokens por versículo.
+- **L2 lexicon** — `bible_translate_lexicon` (greek), `bible_translate_hebrew_lexicon`.
+- **L3 glosses/enrichment** — `bible_translate_glosses` (LOW), `bible_translate_enrichment_*` (MEDIUM).
+- **L4 alignment** — `bible_align_kjv` (en) e `bible_align_arc69` (pt) apenas — HIGH tier. Só essas duas versões recebem interlinear.
+
+Services: `BibleIngestionService`, `BibleLayer4CoverageService`; repository `BibleLayer4ApplicationsRepository`.
+Flow: enfileira em `llm_prompt_queue` → processado via `/run-llm` ou `/drain-queue` → `POST /admin/llm/queue/apply/{phase}` → coverage recalcula.
+
+## Apologetics
+- Fases `apologetics_*` (HIGH tier / Opus). Complementa respostas do usuário, não substitui (exceto quando pedido explicitamente).
+- Migration `V20__create_apologetics.sql`.
+
 ## Concílios (11 fases)
 1. `council_seed` — seed curado
 2. `council_extract_schaff`, `council_extract_hefele`, `council_extract_catholic_enc`, `council_extract_fordham` — extractors primários
@@ -22,8 +35,11 @@ Filtro opcional: `?filter=normalized_name` (ex: `?filter=clement_of_rome`)
 ## SourceConsensusEngine — Pesos
 PRIMARY 1.0 (Schaff, Hefele, Fordham) > ACADEMIC 0.8 (Catholic Enc, Seed) > STRUCTURED 0.7 (Wikidata) > AGGREGATOR 0.5 (Wikipedia)
 
-## LlmOrchestrator
-Anthropic Claude Opus 4.7 (primário) → OpenAI GPT-5.4 (fallback). Rate limiting por provider. Configuração via env vars.
+## LLM execution — 2 caminhos
+1. **Assíncrono (padrão)**: `llm_prompt_queue` + `/run-llm` (Claude Code). Usado por bible/council/heresy/bio/patristic/dating/apologetics em massa.
+2. **Síncrono (LlmOrchestrator legado)**: Anthropic → OpenAI → DeepSeek → OpenRouter. Endpoints request-scoped (ex: apologetics user-facing).
+
+Ver `/run-llm` (tier → modelo) e `/drain-queue` (execução em massa).
 
 ## IngestionPhaseTracker
 Rastreamento persistente via `IngestionPhaseRepository`. Recupera fases stuck no restart do servidor.

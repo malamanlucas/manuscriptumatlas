@@ -8,7 +8,7 @@ Você está trabalhando no backend Kotlin/Ktor/Exposed do Manuscriptum Atlas. Si
 
 ## Pacotes (`backend/src/main/kotlin/com/ntcoverage/`)
 - `config/` — DatabaseConfig, FlywayConfig, IngestionConfig, LocaleConfig, RateLimiter, SourceFileCache
-- `llm/` — LlmOrchestrator, LlmProvider, AnthropicProvider, OpenAiProvider, LlmConfig, LlmRateLimiter
+- `llm/` — LlmConfig + providers (Anthropic/OpenAI/DeepSeek/OpenRouter). Orquestração síncrona em `LlmOrchestrator`. Assíncrono: `LlmQueueRepository` + Kafka `LlmResultsConsumer` (preferido para massa)
 - `model/` — Tables.kt (tabelas Exposed), DTOs.kt (data classes @Serializable)
 - `repository/` — um por domínio (ver diretório para lista atual)
 - `service/` — lógica de negócio (ver diretório para lista atual)
@@ -17,8 +17,9 @@ Você está trabalhando no backend Kotlin/Ktor/Exposed do Manuscriptum Atlas. Si
 - `seed/` — dados iniciais e traduções (ver diretório para lista atual)
 - `util/` — JwtUtil, NtvmrUrl
 
-## LlmOrchestrator (multi-provider)
-Anthropic (primário) → OpenAI (fallback). Interface `LlmProvider` com `chatCompletion()`. Rate limiting por provider.
+## LLM — 2 caminhos
+- **Assíncrono (padrão massa):** enfileira em `llm_prompt_queue` via `LlmQueueRepository`. Drenado pelo Claude Code (`/drain-queue`, `/run-llm`). Resultados via Kafka (`LlmResultsConsumer`).
+- **Síncrono (legado):** `LlmOrchestrator` com fallback encadeado Anthropic → OpenAI → DeepSeek → OpenRouter. Interface `LlmProvider.chatCompletion()`. Usado em endpoints request-scoped (ex: apologetics user-facing).
 
 ## Novo endpoint
 1. Route em `routes/` — recebe Service via construtor

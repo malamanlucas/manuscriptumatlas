@@ -6,11 +6,21 @@ Sistema de cobertura textual do Novo Testamento grego — manuscritos, testemunh
 
 - **Backend:** Kotlin 2.1 / Ktor 3.1 / Exposed ORM / PostgreSQL 16 / Flyway
 - **Frontend:** Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / TanStack Query / next-intl
-- **LLM:** Anthropic Claude Opus 4.7 (primário) + OpenAI GPT-5.4 / DeepSeek / OpenRouter (fallback) via `LlmOrchestrator` + LLM Queue (Claude Code `/run-llm`)
+- **LLM:** LLM Queue (PostgreSQL `llm_prompt_queue`) processada por Claude Code via `/run-llm` — tiered (Haiku/Sonnet/Opus). Fallback síncrono `LlmOrchestrator` (Anthropic → OpenAI → DeepSeek → OpenRouter) para endpoints request-scoped (ex: apologetics).
 - **Messaging:** Apache Kafka (KRaft mode) — notificacao de resultados LLM processados
 - **Infra:** Docker Compose (postgres + kafka + init + app + frontend + prometheus + grafana + loki + promtail)
 - **Observability:** Prometheus (metrics) + Grafana (dashboards, porta 3001) + Loki (logs) + Micrometer + structured JSON logging
 - **Arquitetura:** Routes → Service → Repository → Database (Exposed/PostgreSQL)
+
+## Tier → Modelo (LLM Queue)
+
+| Tier | Fases | Modelo |
+|------|-------|--------|
+| LOW | `bible_translate_glosses`, `*_enrichment_*` | Haiku (`claude-haiku-4-5`) |
+| MEDIUM | `bible_translate_lexicon`, `bible_translate_hebrew_lexicon`, `council_*`, `heresy_*`, `bio_*` | Sonnet (`claude-sonnet-4-6`) |
+| HIGH | `bible_align_*`, `dating_*`, `apologetics_*` | Opus (`claude-opus-4-7`) |
+
+Regra rápida: `enrichment` no nome → Haiku; `tier=HIGH` → Opus; resto MEDIUM → Sonnet. Detalhes em `/run-llm`.
 
 ## Checklist obrigatório por feature
 
@@ -34,6 +44,10 @@ Ao receber um prompt de **implementação ou alteração de código**, detecte o
 | Ingestão, ingestion, pipeline, scraper, fases | `/ingestion` | Fases, SourceConsensusEngine, endpoints admin |
 | Docker, compose, infra, deploy, variável de ambiente | `/docker` | Serviços, volumes, env vars, comandos dev |
 | Testes, test, E2E, Playwright, Vitest, pirâmide | `/testing` | Pirâmide, padrões frontend/backend |
+| Drenar fila LLM (volume alto) | `/drain-queue` | Wrapper safe com batch=50 parallelism=5 |
+| Stats da fila (read-only) | `/queue-status` | ETA, stale claims, rate-limit ativo |
+| Processar 1 lote curto | `/run-llm` | Motor LLM — spawna Agents Haiku/Sonnet |
+| Validar integridade pós-drenagem | `/integrity-check` | Phantom applied, orphan claims, callback_context |
 
 **Regras de dispatch:**
 - Tarefa cross-layer (ex: "novo domínio"): carregar skill principal, seguir ordem arquitetura → banco → backend → frontend → i18n
@@ -64,7 +78,7 @@ Playwright: usar automaticamente após mudanças visuais. Não usar para lógica
 
 ## LLM Queue Processing
 
-- Default batch size = **10 items** (menor = mais visibilidade no dashboard `/pt/ingestion-status`).
+- Batch sizes: **claim** = 50 (`/drain-queue` default), **display dashboard** = 10, **single-agent** = 1 (`/run-llm`).
 - Parallelism **MAX = 5 sub-agents simultâneos**. Nunca spawn 30+.
 - Antes de spawn > 5 agents: pare e pergunte.
 - Temp files devem ser **PID-scoped**: `/tmp/llm_item_$$_*.json` — nunca caminho compartilhado tipo `/tmp/llm_item_*.json`.
