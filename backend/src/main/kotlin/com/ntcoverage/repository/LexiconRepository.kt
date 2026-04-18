@@ -418,15 +418,17 @@ class LexiconRepository {
                 .firstOrNull()
 
             if (translation != null) {
+                val nasExhTrans = translation[GreekLexiconTranslations.nasExhaustiveTranslation] ?: base.nasExhaustiveTranslation
                 return base.copy(
                     shortDefinition = translation[GreekLexiconTranslations.shortDefinition] ?: base.shortDefinition,
                     fullDefinition = translation[GreekLexiconTranslations.fullDefinition] ?: base.fullDefinition,
                     kjvTranslation = translation[GreekLexiconTranslations.kjvTranslation] ?: base.kjvTranslation,
+                    nasbTranslation = if (base.nasbTranslation == base.nasExhaustiveTranslation) nasExhTrans else base.nasbTranslation,
                     wordOrigin = translation[GreekLexiconTranslations.wordOrigin] ?: base.wordOrigin,
                     strongsExhaustive = translation[GreekLexiconTranslations.strongsExhaustive] ?: base.strongsExhaustive,
                     nasExhaustiveOrigin = translation[GreekLexiconTranslations.nasExhaustiveOrigin] ?: base.nasExhaustiveOrigin,
                     nasExhaustiveDefinition = translation[GreekLexiconTranslations.nasExhaustiveDefinition] ?: base.nasExhaustiveDefinition,
-                    nasExhaustiveTranslation = translation[GreekLexiconTranslations.nasExhaustiveTranslation] ?: base.nasExhaustiveTranslation
+                    nasExhaustiveTranslation = nasExhTrans
                 )
             }
         }
@@ -447,15 +449,17 @@ class LexiconRepository {
                 .firstOrNull()
 
             if (translation != null) {
+                val nasExhTrans = translation[HebrewLexiconTranslations.nasExhaustiveTranslation] ?: base.nasExhaustiveTranslation
                 return base.copy(
                     shortDefinition = translation[HebrewLexiconTranslations.shortDefinition] ?: base.shortDefinition,
                     fullDefinition = translation[HebrewLexiconTranslations.fullDefinition] ?: base.fullDefinition,
                     kjvTranslation = translation[HebrewLexiconTranslations.kjvTranslation] ?: base.kjvTranslation,
+                    nasbTranslation = if (base.nasbTranslation == base.nasExhaustiveTranslation) nasExhTrans else base.nasbTranslation,
                     wordOrigin = translation[HebrewLexiconTranslations.wordOrigin] ?: base.wordOrigin,
                     strongsExhaustive = translation[HebrewLexiconTranslations.strongsExhaustive] ?: base.strongsExhaustive,
                     nasExhaustiveOrigin = translation[HebrewLexiconTranslations.nasExhaustiveOrigin] ?: base.nasExhaustiveOrigin,
                     nasExhaustiveDefinition = translation[HebrewLexiconTranslations.nasExhaustiveDefinition] ?: base.nasExhaustiveDefinition,
-                    nasExhaustiveTranslation = translation[HebrewLexiconTranslations.nasExhaustiveTranslation] ?: base.nasExhaustiveTranslation
+                    nasExhaustiveTranslation = nasExhTrans
                 )
             }
         }
