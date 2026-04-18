@@ -260,11 +260,14 @@ class LlmResponseProcessor(
         for (rawLine in content.lines()) {
             val line = rawLine.trim().trim('`')
             if (line.isBlank()) continue
-            val m = lineRegex.find(line) ?: run { skipped++; continue }
-            val tempId = m.groupValues[1].toIntOrNull() ?: run { skipped++; continue }
+            val m = lineRegex.find(line)
+            if (m == null) { skipped++; continue }
+            val tempId = m.groupValues[1].toIntOrNull()
+            if (tempId == null) { skipped++; continue }
             val statusRaw = m.groupValues[2]
             val suggestion = m.groupValues.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
-            val entry = byTempId[tempId] ?: run { skipped++; continue }
+            val entry = byTempId[tempId]
+            if (entry == null) { skipped++; continue }
 
             val verdict = when (statusRaw) {
                 "ok" -> GlossAuditVerdict.OK
