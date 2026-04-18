@@ -7,6 +7,7 @@ import {
   useBibleGlossAuditStats,
   useAuditBibleGlosses,
   useFixFlaggedBibleGlosses,
+  useReauditBibleGlosses,
 } from "@/hooks/useBibleGlossAudit";
 import {
   Loader2,
@@ -32,6 +33,7 @@ export function BibleGlossQualityPanel() {
   const statsQuery = useBibleGlossAuditStats(book || undefined, chapter ?? undefined);
   const auditMutation = useAuditBibleGlosses();
   const fixMutation = useFixFlaggedBibleGlosses();
+  const reauditMutation = useReauditBibleGlosses();
 
   const handleBookChange = (value: string) => {
     setBook(value);
@@ -47,6 +49,14 @@ export function BibleGlossQualityPanel() {
 
   const runFix = () => {
     fixMutation.mutate({
+      book: book || undefined,
+      chapter: chapter ?? undefined,
+    });
+  };
+
+  const runReaudit = () => {
+    if (!window.confirm(t("glossQualityReauditConfirm"))) return;
+    reauditMutation.mutate({
       book: book || undefined,
       chapter: chapter ?? undefined,
     });
@@ -132,12 +142,16 @@ export function BibleGlossQualityPanel() {
         </button>
 
         <button
-          onClick={runAudit}
-          disabled={auditMutation.isPending}
+          onClick={runReaudit}
+          disabled={reauditMutation.isPending}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent disabled:opacity-50"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          {t("glossQualityReaudit")}
+          {reauditMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          {reauditMutation.isPending ? t("glossQualityReauditRunning") : t("glossQualityReaudit")}
         </button>
       </div>
 

@@ -572,6 +572,8 @@
       "glossQualityFix": "Fix flagged",
       "glossQualityFixRunning": "Nullifying and re-enqueuing…",
       "glossQualityReaudit": "Re-audit",
+      "glossQualityReauditConfirm": "This will delete unresolved audits in scope and re-enqueue the audit. Continue?",
+      "glossQualityReauditRunning": "Re-auditing…",
       "glossQualityStatsTotal": "PT glosses",
       "glossQualityStatsOk": "Correct",
       "glossQualityStatsBadEn": "In English",

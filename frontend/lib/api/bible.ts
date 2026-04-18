@@ -91,6 +91,14 @@ export function fixFlaggedBibleGlosses(book?: string, chapter?: number): Promise
   return fetchJsonAuth(`${BASE}/admin/bible/glosses/fix-flagged${q ? `?${q}` : ""}`, { method: "POST" });
 }
 
+export function reauditBibleGlosses(book?: string, chapter?: number): Promise<{ message: string }> {
+  const params = new URLSearchParams();
+  if (book) params.set("book", book);
+  if (chapter != null) params.set("chapter", String(chapter));
+  const q = params.toString();
+  return fetchJsonAuth(`${BASE}/admin/bible/glosses/re-audit${q ? `?${q}` : ""}`, { method: "POST" });
+}
+
 export function getBibleInterlinearChapter(book: string, chapter: number, alignVersion?: string): Promise<InterlinearChapterDTO> {
   const params = alignVersion ? `?alignVersion=${encodeURIComponent(alignVersion)}` : "";
   return fetchJson(`${BASE}/bible/interlinear/${encodeURIComponent(book)}/${chapter}${params}`);

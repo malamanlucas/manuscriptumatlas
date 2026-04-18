@@ -3,6 +3,7 @@ import {
   auditBibleGlosses,
   getBibleGlossAuditStats,
   fixFlaggedBibleGlosses,
+  reauditBibleGlosses,
 } from "@/lib/api";
 
 export function useBibleGlossAuditStats(book?: string, chapter?: number) {
@@ -33,6 +34,19 @@ export function useFixFlaggedBibleGlosses() {
   return useMutation({
     mutationFn: ({ book, chapter }: { book?: string; chapter?: number }) =>
       fixFlaggedBibleGlosses(book, chapter),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bible-gloss-audit"] });
+      qc.invalidateQueries({ queryKey: ["llm-queue"] });
+      qc.invalidateQueries({ queryKey: ["bible-ingestion"] });
+    },
+  });
+}
+
+export function useReauditBibleGlosses() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ book, chapter }: { book?: string; chapter?: number }) =>
+      reauditBibleGlosses(book, chapter),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bible-gloss-audit"] });
       qc.invalidateQueries({ queryKey: ["llm-queue"] });

@@ -453,6 +453,20 @@ fun Route.adminRoutes(
         call.respond(HttpStatusCode.Accepted, MessageResponse("Nullified $nullified flagged glosses, re-enqueued translation (scope=${scope ?: "all NT"})"))
     }
 
+    post("/admin/bible/glosses/re-audit") {
+        val book = call.request.queryParameters["book"]
+        val chapter = call.request.queryParameters["chapter"]?.toIntOrNull()
+        val scope = book?.let { IngestionScope(it, chapter, null) }
+        val cleared = glossAuditRepository.clearUnresolved(book, chapter)
+        ingestionScope.launch {
+            bibleIngestionService.auditGlossesPrepare(scope)
+        }
+        call.respond(
+            HttpStatusCode.Accepted,
+            MessageResponse("Cleared $cleared unresolved audits, re-enqueued audit (scope=${scope ?: "all NT"})")
+        )
+    }
+
     post("/admin/bible/ingestion/run-all") {
         if (phaseTracker.isAnyRunningByPrefix("bible_")) {
             return@post call.respond(HttpStatusCode.Conflict, MessageResponse("A bible ingestion phase is already running"))

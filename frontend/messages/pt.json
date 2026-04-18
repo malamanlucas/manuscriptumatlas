@@ -572,6 +572,8 @@
       "glossQualityFix": "Corrigir flagged",
       "glossQualityFixRunning": "Limpando e re-enfileirando…",
       "glossQualityReaudit": "Re-auditar",
+      "glossQualityReauditConfirm": "Isto apagará auditorias não resolvidas no escopo e re-enfileirará a auditoria. Continuar?",
+      "glossQualityReauditRunning": "Re-auditando…",
       "glossQualityStatsTotal": "Glosses PT",
       "glossQualityStatsOk": "Corretos",
       "glossQualityStatsBadEn": "Em inglês",

@@ -197,6 +197,39 @@ class GlossAuditRepository {
         count
     }
 
+    /** Deleta audits não resolvidos no escopo. Retorna contagem de deletados. */
+    fun clearUnresolved(book: String?, chapter: Int?): Int = transaction(db) {
+        val conditions = mutableListOf("a.resolved_at IS NULL")
+        if (book != null) conditions.add("bb.name = '${book.sqlEscape()}'")
+        if (chapter != null) conditions.add("bv.chapter = $chapter")
+        val whereClause = "WHERE ${conditions.joinToString(" AND ")}"
+        val countSql = """
+            SELECT COUNT(*) AS c
+            FROM interlinear_gloss_audits a
+            JOIN interlinear_words iw ON iw.id = a.word_id
+            JOIN bible_verses bv ON iw.verse_id = bv.id
+            JOIN bible_books bb ON bv.book_id = bb.id
+            $whereClause;
+        """.trimIndent()
+        val deleteSql = """
+            DELETE FROM interlinear_gloss_audits
+            WHERE id IN (
+                SELECT a.id
+                FROM interlinear_gloss_audits a
+                JOIN interlinear_words iw ON iw.id = a.word_id
+                JOIN bible_verses bv ON iw.verse_id = bv.id
+                JOIN bible_books bb ON bv.book_id = bb.id
+                $whereClause
+            );
+        """.trimIndent()
+        var count = 0
+        exec(countSql, explicitStatementType = StatementType.SELECT) { rs ->
+            if (rs.next()) count = rs.getInt("c")
+        }
+        if (count > 0) exec(deleteSql, explicitStatementType = StatementType.DELETE)
+        count
+    }
+
     private fun buildScopeClause(book: String?, chapter: Int?): String {
         val parts = mutableListOf<String>()
         if (book != null) parts.add("bb.name = '${book.sqlEscape()}'")
