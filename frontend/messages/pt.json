@@ -585,7 +585,10 @@
       "glossQualityExampleVerdict": "Veredito",
       "glossQualityExampleSuggestion": "Sugestão PT",
       "glossQualityHint": "Após auditar/corrigir, rode {code} no terminal e depois {apply} para aplicar os resultados.",
-      "glossQualityNothingToFix": "Nenhum gloss flagged no escopo."
+      "glossQualityNothingToFix": "Nenhum gloss flagged no escopo.",
+      "glossQualityClearQueue": "Limpar fila",
+      "glossQualityClearQueueRunning": "Limpando…",
+      "glossQualityClearQueueConfirm": "Excluir todos os itens pendentes da fila bible_audit_glosses_pt? Não pode ser desfeito."
     },
     "tabs": {
       "manuscripts": "Manuscritos",
