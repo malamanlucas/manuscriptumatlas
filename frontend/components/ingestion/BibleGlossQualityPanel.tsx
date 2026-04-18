@@ -9,6 +9,7 @@ import {
   useFixFlaggedBibleGlosses,
   useReauditBibleGlosses,
 } from "@/hooks/useBibleGlossAudit";
+import { useClearQueuePhase } from "@/hooks/useLlmQueue";
 import {
   Loader2,
   Wand2,
@@ -16,6 +17,7 @@ import {
   Hammer,
   RefreshCw,
   CircleAlert,
+  Trash2,
 } from "lucide-react";
 import type { GlossAuditExampleDTO } from "@/types";
 
@@ -34,6 +36,7 @@ export function BibleGlossQualityPanel() {
   const auditMutation = useAuditBibleGlosses();
   const fixMutation = useFixFlaggedBibleGlosses();
   const reauditMutation = useReauditBibleGlosses();
+  const clearQueueMutation = useClearQueuePhase();
 
   const handleBookChange = (value: string) => {
     setBook(value);
@@ -60,6 +63,11 @@ export function BibleGlossQualityPanel() {
       book: book || undefined,
       chapter: chapter ?? undefined,
     });
+  };
+
+  const runClearQueue = () => {
+    if (!window.confirm(t("glossQualityClearQueueConfirm"))) return;
+    clearQueueMutation.mutate("bible_audit_glosses_pt");
   };
 
   const stats = statsQuery.data;
@@ -152,6 +160,19 @@ export function BibleGlossQualityPanel() {
             <RefreshCw className="h-3.5 w-3.5" />
           )}
           {reauditMutation.isPending ? t("glossQualityReauditRunning") : t("glossQualityReaudit")}
+        </button>
+
+        <button
+          onClick={runClearQueue}
+          disabled={clearQueueMutation.isPending}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/60 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+        >
+          {clearQueueMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+          {clearQueueMutation.isPending ? t("glossQualityClearQueueRunning") : t("glossQualityClearQueue")}
         </button>
       </div>
 

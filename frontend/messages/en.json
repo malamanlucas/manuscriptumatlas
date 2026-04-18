@@ -585,7 +585,10 @@
       "glossQualityExampleVerdict": "Verdict",
       "glossQualityExampleSuggestion": "PT suggestion",
       "glossQualityHint": "After auditing/fixing, run {code} in the terminal and then {apply} to apply results.",
-      "glossQualityNothingToFix": "No flagged glosses in scope."
+      "glossQualityNothingToFix": "No flagged glosses in scope.",
+      "glossQualityClearQueue": "Clear queue",
+      "glossQualityClearQueueRunning": "Clearing…",
+      "glossQualityClearQueueConfirm": "Delete all pending items from the bible_audit_glosses_pt queue? This cannot be undone."
     },
     "tabs": {
       "manuscripts": "Manuscripts",
