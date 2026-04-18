@@ -16,11 +16,11 @@ Sistema de cobertura textual do Novo Testamento grego — manuscritos, testemunh
 
 | Tier | Fases | Modelo |
 |------|-------|--------|
-| LOW | `*_enrichment_*` | Haiku (`claude-haiku-4-5`) |
-| MEDIUM | `bible_translate_glosses`, `bible_translate_lexicon`, `bible_translate_hebrew_lexicon`, `council_*`, `heresy_*`, `bio_*` | Sonnet (`claude-sonnet-4-6`) |
+| LOW | fases que **terminam** em `_enrichment` (geram enriquecimento novo, texto curto) | Haiku (`claude-haiku-4-5`) |
+| MEDIUM | `bible_translate_*` (inclui `bible_translate_enrichment_greek/hebrew`), `council_*`, `heresy_*`, `bio_*` | Sonnet (`claude-sonnet-4-6`) |
 | HIGH | `bible_align_*`, `dating_*`, `apologetics_*` | Opus (`claude-opus-4-7`) |
 
-Regra rápida: `enrichment` no nome → Haiku; `tier=HIGH` → Opus; resto MEDIUM → Sonnet. Detalhes em `/run-llm`.
+Regra rápida: `translate` no nome → Sonnet (prevalece sobre `enrichment`); `tier=HIGH` → Opus; `*_enrichment` (sem `translate`) → Haiku. Detalhes em `/run-llm`.
 
 ## Checklist obrigatório por feature
 

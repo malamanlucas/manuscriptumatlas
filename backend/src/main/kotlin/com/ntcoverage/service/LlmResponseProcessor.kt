@@ -57,6 +57,12 @@ class LlmResponseProcessor(
 
         for (item in items) {
             try {
+                if ((item.inputTokens ?: 0) <= 0 && (item.outputTokens ?: 0) <= 0) {
+                    throw IllegalStateException("Fake response (tokens=0) for id=${item.id} — LLM never called")
+                }
+                if (item.responseContent != null && item.responseContent == item.userContent) {
+                    throw IllegalStateException("Response identical to prompt for id=${item.id} — worker bug")
+                }
                 when {
                     item.label.startsWith("ConflictResolution:") -> applyConflictResolution(item)
                     item.label.startsWith("LEXICON_TRANSLATE_") -> applyLexiconTranslation(item)
