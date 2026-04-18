@@ -1756,7 +1756,7 @@ Rules:
                         userContent = inputJson,
                         temperature = 0.0,
                         maxTokens = chunk.size * 30,
-                        tier = "LOW",
+                        tier = "HIGH",
                         callbackContext = queueJson.encodeToString(ctx)
                     )
                     enqueued += chunk.size
