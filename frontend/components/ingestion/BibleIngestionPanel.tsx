@@ -244,26 +244,28 @@ function LayerSection({
 
       {/* Corpo expandível */}
       <div
-        className={`overflow-hidden transition-all duration-300 ${expanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+        className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ${expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
       >
-        <div className="space-y-4 border-t border-border p-4">
-          {/* Descrição da camada */}
-          <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <div className="min-h-0">
+          <div className="space-y-4 border-t border-border p-4">
+            {/* Descrição da camada */}
+            <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
 
-          {/* Info badges */}
-          <div className="flex flex-wrap gap-3 text-xs">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1">
-              <span className="font-medium text-foreground/70">Depende:</span>
-              <span className="text-muted-foreground">{dependsOn}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1">
-              <span className="font-medium text-foreground/70">Fonte:</span>
-              <span className="text-muted-foreground">{source}</span>
-            </span>
+            {/* Info badges */}
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1">
+                <span className="font-medium text-foreground/70">Depende:</span>
+                <span className="text-muted-foreground">{dependsOn}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1">
+                <span className="font-medium text-foreground/70">Fonte:</span>
+                <span className="text-muted-foreground">{source}</span>
+              </span>
+            </div>
+
+            {/* Fases */}
+            {children}
           </div>
-
-          {/* Fases */}
-          {children}
         </div>
       </div>
     </div>

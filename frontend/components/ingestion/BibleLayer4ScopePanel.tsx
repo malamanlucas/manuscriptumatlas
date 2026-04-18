@@ -254,35 +254,44 @@ export function BibleLayer4ScopePanel({ phases, phaseLabels }: BibleLayer4ScopeP
       )}
 
       {/* Histórico */}
-      <div className="space-y-2 rounded-md border border-border bg-background p-3">
-        <h5 className="text-xs font-bold">{t("layer4HistoryTitle")}</h5>
-        {applicationsQuery.isLoading && (
-          <p className="text-xs text-muted-foreground">…</p>
-        )}
-        {applicationsQuery.data && applicationsQuery.data.length === 0 && (
-          <p className="text-xs text-muted-foreground">{t("layer4HistoryEmpty")}</p>
-        )}
-        {applicationsQuery.data && applicationsQuery.data.length > 0 && (
-          <ul className="space-y-1">
-            {applicationsQuery.data.map((app) => (
-              <li
-                key={app.id}
-                className="flex items-center justify-between gap-2 rounded border border-border/40 px-2 py-1 text-xs"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <StatusIcon status={app.status} />
-                  <span className="truncate font-mono text-[11px]">
-                    {formatScope(app.bookName, app.chapter, app.verse)}
+      <div className="rounded-md border border-border bg-background">
+        <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+          <h5 className="text-xs font-bold">{t("layer4HistoryTitle")}</h5>
+          {applicationsQuery.data && applicationsQuery.data.length > 0 && (
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {applicationsQuery.data.length}
+            </span>
+          )}
+        </div>
+        <div className="max-h-60 overflow-y-auto px-3 py-2">
+          {applicationsQuery.isLoading && (
+            <p className="text-xs text-muted-foreground">…</p>
+          )}
+          {applicationsQuery.data && applicationsQuery.data.length === 0 && (
+            <p className="text-xs text-muted-foreground">{t("layer4HistoryEmpty")}</p>
+          )}
+          {applicationsQuery.data && applicationsQuery.data.length > 0 && (
+            <ul className="space-y-1">
+              {applicationsQuery.data.map((app) => (
+                <li
+                  key={app.id}
+                  className="flex items-center justify-between gap-2 rounded border border-border/40 px-2 py-1 text-xs"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <StatusIcon status={app.status} />
+                    <span className="truncate font-mono text-[11px]">
+                      {formatScope(app.bookName, app.chapter, app.verse)}
+                    </span>
+                    <span className="truncate text-muted-foreground">{app.phaseName}</span>
                   </span>
-                  <span className="truncate text-muted-foreground">{app.phaseName}</span>
-                </span>
-                <span className="shrink-0 text-[11px] text-muted-foreground">
-                  {app.itemsProcessed} / {new Date(app.requestedAt).toLocaleTimeString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {app.itemsProcessed} / {new Date(app.requestedAt).toLocaleTimeString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
