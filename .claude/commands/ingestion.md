@@ -12,7 +12,7 @@ Filtro opcional: `?filter=normalized_name` (ex: `?filter=clement_of_rome`)
 ## Bíblia — Layer 1..4 (via LLM Queue)
 - **L1 tokenization** — `bible_tokenize_*`, tokens por versículo.
 - **L2 lexicon** — `bible_translate_lexicon` (greek), `bible_translate_hebrew_lexicon`.
-- **L3 glosses/enrichment** — `bible_translate_glosses` (LOW), `bible_translate_enrichment_*` (MEDIUM).
+- **L3 glosses/enrichment** — `bible_translate_glosses` (MEDIUM/Sonnet), `bible_translate_enrichment_*` (LOW/Haiku).
 - **L4 alignment** — `bible_align_kjv` (en) e `bible_align_arc69` (pt) apenas — HIGH tier. Só essas duas versões recebem interlinear.
 
 Services: `BibleIngestionService`, `BibleLayer4CoverageService`; repository `BibleLayer4ApplicationsRepository`.

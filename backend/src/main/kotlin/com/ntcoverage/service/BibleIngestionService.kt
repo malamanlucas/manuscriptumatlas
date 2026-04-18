@@ -1670,7 +1670,7 @@ IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
                             userContent = input,
                             temperature = 0.0,
                             maxTokens = chunk.size * 40,
-                            tier = "LOW",
+                            tier = "MEDIUM",
                             callbackContext = queueJson.encodeToString(ctx)
                         )
                         enqueued += chunk.size
