@@ -92,6 +92,23 @@ Playwright: usar automaticamente após mudanças visuais. Não usar para lógica
 - Se `/run-llm` bloqueia por usage limit: **não retry em loop apertado** — escreva timestamp do próximo reset em `/tmp/claude_rate_limit_until`, cancele o cron, avise o usuário.
 - Graceful shutdown: cancelar cron + `curl -X POST /admin/llm/queue/unstick?staleMinutes=0` para liberar items em `processing`.
 
+## Autenticação Admin (backend local)
+
+Rotas `/admin/*` exigem `Authorization: Bearer <token>`. Obter token:
+
+```bash
+TOKEN=$(curl -s -X POST "http://localhost:8080/auth/dev-login?email=dev@manuscriptum.local" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+```
+
+Usar nas chamadas:
+```bash
+curl -s -X POST http://localhost:8080/admin/<endpoint> -H "Authorization: Bearer $TOKEN"
+```
+
+- Usuário dev admin: `dev@manuscriptum.local` (Admin) — não requer senha, só funciona com `JWT_SECRET` dev
+- Endpoints úteis: `POST /admin/bible/ingestion/run/{phase}`, `POST /admin/llm/queue/apply/{phase}`, `POST /admin/llm/queue/unstick`
+
 ## Idioma
 
 - Código-fonte, variáveis e classes: **inglês**
