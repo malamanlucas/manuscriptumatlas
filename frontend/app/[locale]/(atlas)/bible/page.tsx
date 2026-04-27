@@ -101,8 +101,8 @@ export default function BiblePage() {
 
   interlinearChapter.data?.verses.forEach((v) => {
     const words = alignLang === "en" ? v.words : v.words.map((w) => {
-      const localGloss = alignLang === "pt" ? w.portugueseGloss
-        : alignLang === "es" ? w.spanishGloss
+      const localGloss = alignLang === "pt" ? (w.portugueseGloss ?? w.kjvAlignment?.alignedText)
+        : alignLang === "es" ? (w.spanishGloss ?? w.kjvAlignment?.alignedText)
         : null;
       return localGloss ? { ...w, englishGloss: localGloss } as InterlinearWordDTO : w;
     });
