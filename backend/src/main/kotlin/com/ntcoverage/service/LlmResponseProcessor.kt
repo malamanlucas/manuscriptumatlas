@@ -355,12 +355,33 @@ class LlmResponseProcessor(
         val content = item.responseContent?.trim()
             ?: throw IllegalStateException("Empty responseContent for alignment id=${item.id}")
 
+        // Tier→model audit: HIGH-tier alignment phases must use Opus (per CLAUDE.md routing).
+        if (item.modelUsed != null && !item.modelUsed.contains("opus", ignoreCase = true)) {
+            log.warn(
+                "LLM_PROCESSOR: tier mismatch — alignment id={} ran with model={} (expected Opus for HIGH tier)",
+                item.id, item.modelUsed
+            )
+        }
+
         val jsonContent = extractJson(content)
             ?: throw IllegalStateException("No JSON found in alignment response id=${item.id}")
         val parsed = try {
             json.decodeFromString(AlignmentResponse.serializer(), jsonContent)
         } catch (e: Exception) {
             throw IllegalStateException("Failed to parse alignment JSON for verse=${ctx.verseId}: ${e.message}", e)
+        }
+
+        // Quality gate — reject responses with massive index conflicts (symptom of LLM dump-into-bucket).
+        // Allows up to 2 Greek words sharing one target index (legitimate for contractions/articles), but
+        // a single index claimed 3+ times is structurally invalid and indicates the LLM gave up.
+        val kCounts = parsed.a.flatMap { it.k.orEmpty() }.groupingBy { it }.eachCount()
+        val maxClaimsPerIndex = kCounts.values.maxOrNull() ?: 0
+        if (maxClaimsPerIndex > 2) {
+            val offending = kCounts.filterValues { it > 2 }
+            throw IllegalStateException(
+                "Alignment quality gate failed for verse=${ctx.verseId} version=${ctx.versionCode}: " +
+                "target indices reclaimed > 2× $offending"
+            )
         }
 
         for (wa in parsed.a) {

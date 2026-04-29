@@ -280,7 +280,7 @@ fun Application.module() {
     val bibleTokenizationService = BibleTokenizationService(bibleTokenRepository, bibleVerseRepository, bibleVersionRepository, bibleBookRepository)
     val bibleLayer4ApplicationRepository = com.ntcoverage.repository.BibleLayer4ApplicationRepository()
     val bibleLayer4CoverageService = com.ntcoverage.service.BibleLayer4CoverageService()
-    val bibleIngestionService = BibleIngestionService(bibleVersionRepository, bibleBookRepository, bibleVerseRepository, interlinearRepository, lexiconRepository, phaseTracker, bibleOnlineScraper = bibleOnlineScraper, wordAlignmentService = wordAlignmentService, lexiconEnrichmentService = lexiconEnrichmentService, llmConfig = llmConfig, llmQueueRepository = llmQueueRepository, tokenizationService = bibleTokenizationService, applicationRepository = bibleLayer4ApplicationRepository)
+    val bibleIngestionService = BibleIngestionService(bibleVersionRepository, bibleBookRepository, bibleVerseRepository, interlinearRepository, lexiconRepository, phaseTracker, bibleOnlineScraper = bibleOnlineScraper, wordAlignmentService = wordAlignmentService, lexiconEnrichmentService = lexiconEnrichmentService, llmConfig = llmConfig, llmQueueRepository = llmQueueRepository, tokenizationService = bibleTokenizationService, applicationRepository = bibleLayer4ApplicationRepository, bibleTokenRepository = bibleTokenRepository)
 
     // Apologetics module (repositories created above, before LlmResponseProcessor)
     val apologeticsService = ApologeticsService(

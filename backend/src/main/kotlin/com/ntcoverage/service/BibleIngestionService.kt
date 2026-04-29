@@ -2,6 +2,7 @@ package com.ntcoverage.service
 
 import com.ntcoverage.repository.BibleBookRepository
 import com.ntcoverage.repository.BibleLayer4ApplicationRepository
+import com.ntcoverage.repository.BibleTokenRepository
 import com.ntcoverage.repository.BibleVersionRepository
 import com.ntcoverage.repository.BibleVerseRepository
 import com.ntcoverage.repository.InterlinearRepository
@@ -64,7 +65,8 @@ class BibleIngestionService(
     private val llmConfig: LlmConfig = LlmConfig(),
     private val llmQueueRepository: LlmQueueRepository? = null,
     private val tokenizationService: BibleTokenizationService? = null,
-    private val applicationRepository: BibleLayer4ApplicationRepository? = null
+    private val applicationRepository: BibleLayer4ApplicationRepository? = null,
+    private val bibleTokenRepository: BibleTokenRepository? = null
 ) {
     private val log = LoggerFactory.getLogger(BibleIngestionService::class.java)
 
@@ -1464,16 +1466,46 @@ Return in the EXACT same format with translated values:"""
                     if (interlinearRepository.hasAlignmentsForVerse(verseId, versionCode)) continue
 
                     val words = interlinearByVerse[verseNumber] ?: continue
+
+                    // Level 1-3 deterministic pre-alignment (when tokens available)
+                    val tokens = bibleTokenRepository?.getTokensForVerse(verseId, version.id) ?: emptyList()
+                    val wordsForLlm = if (tokens.isNotEmpty()) {
+                        val localResult = wordAlignmentService.alignVerseLocal(words, tokens, language)
+                        for (resolved in localResult.resolved) {
+                            interlinearRepository.upsertAlignment(
+                                verseId = verseId,
+                                wordPosition = resolved.greekPosition.toShort(),
+                                versionCode = versionCode,
+                                kjvIndices = null,
+                                alignedText = resolved.alignedText,
+                                isDivergent = false,
+                                confidence = resolved.confidence,
+                                tokenPositions = "[${resolved.tokenPositions.joinToString(",")}]",
+                                method = resolved.method
+                            )
+                        }
+                        if (localResult.unresolvedPositions.isEmpty()) {
+                            log.info("WORD_ALIGN_LOCAL: ${book.name} $chapter:$verseNumber fully resolved by L1-3 (${localResult.resolved.size} words, no LLM)")
+                            continue
+                        }
+                        if (localResult.resolved.isNotEmpty()) {
+                            log.debug("WORD_ALIGN_LOCAL: ${book.name} $chapter:$verseNumber resolved ${localResult.resolved.size}, unresolved ${localResult.unresolvedPositions.size} → LLM")
+                        }
+                        words.filter { it.wordPosition in localResult.unresolvedPositions }
+                    } else {
+                        words
+                    }
+
                     val targetWords = wordAlignmentService.splitKjvText(versionText)
                     val isEnglishVersion = language == "en"
 
                     val (expressionMap, consumedIndices) = if (isEnglishVersion) {
-                        wordAlignmentService.detectExpressions(words, targetWords)
+                        wordAlignmentService.detectExpressions(wordsForLlm, targetWords)
                     } else {
-                        wordAlignmentService.detectExpressionsWithTranslatedGlosses(words, targetWords, language)
+                        wordAlignmentService.detectExpressionsWithTranslatedGlosses(wordsForLlm, targetWords, language)
                     }
 
-                    val prompt = wordAlignmentService.buildAlignmentPrompt(words, targetWords, expressionMap, consumedIndices, isEnglishVersion, language)
+                    val prompt = wordAlignmentService.buildAlignmentPrompt(wordsForLlm, targetWords, expressionMap, consumedIndices, isEnglishVersion, language)
                     val systemPrompt = wordAlignmentService.buildSystemPrompt(language)
 
                     val ctx = LlmResponseProcessor.WordAlignContext(verseId, versionCode, book.name, chapter, verseNumber)
@@ -1595,6 +1627,17 @@ Greek alignments: [$alignmentsJson]"""
     suspend fun translateGlossesPrepare(scope: IngestionScope? = null) = runPhaseTracked("bible_translate_glosses") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_translate_glosses"
+
+        val sanitizedRows = if (scope != null) {
+            val scopedBookId = bookRepository.findByName(scope.bookName)?.id
+            interlinearRepository.clearCorruptedPortugueseGlossesScoped(scopedBookId, scope.chapter)
+        } else {
+            interlinearRepository.clearCorruptedPortugueseGlosses()
+        }
+        if (sanitizedRows > 0) {
+            log.info("TRANSLATE_GLOSSES_PREPARE: nullified $sanitizedRows corrupted PT gloss rows before re-translation (scope=$scope)")
+        }
+
         val booksToProcess = if (scope != null) {
             listOfNotNull(bookRepository.findByName(scope.bookName))
         } else {

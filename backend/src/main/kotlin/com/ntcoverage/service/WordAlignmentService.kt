@@ -302,7 +302,9 @@ $candidateRules
     }
 
     internal fun normalizeForComparison(s: String): String {
-        return s.lowercase()
+        return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+            .lowercase()
             .replace(Regex("[,.:;!?\"'()\\[\\]<>{}]"), "")
             .trim()
     }

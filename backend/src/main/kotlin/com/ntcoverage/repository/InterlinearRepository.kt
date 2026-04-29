@@ -23,8 +23,44 @@ class InterlinearRepository {
 
     fun clearCorruptedPortugueseGlosses(): Int = transaction(db) {
         InterlinearWords.update({
-            InterlinearWords.portugueseGloss.isNotNull() and
+            InterlinearWords.portugueseGloss.isNotNull() and (
+                (InterlinearWords.portugueseGloss eq InterlinearWords.englishGloss) or
+                ((InterlinearWords.portugueseGloss eq InterlinearWords.spanishGloss) and
+                    InterlinearWords.englishGloss.neq(InterlinearWords.spanishGloss)) or
+                InterlinearWords.portugueseGloss.like("¿%") or
+                InterlinearWords.portugueseGloss.like("%vosotros%") or
+                InterlinearWords.portugueseGloss.like("Jesús%") or
                 InterlinearWords.portugueseGloss.like("%\": \"%")
+            )
+        }) {
+            it[portugueseGloss] = null
+        }
+    }
+
+    fun clearCorruptedPortugueseGlossesScoped(bookId: Int?, chapter: Int?): Int = transaction(db) {
+        if (bookId == null && chapter == null) return@transaction clearCorruptedPortugueseGlosses()
+
+        val verseIds = BibleVerses.selectAll().where {
+            when {
+                bookId != null && chapter != null -> (BibleVerses.bookId eq bookId) and (BibleVerses.chapter eq chapter)
+                bookId != null -> BibleVerses.bookId eq bookId
+                else -> BibleVerses.chapter eq chapter!!
+            }
+        }.map { it[BibleVerses.id].value }
+
+        if (verseIds.isEmpty()) return@transaction 0
+
+        InterlinearWords.update({
+            (InterlinearWords.verseId inList verseIds) and
+            InterlinearWords.portugueseGloss.isNotNull() and (
+                (InterlinearWords.portugueseGloss eq InterlinearWords.englishGloss) or
+                ((InterlinearWords.portugueseGloss eq InterlinearWords.spanishGloss) and
+                    InterlinearWords.englishGloss.neq(InterlinearWords.spanishGloss)) or
+                InterlinearWords.portugueseGloss.like("¿%") or
+                InterlinearWords.portugueseGloss.like("%vosotros%") or
+                InterlinearWords.portugueseGloss.like("Jesús%") or
+                InterlinearWords.portugueseGloss.like("%\": \"%")
+            )
         }) {
             it[portugueseGloss] = null
         }
