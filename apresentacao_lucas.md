@@ -2,7 +2,7 @@
 
 ## [OPENING]
 
-Hi! My name is Lucas. I'm 35 years old, I'm a Christian, and I'm a software developer. I have solid experience from the beginning to the delivery of software, and I have a special focus on observability.
+Hi! My name is Lucas. I'm 35 years old and I'm a software developer. I have solid experience from the beginning to the delivery of software, and I have a special focus on observability.
 
 ## [PROFESSIONAL EXPERIENCE]
 
