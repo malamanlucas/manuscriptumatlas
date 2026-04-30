@@ -2,27 +2,35 @@
 
 ## [OPENING]
 
-Hi! My name is Lucas, I'm 35 years old, and I'm a Christian. I'm a software developer with solid experience from conception to delivery, with a special focus on observability.
+Hi! My name is Lucas. I'm 35 years old, I'm a Christian, and I'm a software developer. I have solid experience from the beginning to the delivery of software, and I have a special focus on observability.
 
 ## [PROFESSIONAL EXPERIENCE]
 
-Throughout my career, I've worked in agile environments using Kanban and Scrum. My experience spans both frontend and backend development. I have expertise in microservices security—a skill I gained working for digital banking companies, where security is critical. I also have strong expertise in observability: building and maintaining systems with structured logging, distributed tracing, and metrics — ensuring teams have full visibility into what's happening in production. Beyond that, I have hands-on experience with CI/CD pipelines — automating builds, tests, and deployments to deliver software faster and with confidence. I'm also experienced in software architecture, including microservices, message queue-driven design, and event-driven architecture — building scalable and decoupled solutions.
+During my career, I have worked in agile teams using Kanban and Scrum. I work with both frontend and backend development.
+
+I have experience in microservices security. I developed this skill working for digital banking companies, where security is very important.
+
+I also work with observability — I build systems with logging, tracing, and metrics, so teams can understand what is happening in production.
+
+I have experience with CI/CD pipelines too, automating builds, tests, and deployments to make the delivery process faster and more reliable.
+
+I also have experience with software architecture — microservices, message queue-driven design, and event-driven architecture, creating scalable and decoupled systems.
 
 ## [PASSION FOR SHARING]
 
-What really motivates me is sharing knowledge. I'm proud to have delivered tech talks on different technology stacks during my professional journey. I believe teaching is a powerful way for growth—both for those who teach and those who learn.
-
-## [ASPIRATIONS]
-
-I speak Portuguese and Spanish fluently. I have a dream of working using Spanish—collaborating with Latin American teams. I also have a genuine desire to learn and improve my English, expanding my professional possibilities.
+One thing that really motivates me is sharing knowledge. I have given tech talks about different technologies during my career. I believe that teaching helps everyone grow — the person who teaches and the person who learns.
 
 ## [AI & TECHNOLOGY PASSION]
 
-I'm deeply passionate about Artificial Intelligence and how it's transforming software development. I actively use and explore AI tools daily — I work with Claude Code and Cursor for development, I've experimented with OpenClaw, and I use GitHub Copilot every day at work. I'm constantly learning and keeping up with this rapidly evolving space, because I believe AI is not just a trend — it's reshaping how we build software.
+I am very passionate about Artificial Intelligence and how it is changing software development. I use AI tools every day. I work with Claude Code and Cursor, and I use GitHub Copilot at work daily. I love learning about this area because I believe AI is changing the way we build software.
+
+## [ASPIRATIONS]
+
+I speak Portuguese and Spanish fluently. I have a dream of working with Spanish-speaking teams in Latin America. I also really want to improve my English and grow my professional opportunities.
 
 ## [CLOSING]
 
-I'm constantly seeking to learn and contribute to teams' technical growth. I'm excited to discuss development, architecture, security, and the future of AI-assisted engineering!
+I am always looking to learn and help teams grow technically. I love talking about development, architecture, security, and AI. I hope we can connect!
 
 ---
 
