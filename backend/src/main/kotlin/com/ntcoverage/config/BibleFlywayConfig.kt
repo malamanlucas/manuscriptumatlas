@@ -16,6 +16,7 @@ object BibleFlywayConfig {
                 BibleVersions,
                 BibleBooks,
                 BibleBookAbbreviations,
+                BibleBookTranslations,
                 BibleChapters,
                 BibleVerses,
                 BibleVerseTexts,

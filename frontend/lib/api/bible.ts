@@ -26,9 +26,12 @@ export function getBibleVersions(testament?: string): Promise<BibleVersionDTO[]>
   return fetchJson(`${BASE}/bible/versions${params}`);
 }
 
-export function getBibleBooks(testament?: string): Promise<BibleBookDTO[]> {
-  const params = testament ? `?testament=${testament}` : "";
-  return fetchJson(`${BASE}/bible/books${params}`);
+export function getBibleBooks(testament?: string, locale?: string): Promise<BibleBookDTO[]> {
+  const params = new URLSearchParams();
+  if (testament) params.set("testament", testament);
+  if (locale) params.set("locale", locale);
+  const q = params.toString();
+  return fetchJson(`${BASE}/bible/books${q ? `?${q}` : ""}`);
 }
 
 export function getBibleChapter(version: string, book: string, chapter: number): Promise<BibleChapterResponse> {

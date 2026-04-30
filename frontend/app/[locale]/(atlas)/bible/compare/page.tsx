@@ -17,7 +17,7 @@ export default function ComparePage() {
   const booksQuery = useBibleBooks();
   const compareQuery = useBibleCompare(selectedBook, selectedChapter, selectedVersions);
 
-  const currentBook = booksQuery.data?.find((b) => b.name === selectedBook);
+  const currentBook = booksQuery.data?.find((b) => (b.canonicalName ?? b.name) === selectedBook);
   const allVersions = versionsQuery.data ?? [];
 
   return (

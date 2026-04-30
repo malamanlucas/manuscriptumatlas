@@ -10,6 +10,7 @@ import com.ntcoverage.repository.LexiconRepository
 import com.ntcoverage.repository.LlmQueueRepository
 import kotlinx.serialization.encodeToString
 import com.ntcoverage.seed.BibleAbbreviationsSeedData
+import com.ntcoverage.seed.BibleBookNamesSeedData
 import com.ntcoverage.seed.BibleBooksSeedData
 import com.ntcoverage.seed.BibleVersionsSeedData
 import com.ntcoverage.scraper.BibleOnlineScraper
@@ -209,6 +210,7 @@ class BibleIngestionService(
             "bible_seed_versions",
             "bible_seed_books",
             "bible_seed_abbreviations",
+            "bible_seed_book_names",
             "bible_ingest_text_kjv",
             "bible_ingest_text_aa",
             "bible_ingest_text_acf",
@@ -300,6 +302,7 @@ class BibleIngestionService(
                 "bible_seed_versions" -> seedVersions()
                 "bible_seed_books" -> seedBooks()
                 "bible_seed_abbreviations" -> seedAbbreviations()
+                "bible_seed_book_names" -> seedBookNames()
                 "bible_ingest_text_kjv" -> ingestTextFromUrl("KJV", KJV_BASE)
                 "bible_ingest_text_aa" -> ingestTextFromUrl("AA", ARC_BASE)
                 "bible_ingest_text_acf" -> ingestTextFromUrl("ACF", ACF_BASE)
@@ -434,6 +437,21 @@ class BibleIngestionService(
             phaseTracker.markProgress("bible_seed_abbreviations", processed)
         }
         log.info("BIBLE_SEED_ABBREVIATIONS: seeded $total abbreviations")
+    }
+
+    private suspend fun seedBookNames() = runPhaseTracked("bible_seed_book_names") {
+        val entries = BibleBookNamesSeedData.entries
+        phaseTracker.markProgress("bible_seed_book_names", 0, entries.size)
+        var processed = 0
+        for (entry in entries) {
+            val book = bookRepository.findByName(entry.canonicalName)
+            if (book != null) {
+                bookRepository.upsertBookTranslation(book.id, entry.locale, entry.name)
+            }
+            processed++
+            phaseTracker.markProgress("bible_seed_book_names", processed)
+        }
+        log.info("BIBLE_SEED_BOOK_NAMES: seeded $processed book name translations")
     }
 
     // ── Text Ingestion (download JSON from GitHub) ──

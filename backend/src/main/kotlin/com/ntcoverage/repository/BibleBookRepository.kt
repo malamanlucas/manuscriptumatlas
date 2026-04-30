@@ -10,12 +10,18 @@ class BibleBookRepository {
 
     private val db get() = BibleDatabaseConfig.database
 
-    fun findAll(testament: String? = null): List<BibleBookDTO> = transaction(db) {
+    fun findAll(testament: String? = null, locale: String = "en"): List<BibleBookDTO> = transaction(db) {
         val query = BibleBooks.selectAll()
         if (testament != null) {
             query.andWhere { BibleBooks.testament eq testament }
         }
         val books = query.orderBy(BibleBooks.bookOrder to SortOrder.ASC).map { it.toDTO() }
+
+        val translationByBook = if (locale == "en") emptyMap() else {
+            BibleBookTranslations.selectAll()
+                .where { BibleBookTranslations.locale eq locale }
+                .associate { it[BibleBookTranslations.bookId].value to it[BibleBookTranslations.name] }
+        }
 
         val abbreviations = BibleBookAbbreviations.selectAll()
             .groupBy { it[BibleBookAbbreviations.bookId].value }
@@ -26,7 +32,10 @@ class BibleBookRepository {
                 { it[BibleBookAbbreviations.locale] },
                 { it[BibleBookAbbreviations.abbreviation] }
             )
-            book.copy(abbreviations = byLocale)
+            book.copy(
+                abbreviations = byLocale,
+                localizedName = translationByBook[book.id] ?: book.canonicalName
+            )
         }
     }
 
@@ -107,13 +116,37 @@ class BibleBookRepository {
         }
     }
 
-    private fun ResultRow.toDTO() = BibleBookDTO(
-        id = this[BibleBooks.id].value,
-        name = this[BibleBooks.name],
-        abbreviation = this[BibleBooks.abbreviation],
-        totalChapters = this[BibleBooks.totalChapters],
-        totalVerses = this[BibleBooks.totalVerses],
-        bookOrder = this[BibleBooks.bookOrder],
-        testament = this[BibleBooks.testament]
-    )
+    fun upsertBookTranslation(bookId: Int, locale: String, name: String) = transaction(db) {
+        val existing = BibleBookTranslations.selectAll()
+            .where { (BibleBookTranslations.bookId eq bookId) and (BibleBookTranslations.locale eq locale) }
+            .firstOrNull()
+        if (existing != null) {
+            BibleBookTranslations.update({
+                (BibleBookTranslations.bookId eq bookId) and (BibleBookTranslations.locale eq locale)
+            }) {
+                it[BibleBookTranslations.name] = name
+            }
+        } else {
+            BibleBookTranslations.insert {
+                it[BibleBookTranslations.bookId] = bookId
+                it[BibleBookTranslations.locale] = locale
+                it[BibleBookTranslations.name] = name
+            }
+        }
+    }
+
+    private fun ResultRow.toDTO(): BibleBookDTO {
+        val canonical = this[BibleBooks.name]
+        return BibleBookDTO(
+            id = this[BibleBooks.id].value,
+            name = canonical,
+            canonicalName = canonical,
+            localizedName = canonical,
+            abbreviation = this[BibleBooks.abbreviation],
+            totalChapters = this[BibleBooks.totalChapters],
+            totalVerses = this[BibleBooks.totalVerses],
+            bookOrder = this[BibleBooks.bookOrder],
+            testament = this[BibleBooks.testament]
+        )
+    }
 }

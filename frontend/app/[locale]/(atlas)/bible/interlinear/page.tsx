@@ -18,7 +18,8 @@ export default function InterlinearPage() {
   const interlinearQuery = useBibleInterlinearChapter(selectedBook, selectedChapter);
   const chapterQuery = useBibleChapter(selectedVersion, selectedBook, selectedChapter);
 
-  const currentBook = booksQuery.data?.find((b) => b.name === selectedBook);
+  const currentBook = booksQuery.data?.find((b) => (b.canonicalName ?? b.name) === selectedBook);
+  const alignLang = versionsQuery.data?.find((v) => v.code === selectedVersion)?.language ?? "en";
 
   return (
     <div className="min-h-screen">
@@ -41,6 +42,7 @@ export default function InterlinearPage() {
           error={interlinearQuery.error}
           verseTexts={chapterQuery.data?.verses}
           versionLabel={selectedVersion}
+          alignLang={alignLang}
         />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { getBibleVersions, getBibleBooks, getBibleChapter, getBibleInterlinearChapter, getBibleInterlinearVerse, getStrongsConcordance, getLexiconEntry, compareBibleChapter, searchBible } from "@/lib/api";
 
 export function useBibleVersions(testament?: string) {
@@ -10,9 +11,10 @@ export function useBibleVersions(testament?: string) {
 }
 
 export function useBibleBooks(testament?: string) {
+  const locale = useLocale();
   return useQuery({
-    queryKey: ["bible", "books", testament],
-    queryFn: () => getBibleBooks(testament),
+    queryKey: ["bible", "books", testament, locale],
+    queryFn: () => getBibleBooks(testament, locale),
     staleTime: 60_000,
   });
 }

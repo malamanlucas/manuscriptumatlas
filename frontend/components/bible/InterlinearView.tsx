@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import type { InterlinearChapterDTO, BibleVerseTextDTO } from "@/types";
+import { getDisplayGloss } from "@/lib/bible/gloss";
 
 interface InterlinearViewProps {
   data?: InterlinearChapterDTO;
@@ -11,9 +12,10 @@ interface InterlinearViewProps {
   error: Error | null;
   verseTexts?: BibleVerseTextDTO[];
   versionLabel?: string;
+  alignLang?: string;
 }
 
-export function InterlinearView({ data, isLoading, error, verseTexts, versionLabel }: InterlinearViewProps) {
+export function InterlinearView({ data, isLoading, error, verseTexts, versionLabel, alignLang = "en" }: InterlinearViewProps) {
   const t = useTranslations("bible");
   const tc = useTranslations("common");
 
@@ -82,9 +84,12 @@ export function InterlinearView({ data, isLoading, error, verseTexts, versionLab
                   {word.transliteration && (
                     <span className="mt-0.5 text-[11px] italic text-muted-foreground">{word.transliteration}</span>
                   )}
-                  {word.englishGloss && (
-                    <span className="mt-1 text-[11px] font-semibold text-blue-400">{word.englishGloss}</span>
-                  )}
+                  {(() => {
+                    const gloss = getDisplayGloss(word, alignLang);
+                    return gloss ? (
+                      <span className="mt-1 text-[11px] font-semibold text-blue-400">{gloss}</span>
+                    ) : null;
+                  })()}
                   <span className="mt-0.5 text-[10px] text-foreground/60">{word.lemma}</span>
                   {word.morphology && (
                     <span className="mt-0.5 text-[10px] text-muted-foreground font-mono">{word.morphology}</span>

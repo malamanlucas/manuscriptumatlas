@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useBible";
 import { Search } from "lucide-react";
 import type { InterlinearWordDTO } from "@/types";
+import { getDisplayGloss } from "@/lib/bible/gloss";
 
 export default function BiblePage() {
   const t = useTranslations("bible");
@@ -65,7 +66,7 @@ export default function BiblePage() {
   // Search
   const searchResults = useBibleSearch(debouncedSearch, { locale });
 
-  const currentBook = booksQuery.data?.find((b) => b.name === selectedBook);
+  const currentBook = booksQuery.data?.find((b) => (b.canonicalName ?? b.name) === selectedBook);
   const allVersions = versionsQuery.data ?? [];
   const otherVersions = allVersions.filter((v) => v.code !== primaryVersion);
   const primaryLang = allVersions.find((v) => v.code === primaryVersion)?.language ?? "en";
@@ -94,25 +95,18 @@ export default function BiblePage() {
   };
 
   // Build interlinear data map: verseNumber → { words, kjvText }
-  // Gloss language follows the alignment version, not the UI locale
+  // Gloss language follows the alignment version, not the UI locale.
+  // Word data passes through unchanged; getDisplayGloss(word, alignLang) chooses the right gloss at render time.
   const alignLang = allVersions.find((v) => v.code === alignVersion)?.language ?? "en";
   const interlinearByVerse = new Map<number, { words: InterlinearWordDTO[]; kjvText?: string | null }>();
   let hasAnyAlignment = false;
 
   interlinearChapter.data?.verses.forEach((v) => {
-    const words = alignLang === "en" ? v.words : v.words.map((w) => {
-      const localGloss = alignLang === "pt" ? (w.portugueseGloss ?? w.kjvAlignment?.alignedText)
-        : alignLang === "es" ? (w.spanishGloss ?? w.kjvAlignment?.alignedText)
-        : null;
-      return localGloss ? { ...w, englishGloss: localGloss } as InterlinearWordDTO : w;
-    });
-
-    if (words.some((w) => w.kjvAlignment)) {
+    if (v.words.some((w) => w.kjvAlignment)) {
       hasAnyAlignment = true;
     }
-
     interlinearByVerse.set(v.verseNumber, {
-      words,
+      words: v.words,
       kjvText: v.kjvText,
     });
   });
@@ -240,6 +234,7 @@ export default function BiblePage() {
               error={primaryChapter.error}
               interlinearMode={interlinearMode}
               alignVersion={alignVersion}
+              alignLang={alignLang}
               onPrevChapter={() => setSelectedChapter((c) => Math.max(1, c - 1))}
               onNextChapter={() => setSelectedChapter((c) => Math.min(currentBook?.totalChapters ?? c, c + 1))}
             />

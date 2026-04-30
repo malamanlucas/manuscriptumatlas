@@ -22,7 +22,9 @@ data class BibleBookDTO(
     val totalVerses: Int,
     val bookOrder: Int,
     val testament: String,
-    val abbreviations: Map<String, List<String>> = emptyMap()
+    val abbreviations: Map<String, List<String>> = emptyMap(),
+    val canonicalName: String = name,
+    val localizedName: String = name
 )
 
 @Serializable

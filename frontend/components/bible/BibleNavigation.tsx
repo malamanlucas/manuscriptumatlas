@@ -66,8 +66,8 @@ export function BibleNavigation({
             {otBooks.length > 0 && (
               <optgroup label={t("oldTestament")}>
                 {otBooks.map((b) => (
-                  <option key={b.id} value={b.name}>
-                    {b.name}
+                  <option key={b.id} value={b.canonicalName ?? b.name}>
+                    {b.localizedName ?? b.name}
                   </option>
                 ))}
               </optgroup>
@@ -75,8 +75,8 @@ export function BibleNavigation({
             {ntBooks.length > 0 && (
               <optgroup label={t("newTestament")}>
                 {ntBooks.map((b) => (
-                  <option key={b.id} value={b.name}>
-                    {b.name}
+                  <option key={b.id} value={b.canonicalName ?? b.name}>
+                    {b.localizedName ?? b.name}
                   </option>
                 ))}
               </optgroup>

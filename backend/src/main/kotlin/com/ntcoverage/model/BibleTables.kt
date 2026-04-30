@@ -33,6 +33,16 @@ object BibleBookAbbreviations : IntIdTable("bible_book_abbreviations") {
     }
 }
 
+object BibleBookTranslations : IntIdTable("bible_book_translations") {
+    val bookId = reference("book_id", BibleBooks)
+    val locale = varchar("locale", 5)
+    val name = varchar("name", 80)
+
+    init {
+        uniqueIndex(bookId, locale)
+    }
+}
+
 object BibleChapters : IntIdTable("bible_chapters") {
     val bookId = reference("book_id", BibleBooks)
     val chapterNumber = integer("chapter_number")

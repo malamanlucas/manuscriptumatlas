@@ -19,6 +19,8 @@ export interface BibleBookDTO {
   bookOrder: number;
   testament: string;
   abbreviations: Record<string, string[]>;
+  canonicalName?: string;
+  localizedName?: string;
 }
 
 export interface BibleVerseTextDTO {

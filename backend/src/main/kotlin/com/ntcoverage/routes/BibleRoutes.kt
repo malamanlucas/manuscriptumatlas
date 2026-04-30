@@ -16,7 +16,8 @@ fun Route.bibleRoutes(bibleService: BibleService) {
 
     get("/bible/books") {
         val testament = call.request.queryParameters["testament"]
-        call.respond(bibleService.getBooks(testament))
+        val locale = call.request.queryParameters["locale"] ?: "en"
+        call.respond(bibleService.getBooks(testament, locale))
     }
 
     get("/bible/search") {

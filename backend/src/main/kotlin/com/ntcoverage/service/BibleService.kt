@@ -22,8 +22,8 @@ class BibleService(
         return versionRepository.findAll(testament?.uppercase())
     }
 
-    fun getBooks(testament: String? = null): List<BibleBookDTO> {
-        return bookRepository.findAll(testament?.uppercase())
+    fun getBooks(testament: String? = null, locale: String = "en"): List<BibleBookDTO> {
+        return bookRepository.findAll(testament?.uppercase(), locale)
     }
 
     fun getChapter(versionCode: String, bookName: String, chapter: Int): BibleChapterResponse {

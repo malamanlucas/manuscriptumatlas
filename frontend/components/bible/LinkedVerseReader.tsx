@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { BibleVerseTextDTO, InterlinearWordDTO } from "@/types";
+import { getDisplayGloss } from "@/lib/bible/gloss";
 
 interface InterlinearData {
   words: InterlinearWordDTO[];
@@ -28,6 +29,7 @@ interface LinkedVerseReaderProps {
   error: Error | null;
   interlinearMode: boolean;
   alignVersion?: string;
+  alignLang?: string;
   onPrevChapter?: () => void;
   onNextChapter?: () => void;
 }
@@ -90,6 +92,7 @@ export function LinkedVerseReader({
   error,
   interlinearMode,
   alignVersion = "KJV",
+  alignLang = "en",
   onPrevChapter,
   onNextChapter,
 }: LinkedVerseReaderProps) {
@@ -282,20 +285,23 @@ export function LinkedVerseReader({
                               )}
 
                               {/* Raw gloss */}
-                              {w.strongsNumber ? (
-                                <Link
-                                  href={`/bible/strongs/${w.strongsNumber}`}
-                                  className={`mt-1 text-xs font-medium leading-tight hover:underline ${
-                                    getSemanticGlossColor(alignment?.semanticRelation, alignment?.isDivergent)
-                                  }`}
-                                >
-                                  {w.englishGloss || "-"}
-                                </Link>
-                              ) : (
-                                <span className="mt-1 text-xs text-muted-foreground leading-tight">
-                                  {w.englishGloss || "-"}
-                                </span>
-                              )}
+                              {(() => {
+                                const displayGloss = getDisplayGloss(w, alignLang) || "-";
+                                return w.strongsNumber ? (
+                                  <Link
+                                    href={`/bible/strongs/${w.strongsNumber}`}
+                                    className={`mt-1 text-xs font-medium leading-tight hover:underline ${
+                                      getSemanticGlossColor(alignment?.semanticRelation, alignment?.isDivergent)
+                                    }`}
+                                  >
+                                    {displayGloss}
+                                  </Link>
+                                ) : (
+                                  <span className="mt-1 text-xs text-muted-foreground leading-tight">
+                                    {displayGloss}
+                                  </span>
+                                );
+                              })()}
 
                               {/* Aligned text + contextual sense (shown when not equivalent) */}
                               {alignment?.alignedText && (alignment.semanticRelation ? alignment.semanticRelation !== "equivalent" : alignment.isDivergent) && (

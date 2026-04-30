@@ -26,7 +26,7 @@ export function BibleLayer4ScopePanel({ phases, phaseLabels }: BibleLayer4ScopeP
   const [selectedPhases, setSelectedPhases] = useState<Set<string>>(new Set(phases));
 
   const selectedBookDTO = useMemo(
-    () => booksQuery.data?.find((b) => b.name === selectedBook) ?? null,
+    () => booksQuery.data?.find((b) => (b.canonicalName ?? b.name) === selectedBook) ?? null,
     [booksQuery.data, selectedBook]
   );
 
