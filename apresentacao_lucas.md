@@ -6,7 +6,7 @@ Hi! My name is Lucas, I'm 35 years old, and I'm a Christian. I'm a software deve
 
 ## [PROFESSIONAL EXPERIENCE]
 
-Throughout my career, I've worked in agile environments using Kanban and Scrum. My experience spans both frontend and backend development. I have expertise in microservices security—a skill I gained working for digital banking companies, where security is critical. I also have strong expertise in observability: building and maintaining systems with structured logging, distributed tracing, and metrics — ensuring teams have full visibility into what's happening in production. Beyond that, I have hands-on experience with CI/CD pipelines — automating builds, tests, and deployments to deliver software faster and with confidence. I'm also experienced in software architecture, including microservices, message queue-driven design, and event-driven systems — building scalable and decoupled solutions.
+Throughout my career, I've worked in agile environments using Kanban and Scrum. My experience spans both frontend and backend development. I have expertise in microservices security—a skill I gained working for digital banking companies, where security is critical. I also have strong expertise in observability: building and maintaining systems with structured logging, distributed tracing, and metrics — ensuring teams have full visibility into what's happening in production. Beyond that, I have hands-on experience with CI/CD pipelines — automating builds, tests, and deployments to deliver software faster and with confidence. I'm also experienced in software architecture, including microservices, message queue-driven design, and event-driven architecture — building scalable and decoupled solutions.
 
 ## [PASSION FOR SHARING]
 
