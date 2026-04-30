@@ -6,7 +6,7 @@ Hi! My name is Lucas, I'm 35 years old, and I'm a Christian. I'm a software deve
 
 ## [PROFESSIONAL EXPERIENCE]
 
-Throughout my career, I've worked in agile environments using Kanban and Scrum. My experience spans both frontend and backend development. I have expertise in microservices security—a skill I gained working for digital banking companies, where security is critical.
+Throughout my career, I've worked in agile environments using Kanban and Scrum. My experience spans both frontend and backend development. I have expertise in microservices security—a skill I gained working for digital banking companies, where security is critical. I also have strong expertise in observability: building and maintaining systems with structured logging, distributed tracing, and metrics — ensuring teams have full visibility into what's happening in production.
 
 ## [PASSION FOR SHARING]
 
