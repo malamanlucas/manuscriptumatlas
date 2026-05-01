@@ -256,25 +256,10 @@ class LlmResponseProcessor(
         if (normEng.isNotBlank() && normTrans == normEng) return "echo_english"
 
         when (locale) {
-            "pt" -> {
-                if (isLikelyNonPortuguese(normalized)) return "non_target_language"
-                if (looksLikeBareEnglish(normalized)) return "ascii_suspect"
-            }
-            "es" -> {
-                if (isLikelyNonSpanish(normalized)) return "non_target_language"
-                if (looksLikeBareEnglish(normalized)) return "ascii_suspect"
-            }
+            "pt" -> if (isLikelyNonPortuguese(normalized)) return "non_target_language"
+            "es" -> if (isLikelyNonSpanish(normalized)) return "non_target_language"
         }
         return null
-    }
-
-    /** Heuristic: ASCII puro, length>5, sem aparência de palavra PT/ES curta — provavelmente inglês. */
-    private fun looksLikeBareEnglish(value: String): Boolean {
-        val v = value.trim()
-        if (v.length <= 5) return false
-        if (!v.matches(Regex("^[A-Za-z][A-Za-z\\s'\\-]*$"))) return false
-        val firstWord = v.split(Regex("\\s+")).firstOrNull()?.lowercase() ?: return false
-        return firstWord !in PT_SHORT_ALLOWLIST && firstWord !in ES_SHORT_ALLOWLIST
     }
 
     /** Heuristic: returns true if token is clearly in English or Spanish (not Portuguese). */
@@ -333,18 +318,20 @@ class LlmResponseProcessor(
             "beginning", "concerning", "indeed", "surely", "behold",
             "prophets", "spirits", "whether", "out",
             "paul", "peter", "john", "james", "jude",
-            // Spanish function words and common biblical glosses
-            "el", "la", "los", "las", "ese", "esa", "eso", "esto", "este",
-            "palabra", "dios", "señor", "santo", "espíritu", "espiritu",
-            "fue", "era", "eran", "está", "están", "estaba", "estaban",
-            "y", "pero", "si",
-            "del", "al", "por", "para", "con", "sin",
+            // Spanish — APENAS palavras distintas de PT (cuidado com falsos positivos!)
+            // NÃO inclui: para, por, con, sin, si, este, esta, contra, todo, todos,
+            //             como, porque, antes, nunca, está, santo, ahora, siempre — todas existem em PT.
+            "el", "la", "los", "las", "ese", "esa", "eso",
+            "palabra", "dios", "señor", "espíritu", "espiritu",
+            "fue", "eran", "están", "estaba", "estaban",
+            "pero", "y",
+            "del", "al",
             "él", "ella", "ellos", "ellas",
             // Spanish content words observed in corruption
             "nuestro", "nuestra", "vuestro", "vuestra",
-            "donde", "cuando", "como", "porque", "también", "según",
-            "contra", "hacia", "aún", "todavía", "ahora", "después", "antes",
-            "siempre", "nunca", "mucho", "poco", "todo", "todos", "mismo", "propio",
+            "donde", "cuando", "también", "según",
+            "hacia", "aún", "todavía", "después",
+            "mucho", "poco", "mismo", "propio",
             "hizo", "dijo", "fueron", "vio", "vieron", "dio", "dieron",
             "vino", "vinieron", "sea", "sean",
             "hablado", "dicho", "hecho", "visto", "oído", "llamado", "llevado",
