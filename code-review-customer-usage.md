@@ -133,6 +133,112 @@ isOverLimit: subscription ? apiCalls.length > subscription.monthlyLimit : false,
 
 ---
 
+## Diagrama: Fluxo Atual vs. Fluxo Corrigido
+
+### Fluxo atual — problema N+1 + IDOR
+
+```
+GET /api/reports/customer-usage/:accountId
+        │
+        ▼
+┌─────────────────────────────────┐
+│  req.params.accountId           │  ← ⚠ SEM verificação de auth
+│  (qualquer usuário acessa)      │     qualquer accountId funciona
+└─────────────────────────────────┘
+        │
+        ▼
+  db.customer.findMany()           ── Query 1 (ex: 1.000 clientes)
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  FOR EACH customer  (loop sequencial, N iterações)  │
+│                                                     │
+│  ├─ db.apiCall.findMany(customerId)  ── Query 2     │
+│  │   └─ carrega TODOS os bodies em memória          │
+│  │       para calcular Buffer.byteLength            │
+│  │                                                  │
+│  ├─ db.subscription.findFirst(customerId) ── Query 3│
+│  │                                                  │
+│  └─ checkIfOverLimit(customerId)                    │
+│      └─ db.apiCall.count(customerId) ── Query 4     │
+│          (duplica Query 2, mesma janela 30 dias)    │
+│                                                     │
+│  ⚠ Se apiCalls.length === 0:                        │
+│    successRate = NaN, avgResponseTime = NaN         │
+└─────────────────────────────────────────────────────┘
+        │
+        │  1.000 clientes × 3 queries = 3.000 queries sequenciais
+        ▼
+  TIMEOUT em staging ──────────────────────────────────────────
+```
+
+### Fluxo corrigido — 3 queries paralelas
+
+```
+GET /api/reports/customer-usage/:accountId
+        │
+        ▼
+┌──────────────────────────────────────┐
+│  req.user.accountId === accountId?   │
+│  NÃO → 403 Forbidden                 │  ← auth check
+│  SIM → continua                      │
+└──────────────────────────────────────┘
+        │
+        ▼
+  Promise.all([                         ── 3 queries em paralelo
+    db.customer.findMany(accountId),    ── Query A: clientes
+    db.apiCall.groupBy(accountId,30d),  ── Query B: métricas agregadas
+    db.subscription.findMany(ids),      ── Query C: assinaturas
+  ])
+        │
+        ▼
+┌──────────────────────────────────────────────┐
+│  JOIN em memória (O(n), sem I/O adicional)   │
+│                                              │
+│  Para cada cliente:                          │
+│  ├─ successRate: total > 0 ? x/total : 0    │  ← sem NaN
+│  ├─ avgResponseTime: total > 0 ? avg : 0    │  ← sem NaN
+│  └─ isOverLimit: count > monthlyLimit        │  ← sem query extra
+└──────────────────────────────────────────────┘
+        │
+        ▼
+  < 500ms para 1.000+ clientes
+```
+
+### Mapa de issues por severidade
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    BLOQUEIA O MERGE                         │
+├──────────────────────────┬──────────────────────────────────┤
+│  B1 — IDOR               │  B2 — N+1 Queries               │
+│  ─────────────────────   │  ───────────────────────────     │
+│  Qualquer usuário acessa │  3.000 queries sequenciais       │
+│  dados de qualquer conta │  → timeout com 1.000+ clientes   │
+│  → vazamento multi-tenant│  → causa direta do bug staging   │
+└──────────────────────────┴──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    BUGS DE CORRETUDE                        │
+├──────────────────────────┬──────────────────────────────────┤
+│  C1 — Divisão por zero   │  C2 — Query duplicada           │
+│  ─────────────────────   │  ───────────────────────────     │
+│  Clientes sem chamadas   │  checkIfOverLimit refaz count    │
+│  retornam NaN no JSON    │  já disponível em apiCalls.length│
+│  → "dados incorretos"    │  → query extra por cliente       │
+└──────────────────────────┴──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    FOLLOW-UP (PR SEPARADO)                  │
+├───────────────┬────────────────┬───────────────────────────┤
+│  F1           │  F2            │  F3                        │
+│  Bodies em    │  Sem paginação │  Sem try/catch             │
+│  memória      │  (sem limit)   │  (500 não estruturado)     │
+└───────────────┴────────────────┴───────────────────────────┘
+```
+
+---
+
 ## Estimativa de impacto
 
 | Antes (1.000 clientes) | Depois |
