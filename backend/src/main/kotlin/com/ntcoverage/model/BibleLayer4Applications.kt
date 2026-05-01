@@ -38,7 +38,16 @@ data class RunScopedRequest(
     val phases: List<String>,
     val bookName: String? = null,
     val chapter: Int? = null,
-    val verse: Int? = null
+    val verse: Int? = null,
+    val locales: List<String>? = null
+)
+
+@Serializable
+data class RunPhaseScopedRequest(
+    val bookName: String? = null,
+    val chapter: Int? = null,
+    val verse: Int? = null,
+    val locales: List<String>? = null
 )
 
 @Serializable

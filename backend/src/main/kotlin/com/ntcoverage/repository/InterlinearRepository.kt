@@ -73,6 +73,14 @@ class InterlinearRepository {
         }
     }
 
+    /** Returns the english_gloss for a single wordId, or null if not found. */
+    fun getEnglishGloss(wordId: Int): String? = transaction(db) {
+        InterlinearWords.selectAll()
+            .where { InterlinearWords.id eq wordId }
+            .firstOrNull()
+            ?.get(InterlinearWords.englishGloss)
+    }
+
     fun getWordsForChapterWithIds(bookId: Int, chapter: Int): List<Pair<Int, InterlinearWordDTO>> = transaction(db) {
         (InterlinearWords innerJoin BibleVerses)
             .selectAll()

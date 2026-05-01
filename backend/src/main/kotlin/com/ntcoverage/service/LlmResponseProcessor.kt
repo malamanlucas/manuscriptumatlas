@@ -202,23 +202,79 @@ class LlmResponseProcessor(
         val glossMap = parseGlossJson(content, ctx.keys)
         if (glossMap.isEmpty()) throw IllegalStateException("No glosses parsed for id=${item.id}")
 
+        // Lookup english_gloss per wordId — needed for anti-copy guard
+        val englishByWordId = ctx.entries.associate { entry ->
+            entry.wordId to (interlinearRepository.getEnglishGloss(entry.wordId) ?: "")
+        }
+
         var applied = 0
-        var rejected = 0
+        var rejectedEcho = 0
+        var rejectedLang = 0
+        var rejectedAscii = 0
         for ((key, translation) in glossMap) {
             val entryCtx = ctx.entries.find { it.transliteration == key } ?: continue
-            if (ctx.locale == "pt") {
-                if (isLikelyNonPortuguese(translation)) {
-                    log.warn("LLM_PROCESSOR: rejected gloss PT (non-portuguese) wordId={} value='{}'", entryCtx.wordId, translation)
-                    rejected++
-                    continue
+            val englishGloss = englishByWordId[entryCtx.wordId] ?: ""
+            val rejection = validateGloss(translation, englishGloss, ctx.locale)
+            if (rejection != null) {
+                when (rejection) {
+                    "echo_english" -> rejectedEcho++
+                    "non_target_language" -> rejectedLang++
+                    "ascii_suspect" -> rejectedAscii++
                 }
+                log.warn(
+                    "LLM_PROCESSOR: rejected gloss locale={} reason={} wordId={} translit='{}' proposed='{}' englishGloss='{}'",
+                    ctx.locale, rejection, entryCtx.wordId, key, translation, englishGloss
+                )
+                continue
+            }
+            if (ctx.locale == "pt") {
                 interlinearRepository.updateGlosses(entryCtx.wordId, translation, null)
             } else if (ctx.locale == "es") {
                 interlinearRepository.updateGlosses(entryCtx.wordId, null, translation)
             }
             applied++
         }
-        log.info("LLM_PROCESSOR: applied gloss translations locale={} count={} rejected={}", ctx.locale, applied, rejected)
+        log.info(
+            "LLM_PROCESSOR: applied gloss translations locale={} applied={} rejected_echo={} rejected_lang={} rejected_ascii={}",
+            ctx.locale, applied, rejectedEcho, rejectedLang, rejectedAscii
+        )
+    }
+
+    /**
+     * Validates a translation against the target locale. Returns null if accepted,
+     * or a short reason string if rejected.
+     */
+    private fun validateGloss(translation: String, englishGloss: String, locale: String): String? {
+        val normalized = translation.trim()
+        if (normalized.isBlank()) return "non_target_language"
+
+        // Hard-fail: LLM ecoou o english_gloss verbatim (após normalize de brackets/case)
+        val normEng = englishGloss.trim().lowercase()
+            .replace(Regex("[\\[\\]<>(){}]"), "").trim()
+        val normTrans = normalized.lowercase()
+            .replace(Regex("[\\[\\]<>(){}]"), "").trim()
+        if (normEng.isNotBlank() && normTrans == normEng) return "echo_english"
+
+        when (locale) {
+            "pt" -> {
+                if (isLikelyNonPortuguese(normalized)) return "non_target_language"
+                if (looksLikeBareEnglish(normalized)) return "ascii_suspect"
+            }
+            "es" -> {
+                if (isLikelyNonSpanish(normalized)) return "non_target_language"
+                if (looksLikeBareEnglish(normalized)) return "ascii_suspect"
+            }
+        }
+        return null
+    }
+
+    /** Heuristic: ASCII puro, length>5, sem aparência de palavra PT/ES curta — provavelmente inglês. */
+    private fun looksLikeBareEnglish(value: String): Boolean {
+        val v = value.trim()
+        if (v.length <= 5) return false
+        if (!v.matches(Regex("^[A-Za-z][A-Za-z\\s'\\-]*$"))) return false
+        val firstWord = v.split(Regex("\\s+")).firstOrNull()?.lowercase() ?: return false
+        return firstWord !in PT_SHORT_ALLOWLIST && firstWord !in ES_SHORT_ALLOWLIST
     }
 
     /** Heuristic: returns true if token is clearly in English or Spanish (not Portuguese). */
@@ -230,21 +286,105 @@ class LlmResponseProcessor(
         return words.any { it.isNotBlank() && it in NON_PT_TOKENS }
     }
 
+    /** Heuristic: returns true if token is clearly in English or Portuguese (not Spanish). Reserved for future ES rebuild. */
+    private fun isLikelyNonSpanish(value: String): Boolean {
+        val normalized = value.trim().lowercase()
+        if (normalized.isBlank()) return false
+        if (normalized in NON_ES_TOKENS) return true
+        val words = normalized.split(Regex("\\s+|[/,;|]"))
+        return words.any { it.isNotBlank() && it in NON_ES_TOKENS }
+    }
+
     companion object {
+        // Curtas allowlists para distinguir palavras curtas legítimas do idioma alvo
+        private val PT_SHORT_ALLOWLIST = setOf(
+            "o", "a", "e", "os", "as", "do", "da", "dos", "das", "de", "no", "na",
+            "nos", "nas", "em", "um", "uma", "uns", "umas", "ao", "aos", "ou", "se",
+            "sim", "não", "lá", "cá", "já", "só", "vós", "nós", "ele", "ela", "eles",
+            "elas", "isto", "isso", "este", "esta", "esses", "essas", "foi", "era",
+            "são", "ser", "ter", "ir", "vir", "dar", "ver", "diz", "faz", "quer",
+            "sabe", "pode", "deve", "vai", "vem", "dá", "vê"
+        )
+        private val ES_SHORT_ALLOWLIST = setOf(
+            "el", "la", "los", "las", "un", "una", "de", "del", "en", "y", "o", "que",
+            "no", "sí", "lo", "su", "sus", "mi", "mis", "tu", "tus", "ya", "ello",
+            "ese", "esa", "esto", "este"
+        )
+
         private val NON_PT_TOKENS = setOf(
-            // English function words and common biblical glosses
+            // English function words
             "the", "was", "is", "are", "were", "be", "been", "has", "had", "have",
             "of", "in", "on", "at", "to", "from", "by", "for", "with",
             "and", "or", "but", "if", "then",
+            "we", "our", "your", "my", "they", "them", "him", "her",
+            "this", "that", "these", "those",
+            "who", "whom", "whose", "what", "why", "how", "when", "where",
+            "will", "shall", "can", "could", "would", "should", "may", "might", "must",
+            "do", "does", "did", "done", "being", "having",
+            "only", "every", "each", "all", "any", "more", "most", "less",
+            "also", "however", "because", "until", "since", "before", "after",
+            "during", "against", "without", "within", "between", "beyond",
+            "upon", "into", "onto", "across",
+            // English biblical/content words observed in corruption
             "word", "god", "lord", "jesus", "christ", "spirit", "holy",
-            "this", "that", "these", "those", "him", "her", "them", "they",
+            "eyes", "hands", "life", "world", "day", "night", "time", "things",
+            "said", "made", "gone", "came", "taken", "given", "kept",
+            "knew", "known", "found", "told", "seen", "heard", "handled", "gazed",
+            "beginning", "concerning", "indeed", "surely", "behold",
+            "prophets", "spirits", "whether", "out",
+            "paul", "peter", "john", "james", "jude",
             // Spanish function words and common biblical glosses
             "el", "la", "los", "las", "ese", "esa", "eso", "esto", "este",
             "palabra", "dios", "señor", "santo", "espíritu", "espiritu",
-            "fue", "era", "eran", "está", "esta", "están", "estaba",
-            "y", "o", "pero", "si", "que",
+            "fue", "era", "eran", "está", "están", "estaba", "estaban",
+            "y", "pero", "si",
             "del", "al", "por", "para", "con", "sin",
-            "él", "ella", "ellos", "ellas"
+            "él", "ella", "ellos", "ellas",
+            // Spanish content words observed in corruption
+            "nuestro", "nuestra", "vuestro", "vuestra",
+            "donde", "cuando", "como", "porque", "también", "según",
+            "contra", "hacia", "aún", "todavía", "ahora", "después", "antes",
+            "siempre", "nunca", "mucho", "poco", "todo", "todos", "mismo", "propio",
+            "hizo", "dijo", "fueron", "vio", "vieron", "dio", "dieron",
+            "vino", "vinieron", "sea", "sean",
+            "hablado", "dicho", "hecho", "visto", "oído", "llamado", "llevado",
+            "escrito", "leído", "mostrado", "dado", "recibido", "encontrado",
+            "escuchado", "sentido", "salido", "llegado", "partido",
+            "pasado", "pasando", "hablando", "viendo", "oyendo", "dando",
+            "comiendo", "bebiendo", "durmiendo", "viajando", "caminando",
+            "corriendo", "naciendo", "muriendo", "viviendo",
+            "amando", "queriendo", "sabiendo", "conociendo", "entendiendo",
+            "escuchando", "sintiendo", "saliendo", "llegando"
+        )
+
+        /** Tokens que NÃO devem aparecer em ES (são EN ou PT distintos). Reservado para futuro ES rebuild. */
+        private val NON_ES_TOKENS = setOf(
+            // English function/content (mesmo conjunto do bloco EN acima — ES também não pode emitir EN)
+            "the", "was", "is", "are", "were", "be", "been", "has", "had", "have",
+            "of", "in", "on", "at", "to", "from", "by", "for", "with",
+            "and", "or", "but", "if", "then",
+            "we", "our", "your", "my", "they", "them", "him", "her",
+            "this", "that", "these", "those",
+            "who", "whom", "whose", "what", "why", "how", "when", "where",
+            "will", "shall", "can", "could", "would", "should", "may", "might", "must",
+            "do", "does", "did", "done", "being", "having",
+            "word", "god", "lord", "jesus", "christ", "spirit", "holy",
+            "eyes", "hands", "life", "world", "day", "night", "time", "things",
+            "said", "made", "gone", "came", "taken", "given",
+            "knew", "known", "found", "told", "seen", "heard", "handled", "gazed",
+            "beginning", "concerning", "prophets", "spirits", "whether",
+            // Portuguese-specific tokens (não devem vazar para ES)
+            "verbo", "palavra", "deus",
+            "ele", "ela", "eles", "elas", "isto", "isso", "este", "esta",
+            "foi", "são", "ser", "ter",
+            "do", "da", "dos", "das", "no", "na", "nos", "nas",
+            "ao", "aos", "uma", "umas",
+            "vós", "nós",
+            "também", "porém",
+            "mostrou", "mostraram", "fez", "fizeram", "viu", "viram",
+            "ouviu", "ouviram", "deu", "deram", "veio", "vieram",
+            "mostrando", "fazendo", "vendo", "ouvindo", "dando", "vindo",
+            "tinha", "tinham", "havia", "haviam"
         )
     }
 

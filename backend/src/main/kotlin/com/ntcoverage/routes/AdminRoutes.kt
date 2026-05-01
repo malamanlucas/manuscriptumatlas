@@ -327,10 +327,21 @@ fun Route.adminRoutes(
         if (phaseTracker.isPhaseRunning(phase)) {
             return@post call.respond(HttpStatusCode.Conflict, MessageResponse("Phase already running: $phase"))
         }
+        val scope: IngestionScope? = try {
+            val body = call.receiveText().trim()
+            if (body.isEmpty() || body == "{}") null
+            else {
+                val req = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                    .decodeFromString<com.ntcoverage.model.RunPhaseScopedRequest>(body)
+                if (req.bookName != null || req.locales != null) {
+                    IngestionScope(req.bookName, req.chapter, req.verse, req.locales)
+                } else null
+            }
+        } catch (_: Exception) { null }
         ingestionScope.launch {
-            bibleIngestionService.runPhase(phase)
+            bibleIngestionService.runPhase(phase, scope)
         }
-        call.respond(HttpStatusCode.Accepted, MessageResponse("Phase started: $phase"))
+        call.respond(HttpStatusCode.Accepted, MessageResponse("Phase started: $phase${scope?.let { " (scope=$it)" } ?: ""}"))
     }
 
     post("/admin/bible/ingestion/run") {
@@ -383,7 +394,9 @@ fun Route.adminRoutes(
                 MessageResponse("Phases already running: ${alreadyRunning.joinToString(", ")}")
             )
         }
-        val scope = request.bookName?.let { IngestionScope(it, request.chapter, request.verse) }
+        val scope = if (request.bookName != null || request.locales != null) {
+            IngestionScope(request.bookName, request.chapter, request.verse, request.locales)
+        } else null
         ingestionScope.launch {
             bibleIngestionService.runPhases(phases, scope)
         }

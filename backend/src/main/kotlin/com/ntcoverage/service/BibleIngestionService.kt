@@ -39,17 +39,24 @@ import java.net.http.HttpResponse
 import java.time.Duration
 
 /**
- * Runtime scope filter for Layer 4 phases — selects a single book, chapter, or verse.
- * Replaces the former `bible-ingestion-filter.txt` approach (deleted 2026-04-17).
+ * Runtime scope filter for Layer 4 phases — selects a single book, chapter, verse, or locale subset.
  *
  * - `bookName == null` → todos os livros
  * - `bookName != null, chapter == null` → livro inteiro
  * - `bookName != null, chapter != null, verse == null` → capítulo inteiro
  * - `bookName != null, chapter != null, verse != null` → único versículo
+ * - `locales == null/empty` → todos os locales suportados pela fase (ex: pt+es)
+ * - `locales = ["pt"]` → só português; `locales = ["es"]` → só espanhol
  */
-data class IngestionScope(val bookName: String, val chapter: Int?, val verse: Int?) {
+data class IngestionScope(
+    val bookName: String? = null,
+    val chapter: Int? = null,
+    val verse: Int? = null,
+    val locales: List<String>? = null
+) {
     init {
         require(verse == null || chapter != null) { "verse scope requires chapter" }
+        require(chapter == null || bookName != null) { "chapter scope requires bookName" }
     }
 }
 
@@ -1646,8 +1653,8 @@ Greek alignments: [$alignmentsJson]"""
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_translate_glosses"
 
-        val sanitizedRows = if (scope != null) {
-            val scopedBookId = bookRepository.findByName(scope.bookName)?.id
+        val sanitizedRows = if (scope?.bookName != null || scope?.chapter != null) {
+            val scopedBookId = scope.bookName?.let { bookRepository.findByName(it)?.id }
             interlinearRepository.clearCorruptedPortugueseGlossesScoped(scopedBookId, scope.chapter)
         } else {
             interlinearRepository.clearCorruptedPortugueseGlosses()
@@ -1656,7 +1663,7 @@ Greek alignments: [$alignmentsJson]"""
             log.info("TRANSLATE_GLOSSES_PREPARE: nullified $sanitizedRows corrupted PT gloss rows before re-translation (scope=$scope)")
         }
 
-        val booksToProcess = if (scope != null) {
+        val booksToProcess = if (scope?.bookName != null) {
             listOfNotNull(bookRepository.findByName(scope.bookName))
         } else {
             bookRepository.findAll("NT")
@@ -1681,7 +1688,8 @@ Greek alignments: [$alignmentsJson]"""
                     GlossTranslationEntry(it.second.transliteration!!.trim(), it.second.morphology?.trim() ?: "", it.second.englishGloss?.trim()?.removeSurrounding("<", ">") ?: "", it.second.lemma?.trim() ?: "")
                 }.mapValues { (_, pairs) -> pairs.first().first }
 
-                for (locale in listOf("pt", "es")) {
+                val targetLocales = scope?.locales?.takeIf { it.isNotEmpty() } ?: listOf("pt", "es")
+                for (locale in targetLocales) {
                     val language = if (locale == "pt") "Portuguese" else "Spanish"
                     val chunks = uniqueEntries.chunked(20)
 
@@ -1692,7 +1700,7 @@ Greek alignments: [$alignmentsJson]"""
 Each line contains 4 fields separated by |: transliteration | morphology | english_gloss | lemma
 
 Translate each Greek word to a short $language gloss (1-3 words).
-Use the english_gloss as the semantic reference, then adapt to $language grammar using the morphology code.
+Use the english_gloss as the semantic REFERENCE only — adapt to $language grammar using the morphology code.
 
 Rules:
 - Match grammatical number: 3P verbs → plural, 3S → singular
@@ -1700,19 +1708,52 @@ Rules:
 - For pronouns, translate the grammatical function (dative=to/a, genitive=of/de, accusative=direct object)
 - Prefer the contextual meaning of the english_gloss over the primary dictionary meaning of the lemma
 
+ANTI-COPY RULE — ABSOLUTE:
+- NEVER copy the english_gloss verbatim into the output. The english_gloss is REFERENCE ONLY — your output MUST be in $language.
+- For multi-word english_gloss like "[the] beginning", "we have heard", "we have seen", "we have gazed upon", "with the", "of life",
+  produce the natural single-word $language form (Portuguese: "princípio", "ouvimos", "vimos", "contemplamos", "com os", "da vida"
+  / Spanish: "principio", "oímos", "vimos", "contemplamos", "con los", "de vida").
+  NEVER reproduce the bracketed/multi-word English shape.
+- If you genuinely do not know the equivalent in $language, output the lemma transliterated to lowercase in $language alphabet
+  (NEVER the english_gloss, NEVER an English word).
+
 LANGUAGE LOCK — CRITICAL:
-- Every value MUST be in $language only. NEVER output English (the, was, and, of, word, god, is, be, were, has, had).
-- NEVER mix languages across values. If target is Portuguese, do NOT emit Spanish (el, la, los, palabra, y, fue, era, ese); if target is Spanish, do NOT emit Portuguese (o, a, os, palavra, e, foi, verbo).
-- If you do not know the equivalent in $language, copy the transliteration verbatim.
+- Every value MUST be in $language only.
+- NEVER output any of these English words (these are common LLM failure modes observed in production):
+  the, was, is, are, were, be, been, has, had, have, of, in, on, at, to, from, by, for, with, and, or, but, if, then,
+  who, what, when, where, why, how, we, our, your, my, them, they, him, her, this, that, these, those,
+  every, all, any, some, no, not, said, made, gone, came, taken, given, kept, knew, known, found, told,
+  seen, heard, handled, gazed, eyes, hands, life, world, day, night, time, things, beginning, concerning,
+  prophets, spirits, whether, indeed, surely, behold, paul, peter, john, james, jude, christ, lord, jesus, god, spirit, holy.
+- NEVER mix languages across values. If target is Portuguese, do NOT emit Spanish (el, la, los, palabra, y, fue, era, ese, hizo, dijo, vio, fueron);
+  if target is Spanish, do NOT emit Portuguese (o, a, os, palavra, verbo, foi, são, fez, viu, fizeram).
 
 Few-shot (target=$language):
-${if (language == "Portuguese") """- "en" → "em"
+${if (language == "Portuguese") """- "ho" (T-NSM) → "o"
+- "ho" (T-NSF) → "a"
 - "logos" → "Palavra"
 - "theos" → "Deus"
-- "ho" → "o"""" else """- "en" → "en"
+- "akēkoamen" → "ouvimos"            (NOT "we have heard")
+- "he'ōrakamen" → "vimos"            (NOT "we have seen")
+- "etheasametha" → "contemplamos"    (NOT "we have gazed upon")
+- "epsēlaphēsan" → "tocaram"         (NOT "handled")
+- "archēs" → "princípio"             (NOT "[the] beginning")
+- "ophthalmois" → "olhos"            (NOT "eyes")
+- "cheires" → "mãos"                 (NOT "hands")
+- "zōēs" → "vida"                    (NOT "of life")
+- "peri" → "acerca de"               (NOT "concerning")
+- "psēudoprophētai" → "falsos profetas"  (NOT "false prophets")""" else """- "ho" (T-NSM) → "el"
+- "ho" (T-NSF) → "la"
 - "logos" → "Palabra"
 - "theos" → "Dios"
-- "ho" → "el""""}
+- "akēkoamen" → "oímos"              (NOT "we have heard")
+- "he'ōrakamen" → "vimos"            (NOT "we have seen")
+- "etheasametha" → "contemplamos"    (NOT "we have gazed upon")
+- "epsēlaphēsan" → "tocaron"         (NOT "handled")
+- "archēs" → "principio"             (NOT "[the] beginning")
+- "ophthalmois" → "ojos"             (NOT "eyes")
+- "cheires" → "manos"                (NOT "hands")
+- "zōēs" → "vida"                    (NOT "of life")"""}
 
 Return a JSON object mapping each transliteration to its $language translation.
 IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
@@ -1748,7 +1789,7 @@ IMPORTANT: Return ONLY the JSON object. No preamble, no explanation."""
     suspend fun auditGlossesPrepare(scope: IngestionScope? = null) = runPhaseTracked("bible_audit_glosses_pt") {
         val repo = llmQueueRepository ?: throw IllegalStateException("llmQueueRepository not configured")
         val phaseName = "bible_audit_glosses_pt"
-        val booksToProcess = if (scope != null) {
+        val booksToProcess = if (scope?.bookName != null) {
             listOfNotNull(bookRepository.findByName(scope.bookName))
         } else {
             bookRepository.findAll("NT")
