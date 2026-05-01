@@ -305,7 +305,8 @@ class LlmResponseProcessor(
             "this", "that", "these", "those",
             "who", "whom", "whose", "what", "why", "how", "when", "where",
             "will", "shall", "can", "could", "would", "should", "may", "might", "must",
-            "do", "does", "did", "done", "being", "having",
+            "does", "did", "done", "being", "having",
+            // NÃO inclui "do" (contração PT "do livro"), "each" não, "any" só EN OK
             "only", "every", "each", "all", "any", "more", "most", "less",
             "also", "however", "because", "until", "since", "before", "after",
             "during", "against", "without", "within", "between", "beyond",
