@@ -1,23 +1,23 @@
-# Projeto PagBank — Arquitetura de Segurança
+# Proyecto PagBank — Arquitectura de Seguridad
 
 ## Contexto
 
-Trabalho na PagBank, em um projeto de força de vendas. Meu time é responsável pela segurança das aplicações.
+Trabajo en PagBank, en un proyecto de fuerza de ventas. Mi equipo es responsable de la seguridad de las aplicaciones.
 
-## O que eu construí
+## Lo que construí
 
-Desenvolvi toda a arquitetura de autenticação e autorização do projeto. O coração disso é a emissão de tokens JWT com assinatura assimétrica — o Authorization Server detém a chave privada e emite os tokens; os Resource Servers possuem apenas a chave pública, conseguindo validar a assinatura sem nunca ter acesso à chave privada.
+Desarrollé toda la arquitectura de autenticación y autorización del proyecto. El núcleo de esto es la emisión de tokens JWT con firma asimétrica — el Authorization Server tiene la clave privada y emite los tokens; los Resource Servers tienen solo la clave pública, pudiendo validar la firma sin nunca tener acceso a la clave privada.
 
-O JWT é autoassinado e carrega as permissões, as informações básicas do usuário, e trafega entre as aplicações de forma segura. Configurei todos os microsserviços de recursos para validarem o token automaticamente usando o Spring Security, que facilita muito esse processo.
+El JWT es autofirmado y lleva los permisos, la información básica del usuario, y viaja entre las aplicaciones de forma segura. Configuré todos los microservicios de recursos para validar el token automáticamente usando Spring Security, lo que facilita mucho ese proceso.
 
-Implementei também o mecanismo de introspecção de token, que permite revogar credenciais imediatamente em caso de qualquer incidente de segurança.
+También implementé el mecanismo de introspección de token, que permite revocar credenciales de forma inmediata en caso de cualquier incidente de seguridad.
 
-## SSO com Microsoft
+## SSO con Microsoft
 
-Além disso, criei um microsserviço separado de autenticação integrado à Microsoft — o que chamei de "Alfa SSO". Ele usa OAuth 2.0 com Authorization Code Grant, obrigando o usuário a autenticar com o e-mail corporativo e validar via Microsoft Authenticator no dispositivo Android — MFA.
+Además, creé un microservicio separado de autenticación integrado con Microsoft — al que llamé "Alfa SSO". Utiliza OAuth 2.0 con Authorization Code Grant, obligando al usuario a autenticarse con su correo corporativo y validar mediante Microsoft Authenticator en su dispositivo Android — MFA.
 
-Após a autenticação bem-sucedida no Alfa SSO, a responsabilidade de gerar o JWT interno é delegada para outro microsserviço. Esse token interno é especial — diferente dos tokens dos recursos — e é ele que trafega pelas aplicações internas.
+Después de la autenticación exitosa en el Alfa SSO, la responsabilidad de generar el JWT interno se delega a otro microservicio. Este token interno es especial — diferente de los tokens de los recursos — y es el que circula por las aplicaciones internas.
 
 ## Resultado
 
-Com essa arquitetura, garanto que as credenciais do usuário nunca são expostas, os recursos estão protegidos, e em caso de problema podemos revogar o acesso imediatamente.
+Con esta arquitectura, garantizo que las credenciales del usuario nunca quedan expuestas, los recursos están protegidos, y ante cualquier problema podemos revocar el acceso de forma inmediata.
